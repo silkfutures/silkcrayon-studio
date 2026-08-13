@@ -1,0 +1,7 @@
+import Link from 'next/link';
+import AdminNav from '../../../components/AdminNav';
+import CustomerCreateForm from '../../../components/CustomerCreateForm';
+import {requireStaff} from '../../../lib/auth';
+import {getAdminDb} from '../../../lib/supabase';
+export const dynamic='force-dynamic';
+export default async function Artists({searchParams}){const ctx=await requireStaff();const sp=await searchParams;const showNew=sp?.new==='1';const {data:customers=[]}=await getAdminDb().from('customers').select('id,full_name,artist_name,email,phone,postcode,preferred_genre,created_at').order('created_at',{ascending:false}).limit(250);return <main className="engineerApp"><header className="mobileTop"><div><p className="eyebrow">CRM</p><h1>Artists.</h1><p className="muted">Search, register and grow client relationships.</p></div><AdminNav profile={ctx.profile}/></header>{showNew&&<section className="mobileSection"><h2>Register new artist</h2><CustomerCreateForm compact/></section>}<section className="mobileSection"><div className="sectionTitle"><div><p className="eyebrow">Database</p><h2>All artists</h2></div>{!showNew&&<Link href="/admin/artists?new=1" className="button primary">＋ New</Link>}</div><div className="artistList">{customers.map(c=><Link key={c.id} href={`/admin/artists/${c.id}`} className="artistRow"><div className="avatar">{(c.artist_name||c.full_name||'?').slice(0,1).toUpperCase()}</div><div><b>{c.artist_name||c.full_name}</b><small>{c.full_name}{c.preferred_genre?' · '+c.preferred_genre:''}</small></div><span>→</span></Link>)}</div></section></main>}

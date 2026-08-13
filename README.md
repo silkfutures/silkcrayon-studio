@@ -37,3 +37,12 @@ An owner assigns the engineer from the Upcoming Sessions table. The booking stor
 ## Important
 
 The Supabase service-role/secret key remains server-only. The anon/public key is intentionally exposed to the browser solely for Supabase authentication.
+
+## V5 Engineer App upgrade
+1. Run `supabase/v5-engineer-app.sql` in Supabase SQL Editor once.
+2. Deploy to Vercel. No new environment variables are required beyond V4.
+3. On iPhone, open `/admin/login` in Safari, log in, then Share → Add to Home Screen. The manifest launches Studio OS standalone.
+4. Engineer home: `/admin/engineer`; artists: `/admin/artists`; payments: `/admin/payments`.
+
+### Tap to Pay on iPhone
+The V5 PWA can create Stripe Checkout payments, but browser PWAs cannot use Stripe Terminal's iPhone NFC reader directly. Stripe's native Tap to Pay integration requires the Terminal iOS or React Native SDK plus Apple's Tap to Pay entitlement. Until a native companion is built, use Stripe Checkout here or Stripe's Dashboard mobile app for no-code Tap to Pay.
