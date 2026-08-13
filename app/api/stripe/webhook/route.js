@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "../../../../lib/stripe";
 import { getAdminDb } from "../../../../lib/supabase";
+import { sendLoggedNotification, confirmationEmail } from "../../../../lib/notifications";
 
 export async function POST(request) {
   try {
@@ -37,7 +38,13 @@ export async function POST(request) {
         }
       } else {
         const id = session.metadata?.booking_id || session.client_reference_id;
-        if (id) await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString() }).eq("id", id);
+        if (id) {
+          await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString() }).eq("id", id);
+          if (session.payment_status === "paid") {
+            const { data: booking } = await db.from("bookings").select("*,customers(*)").eq("id", id).maybeSingle();
+            if (booking?.customers?.email) { const msg=confirmationEmail(booking,booking.customers); await sendLoggedNotification({booking,customer:booking.customers,type:"booking_confirmation",...msg}); }
+          }
+        }
       }
     }
 
