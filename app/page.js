@@ -39,7 +39,7 @@ export default function Home() {
           <div className="cardGrid">
             <article><h3>Mixing & Mastering</h3><p>Professional mix and master from an engineer who has developed artists from first session to release-ready.</p><strong>POA per track</strong></article>
             <article><h3>Audiobooks & Podcasts</h3><p>Crystal-clear recording, editing and production for spoken-word projects.</p><strong>POA per project</strong></article>
-            <article><h3>Industry Guidance</h3><p>Experienced ears, honest feedback and artist-development thinking built into the relationship as you grow.</p><strong>Available to returning artists</strong></article>
+            <article><h3>Artist Development</h3><p>Identity, direction, sound, strategy and industry guidance for artists who want more than studio time.</p><Link href="/booking?service=artist-development">Book guidance →</Link></article>
             <article><h3>Full Day Rate</h3><p>Eight hours in the vault for focused recording, development and production.</p><Link href="/booking?service=full-day">£450 / day →</Link></article>
           </div>
         </div>
@@ -56,8 +56,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-      <section id="standard" className="section standard"><div className="container"><p className="eyebrow">The standard</p><h2>Music that moves people forward.</h2><p className="muted">We do not record music that glorifies violence, exploitation or the degradation of others. We believe authenticity is the most powerful artistic force, and we ask every artist to respect the space and the people in it.</p></div></section>
 
       <section className="section selectedWork"><div className="container"><p className="eyebrow">Selected work</p><h2>Hear what’s been made here.</h2><p className="muted">Drop your Spotify playlist embed into this section when ready.</p></div></section>
 

@@ -116,8 +116,3 @@ No custom build configuration is required; Vercel detects Next.js.
 - Customer notes / tags / lifetime value
 - Booking source attribution
 - Automated post-session follow-up
-
-## V2 upgrade
-If V1 is already live, run `supabase/v2-upgrade.sql` once in the Supabase SQL Editor before deploying this version.
-
-New in V2: £0.30 private test booking option, mandatory No Harmful Music Policy acceptance, Artist Development removed as a bookable service, first-party page-view tracking, expanded admin dashboard, and engineer session reports at `/admin/sessions`.

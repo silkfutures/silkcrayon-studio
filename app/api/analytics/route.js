@@ -1,0 +1,2 @@
+import { NextResponse } from "next/server"; import { getAdminDb } from "../../../lib/supabase";
+export async function POST(req){try{const b=await req.json(); if(!b.path)return NextResponse.json({ok:false},{status:400}); await getAdminDb().from('page_views').insert({path:String(b.path).slice(0,300),referrer:String(b.referrer||'').slice(0,600)||null,visitor_id:String(b.visitorId||'').slice(0,100)||null}); return NextResponse.json({ok:true})}catch{return NextResponse.json({ok:false},{status:200})}}

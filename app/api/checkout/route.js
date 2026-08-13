@@ -13,7 +13,7 @@ export async function POST(request) {
     if (!service || !service.durations.includes(duration)) throw new Error("Invalid service or duration");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date || "") || !/^\d{2}:\d{2}$/.test(body.start || "")) throw new Error("Invalid date or time");
     if (!body.fullName?.trim() || !body.email?.trim()) throw new Error("Name and email are required");
-    if (!body.policyAccepted) return NextResponse.json({ error: "You must agree to the No Harmful Music Policy before booking." }, { status: 400 });
+    if (!body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the No Harmful Music Policy before booking." }, { status: 400 });
 
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
@@ -49,13 +49,13 @@ export async function POST(request) {
       p_notes: body.notes?.trim() || null,
       p_amount_pence: amountPence,
       p_hold_expires_at: holdExpires,
+      p_harmful_music_policy_accepted: true,
     });
     if (bookingError) {
       if (bookingError.message?.includes("slot_unavailable")) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
       throw bookingError;
     }
     bookingId = reservedId;
-    await db.from("bookings").update({ policy_accepted: true }).eq("id", reservedId);
     const booking = { id: reservedId };
 
     const stripe = getStripe();

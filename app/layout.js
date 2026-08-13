@@ -1,4 +1,4 @@
-import Analytics from "../components/Analytics";
+import PageTracker from "../components/PageTracker";
 import "./globals.css";
 
 export const metadata = {
@@ -9,7 +9,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body><Analytics />{children}</body>
+      <body><PageTracker />{children}</body>
     </html>
   );
 }
