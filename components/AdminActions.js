@@ -3,15 +3,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export function BookingStatus({ id, status }) {
-  const router = useRouter(); const [busy,setBusy]=useState(false);
-  async function change(next){setBusy(true);await fetch(`/api/admin/bookings/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status:next})});router.refresh();setBusy(false)}
-  return <select aria-label="Booking status" disabled={busy} value={status} onChange={e=>change(e.target.value)}><option>pending</option><option>confirmed</option><option>completed</option><option>cancelled</option><option value="no_show">no show</option></select>;
+  const router = useRouter(); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState('');
+  async function change(next){setBusy(true);setMsg('Saving…');const r=await fetch(`/api/admin/bookings/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status:next})});setMsg(r.ok?'Saved ✓':'Could not save');router.refresh();setBusy(false);setTimeout(()=>setMsg(''),1200)}
+  return <div className="inlineControl"><select aria-label="Booking status" disabled={busy} value={status} onChange={e=>change(e.target.value)}><option>pending</option><option>confirmed</option><option>completed</option><option>cancelled</option><option value="no_show">no show</option></select>{msg&&<small>{msg}</small>}</div>;
 }
 
-export function EngineerAssign({id,value,staff=[]}){
- const router=useRouter(); const [busy,setBusy]=useState(false);
- async function change(engineerUserId){setBusy(true);await fetch(`/api/admin/bookings/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({engineerUserId:engineerUserId||null})});router.refresh();setBusy(false)}
- return <select aria-label="Assigned engineer" disabled={busy} value={value||''} onChange={e=>change(e.target.value)}><option value="">Unassigned</option>{staff.map(s=><option key={s.user_id} value={s.user_id}>{s.engineer_name||s.full_name}</option>)}</select>
+export function EngineerAssign({id,value,staff=[],compact=false}){
+ const router=useRouter(); const [busy,setBusy]=useState(false); const [msg,setMsg]=useState('');
+ async function change(engineerUserId){setBusy(true);setMsg('Assigning…');const r=await fetch(`/api/admin/bookings/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({engineerUserId:engineerUserId||null})});const j=await r.json().catch(()=>({}));setMsg(r.ok?(engineerUserId?'Assigned + notified ✓':'Unassigned ✓'):(j.error||'Could not assign'));router.refresh();setBusy(false);setTimeout(()=>setMsg(''),2200)}
+ return <div className={`assignControl ${compact?'compact':''}`}><select aria-label="Assigned engineer" disabled={busy} value={value||''} onChange={e=>change(e.target.value)}><option value="">Assign engineer…</option>{staff.map(s=><option key={s.user_id} value={s.user_id}>{s.engineer_name||s.full_name}</option>)}</select>{msg&&<small>{msg}</small>}</div>
 }
 
 export function BlockoutForm() {
