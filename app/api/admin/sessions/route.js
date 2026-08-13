@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server"; import {getAdminDb} from "../../../../lib/supabase";
+export async function POST(r){try{const b=await r.json(); if(!b.session_date||!b.artist_name||!b.engineer_name) return NextResponse.json({error:"Date, artist and engineer are required"},{status:400}); const {error}=await getAdminDb().from("engineer_sessions").insert(b); if(error) throw error; return NextResponse.json({ok:true});}catch(e){return NextResponse.json({error:e.message},{status:500})}}
