@@ -1,0 +1,2 @@
+import { SetupForm } from '../../../components/AuthForms';
+export default function Setup(){return <main className="authPage"><section className="authCard wideAuth"><p className="eyebrow">One-time setup</p><h1>Create the owner account.</h1><p className="muted">Use your existing temporary admin credentials once. After this, staff will log in with individual accounts.</p><SetupForm/></section></main>}

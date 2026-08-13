@@ -1,14 +1,5 @@
-import { NextResponse } from "next/server";
-import { getAdminDb } from "../../../../../lib/supabase";
-
-export async function PATCH(request, { params }) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const allowed = ["pending","confirmed","cancelled","completed","no_show"];
-    if (!allowed.includes(body.status)) return NextResponse.json({ error: "Invalid status" }, { status: 400 });
-    const { data, error } = await getAdminDb().from("bookings").update({ status: body.status, internal_notes: body.internalNotes ?? undefined, updated_at: new Date().toISOString() }).eq("id", id).select().single();
-    if (error) throw error;
-    return NextResponse.json(data);
-  } catch (e) { return NextResponse.json({ error: e.message }, { status: 500 }); }
-}
+import { NextResponse } from 'next/server';
+import { getAdminDb } from '../../../../../lib/supabase';
+import { getStaffContext } from '../../../../../lib/auth';
+export async function PATCH(request,{params}){try{const ctx=await getStaffContext();if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});const {id}=await params;const body=await request.json();const patch={updated_at:new Date().toISOString()};if(body.status){const allowed=['pending','confirmed','cancelled','completed','no_show'];if(!allowed.includes(body.status))return NextResponse.json({error:'Invalid status'},{status:400});patch.status=body.status;}if('internalNotes' in body)patch.internal_notes=body.internalNotes||null;if('engineerUserId' in body){if(body.engineerUserId){const db=getAdminDb();const {data:eng,error:ee}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,active,role').eq('user_id',body.engineerUserId).single();if(ee||!eng||!eng.active||eng.role!=='engineer')return NextResponse.json({error:'Engineer not found or inactive.'},{status:400});patch.engineer_user_id=eng.user_id;patch.assigned_engineer=eng.engineer_name||eng.full_name;}else{patch.engineer_user_id=null;patch.assigned_engineer=null;}}
+ const {data,error}=await getAdminDb().from('bookings').update(patch).eq('id',id).select().single();if(error)throw error;return NextResponse.json(data);}catch(e){return NextResponse.json({error:e.message},{status:500})}}

@@ -1,118 +1,39 @@
-# Silkcrayon Booking System — V1
+# Silkcrayon Studio OS V4
 
-A Vercel-ready Next.js booking system using Supabase for customers/bookings and Stripe Checkout for payment.
+V4 adds real Supabase Auth staff accounts and role-based Studio OS access on top of V3.
 
-## What V1 includes
+## Upgrade from V3
 
-- Silkcrayon marketing homepage using the supplied studio photography
-- Bookable services with live availability
-- 30-minute slot calculation and overlap prevention
-- 30-minute temporary slot hold while a customer pays
-- Stripe-hosted secure checkout
-- Stripe webhook confirmation / expired checkout cleanup
-- Supabase customer CRM and booking database
-- Password-protected admin dashboard
-- Upcoming bookings, booking status controls and monthly paid total
-- Studio blockouts for holidays / maintenance / private sessions
-- Customer directory + CSV export
-- Responsive Silkcrayon black / white / #C394FF design
+1. Run `supabase/v4-auth-roles.sql` once in Supabase SQL Editor.
+2. Add `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel. Find it in Supabase → Project Settings → API / API Keys. This is the **anon/public** key, not the service-role secret.
+3. Ensure `NEXT_PUBLIC_SUPABASE_URL` is present in Vercel.
+4. Deploy V4.
+5. Visit `/admin/setup` once and use your existing `ADMIN_USERNAME` + `ADMIN_PASSWORD` to create your owner account.
+6. Log in at `/admin/login` with the new owner email/password.
+7. Open `/admin/staff` to create engineer accounts.
 
-## Default booking rules — edit these before launch
+Keep the legacy ADMIN_USERNAME / ADMIN_PASSWORD until the owner bootstrap succeeds. After an owner exists, `/api/auth/bootstrap` refuses to create another first owner.
 
-`lib/services.js` contains all business rules in one place.
+## Permissions
 
-Current V1 defaults:
-- Vocal Recording: £60/hour, 1–4 hours
-- Artist Development & Industry Guidance: £60/hour, 1–2 hours
-- Full Day: £450, 8 hours
-- Monday–Friday: 10:00–22:00
-- Saturday: 10:00–20:00
-- Sunday: closed
-- Availability increments: 30 minutes
-- Payment: full payment at checkout
+### Owner
+- `/admin` studio/revenue dashboard
+- Customers and customer profiles
+- Engineer assignment
+- Blockouts
+- Staff account creation/deactivation
+- All session reports
 
-These are intentionally easy to change.
+### Engineer
+- `/admin/sessions`
+- Only bookings assigned to their own account
+- Only their own session-report history
+- Cannot access revenue/customer/staff administration
 
-## 1. Create Supabase
+## Assignment workflow
 
-1. Create a Supabase project.
-2. Open SQL Editor.
-3. Run `supabase/schema.sql`.
-4. In Project Settings -> API Keys, copy:
-   - Project URL -> `SUPABASE_URL`
-   - Secret key -> `SUPABASE_SECRET_KEY`
-5. Do **not** expose the secret key to the browser. This project uses it only in server routes/components.
+An owner assigns the engineer from the Upcoming Sessions table. The booking stores both the auth user ID and display name. When an engineer logs in, their Sessions page only loads bookings assigned to that user ID.
 
-The database has:
-- `customers`
-- `bookings`
-- `blockouts`
+## Important
 
-RLS is enabled with no public policies. V1 performs database work server-side only.
-
-## 2. Create Stripe
-
-1. Create / use your Stripe account.
-2. Copy your secret key -> `STRIPE_SECRET_KEY`.
-3. After deploying, add this webhook endpoint in Stripe:
-   `https://YOUR-DOMAIN/api/stripe/webhook`
-4. Subscribe to:
-   - `checkout.session.completed`
-   - `checkout.session.expired`
-5. Copy the endpoint signing secret -> `STRIPE_WEBHOOK_SECRET`.
-
-V1 uses Stripe Checkout, so card details never pass through this application.
-
-## 3. Environment variables
-
-Copy `.env.example` to `.env.local` locally, or set the same values in Vercel Project Settings -> Environment Variables.
-
-Set `NEXT_PUBLIC_SITE_URL` to the exact deployment URL, for example:
-`https://silkcrayon.com`
-
-Set a long random `ADMIN_PASSWORD`. `/admin` and `/api/admin/*` use HTTP Basic Auth in V1.
-
-## 4. Run locally
-
-```bash
-npm install
-npm run dev
-```
-
-Open `http://localhost:3000`.
-
-## 5. Deploy to Vercel
-
-Push this folder to GitHub, import the repo into Vercel, add the environment variables, then deploy.
-
-No custom build configuration is required; Vercel detects Next.js.
-
-## Important before taking real bookings
-
-- Replace the placeholder privacy wording with a proper Privacy Notice and link it in the booking flow.
-- Confirm the opening hours, service prices and cancellation/refund policy.
-- Test Stripe in Test Mode end-to-end before switching to live keys.
-- Make one test booking, verify the webhook changes it to `confirmed`, then verify it appears in `/admin`.
-- The V1 admin uses Basic Auth. It is appropriate as a temporary internal gate if you use HTTPS and a strong unique password, but V2 should replace this with Supabase Auth / role-based admin access.
-- V1 takes full payment. Deposits, rescheduling, refunds, email reminders and calendar sync belong in V2.
-
-## Where to edit things
-
-- Services/prices/hours: `lib/services.js`
-- Homepage: `app/page.js`
-- Booking UX: `components/BookingFlow.js`
-- Brand styles: `app/globals.css`
-- Database: `supabase/schema.sql`
-- Admin: `app/admin/`
-
-## Suggested V2
-
-- Branded booking confirmation + 24h reminders
-- Google Calendar sync
-- Customer self-service reschedule/cancel link
-- Deposits / packages / credits
-- Refund workflow
-- Supabase Auth admin login
-- Customer notes / tags / lifetime value
-- Booking source attribution
-- Automated post-session follow-up
+The Supabase service-role/secret key remains server-only. The anon/public key is intentionally exposed to the browser solely for Supabase authentication.

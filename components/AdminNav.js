@@ -1,2 +1,3 @@
 import Link from 'next/link';
-export default function AdminNav(){return <nav className="osNav"><Link href="/admin">Overview</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/sessions">Sessions</Link><Link href="/">Website ↗</Link></nav>}
+import { LogoutButton } from './AuthForms';
+export default function AdminNav({profile}){const owner=profile?.role==='owner';return <nav className="osNav">{owner&&<Link href="/admin">Overview</Link>}{owner&&<Link href="/admin/customers">Customers</Link>}<Link href="/admin/sessions">Sessions</Link>{owner&&<Link href="/admin/staff">Staff</Link>}<Link href="/">Website ↗</Link><span className="navIdentity">{profile?.full_name}<small>{profile?.role}</small></span><LogoutButton/></nav>}

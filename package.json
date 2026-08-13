@@ -1,14 +1,14 @@
 {
-  "name": "silkcrayon-booking-v1",
-  "version": "1.0.0",
+  "name": "silkcrayon-studio-os",
+  "version": "4.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "lint": "next lint"
+    "start": "next start"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.56.0",
     "next": "^16.0.0",
     "react": "^19.2.0",
