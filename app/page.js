@@ -5,7 +5,7 @@ export default function Home() {
     <main>
       <header className="siteHeader">
         <Link href="/" className="brand"><img src="/logo.png" alt="Silkcrayon" /></Link>
-        <nav><a href="#space">The space</a><a href="#services">Services</a><a href="#difference">Why Silkcrayon</a><Link className="navCta" href="/booking">Book</Link></nav>
+        <nav><a href="#space">The space</a><a href="#services">Services</a><a href="#difference">Why Silkcrayon</a><Link href="/account/login">My Studio</Link><Link className="navCta" href="/booking">Book</Link></nav>
       </header>
 
       <section className="hero">
@@ -39,7 +39,7 @@ export default function Home() {
           <div className="cardGrid">
             <article><h3>Mixing & Mastering</h3><p>Professional mix and master from an engineer who has developed artists from first session to release-ready.</p><strong>POA per track</strong></article>
             <article><h3>Audiobooks & Podcasts</h3><p>Crystal-clear recording, editing and production for spoken-word projects.</p><strong>POA per project</strong></article>
-            <article><h3>Artist Development</h3><p>Identity, direction, sound, strategy and industry guidance for artists who want more than studio time.</p><Link href="/booking?service=artist-development">Book guidance →</Link></article>
+            <article><h3>Artist Development</h3><p>Identity, direction, sound, strategy and industry guidance for artists who want more than studio time.</p><strong>Enquire via the studio</strong></article>
             <article><h3>Full Day Rate</h3><p>Eight hours in the vault for focused recording, development and production.</p><Link href="/booking?service=full-day">£450 / day →</Link></article>
           </div>
         </div>
