@@ -6,7 +6,7 @@ import {ownerEmails,sendEmail,staffEmail} from '../../../../../lib/notifications
 import {hoursUntilLondon} from '../../../../../lib/time';
 
 const cutoffHours=()=>Number(process.env.CUSTOMER_CHANGE_REQUEST_CUTOFF_HOURS||48);
-function hoursUntil(b){return hoursUntilLondon(b.booking_date,String(b.start_time).slice(0,5))}T${String(b.start_time).slice(0,8)}+01:00`).getTime()-Date.now())/36e5}
+function hoursUntil(b){return hoursUntilLondon(b.booking_date,String(b.start_time).slice(0,5))}
 const base=()=>process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon-studio.vercel.app';
 const pretty=(v)=>String(v||'').slice(0,5);
 function mail(title,body,buttonLabel,href){return `<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;font-size:11px;letter-spacing:3px;font-weight:800">SILKCRAYON STUDIOS</div><h1 style="font-size:34px">${title}</h1><div style="color:#c8c1cc;line-height:1.7">${body}</div>${href?`<p style="margin-top:26px"><a href="${href}" style="display:inline-block;background:#C394FF;color:#09050d;padding:14px 18px;text-decoration:none;font-weight:800">${buttonLabel}</a></p>`:''}</div></div>`}
