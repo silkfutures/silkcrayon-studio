@@ -30,10 +30,10 @@ export default function SiteHeader(){
     <nav className="desktopNav">
       <a href="#experience">Why Silkcrayon</a>
       <a href="#services">Services</a>
-      <a href="#space">The space</a>
+      <a href="#space">The Space</a>
       <a href="#work">Listen</a>
       <Link href="/account/login">My Studio</Link>
-      <Link className="navCta" href="/booking">Book</Link>
+      <Link className="navCta" href="/booking">BOOK</Link>
     </nav>
 
     <button className="menuButton" aria-label={open?'Close menu':'Open menu'} aria-expanded={open} onClick={()=>setOpen(v=>!v)}>
@@ -43,7 +43,7 @@ export default function SiteHeader(){
     {open&&<div className="mobileMenu" role="dialog" aria-modal="true" aria-label="Site navigation">
       <a href="#experience" onClick={close}>Why Silkcrayon</a>
       <a href="#services" onClick={close}>Services</a>
-      <a href="#space" onClick={close}>The space</a>
+      <a href="#space" onClick={close}>The Space</a>
       <a href="#work" onClick={close}>Listen</a>
       <Link href="/account/login" onClick={close}>My Studio</Link>
       <a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer" onClick={close}>Instagram ↗</a>
