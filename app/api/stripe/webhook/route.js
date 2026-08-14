@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStripe } from "../../../../lib/stripe";
 import { getAdminDb } from "../../../../lib/supabase";
 import { sendLoggedNotification, sendStaffLoggedNotification, confirmationEmail, newBookingOwnerEmail, ownerEmails, packagePurchaseEmail, mixMasterPurchaseEmail, sendEmail } from "../../../../lib/notifications";
+import { newToken, tokenHash } from "../../../../lib/customerAuth";
 
 export async function POST(request) {
   try {
@@ -40,7 +41,7 @@ export async function POST(request) {
           const inv=await invoiceFields(session); await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString(), ...inv }).eq("id", id);
           if (session.payment_status === "paid") {
             const { data: booking } = await db.from("bookings").select("*,customers(*)").eq("id", id).maybeSingle();
-            if(booking){const {data:history=[]}=await db.from("bookings").select("id,amount_pence,payment_status").eq("customer_id",booking.customer_id).in("status",["confirmed","completed"]);const paid=(history||[]).filter(x=>x.payment_status==="paid");const stats={firstTime:paid.length<=1,bookingCount:paid.length,lifetimeSpendPence:paid.reduce((n,x)=>n+Number(x.amount_pence||0),0)};if(booking.customers?.email){const msg=confirmationEmail(booking,booking.customers,{firstTime:stats.firstTime});await sendLoggedNotification({booking,customer:booking.customers,type:"booking_confirmation",...msg});}const owners=await ownerEmails();const msg=newBookingOwnerEmail(booking,booking.customers||{},stats);for(const email of owners)await sendStaffLoggedNotification({booking,type:'owner_new_booking',to:email,...msg});}
+            if(booking){const {data:history=[]}=await db.from("bookings").select("id,amount_pence,payment_status").eq("customer_id",booking.customer_id).in("status",["confirmed","completed"]);const paid=(history||[]).filter(x=>x.payment_status==="paid");const stats={firstTime:paid.length<=1,bookingCount:paid.length,lifetimeSpendPence:paid.reduce((n,x)=>n+Number(x.amount_pence||0),0)};if(booking.customers?.email){let portalUrl=null;try{const token=newToken(),expires=new Date(Date.now()+7*24*60*60*1000).toISOString();const {error:tokenError}=await db.from('customer_access_tokens').insert({customer_id:booking.customer_id,token_hash:tokenHash(token),expires_at:expires});if(!tokenError)portalUrl=`${process.env.NEXT_PUBLIC_SITE_URL||new URL(request.url).origin}/account/access?token=${encodeURIComponent(token)}`;}catch{}const msg=confirmationEmail(booking,booking.customers,{firstTime:stats.firstTime,portalUrl});await sendLoggedNotification({booking,customer:booking.customers,type:"booking_confirmation",...msg});}const owners=await ownerEmails();const msg=newBookingOwnerEmail(booking,booking.customers||{},stats);for(const email of owners)await sendStaffLoggedNotification({booking,type:'owner_new_booking',to:email,...msg});}
           }
         }
       }

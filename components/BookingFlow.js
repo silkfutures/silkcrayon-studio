@@ -47,6 +47,7 @@ export default function BookingFlow() {
   const [availabilityError, setAvailabilityError] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [detailsReady, setDetailsReady] = useState(false);
 
   useEffect(() => { setDuration(services[service].durations[0]); setSlot(null); }, [service]);
   useEffect(() => {
@@ -80,8 +81,18 @@ export default function BookingFlow() {
     } catch (e) { setError(e.message); setSubmitting(false); }
   }
 
+  function updateReadiness(e) {
+    const form = e.currentTarget;
+    const fullName = form.elements.fullName?.value?.trim();
+    const email = form.elements.email?.value?.trim();
+    const policy = form.elements.harmfulMusicPolicy?.checked;
+    setDetailsReady(Boolean(fullName && email && policy && form.elements.email?.checkValidity()));
+  }
+
+  const checkoutReady = Boolean(slot && detailsReady);
+
   return (
-    <form className="bookingPanel" onSubmit={submit}>
+    <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}>
       <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).map(([slug,s])=><button type="button" key={slug} className={`option ${service===slug?"active":""}`} onClick={()=>setService(slug)}><b>{s.name}</b><small>{slug==="full-day"?"£450":slug==="system-test"?"£0.30":"£60 / hour"}</small></button>)}</div></div></div>
 
       <div className="bookingSection"><span className="step">02</span><div><h2>Choose duration & date</h2><div className="durationRow">{services[service].durations.map(d=><button type="button" className={duration===d?"activePill":"pill"} key={d} onClick={()=>setDuration(d)}>{durationLabel(d)} · {services[service].price(d)}</button>)}</div>
@@ -96,7 +107,7 @@ export default function BookingFlow() {
 
       <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone</span><input name="phone" type="tel" /></label><label className="field"><span>Genre / style</span><input name="genre" /></label><label className="field full"><span>What are you making?</span><textarea name="notes" rows="4" placeholder="Tell us what you're working on and what you want to leave the session with." /></label></div><label className="check policyCheck"><input type="checkbox" name="harmfulMusicPolicy" required/> <span><b>I agree to Silkcrayon’s No Harmful Music Policy.</b> I understand that music glorifying violence, exploitation or the degradation of others may be declined.</span></label><label className="check"><input type="checkbox" name="marketingConsent"/> <span>I’m happy to receive occasional Silkcrayon studio updates. Booking emails are sent regardless.</span></label><p className="legal">By continuing you agree that Silkcrayon can store the information required to manage your booking. Add your final Privacy Policy link before launch.</p></div></div>
       {error && <div className="errorBox">{error}</div>}
-      <div className="checkoutBar"><div><small>Your booking</small><b>{services[service].name}{slot?` · ${date} at ${slot.start}`:""}</b></div><button className="button primary" disabled={submitting || !slot}>{submitting?"Opening secure checkout…":"Continue to payment →"}</button></div>
+      {checkoutReady&&<div className="checkoutBar ready"><div><small>Your booking</small><b>{services[service].name} · {date} at {slot.start}</b></div><button className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to payment →"}</button></div>}
     </form>
   );
 }
