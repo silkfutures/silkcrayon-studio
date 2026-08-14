@@ -45,7 +45,7 @@ export default function Home(){
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
       <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>Book →</Link>:<a href="mailto:info@silkcrayon.com">Enquire →</a>}</div></article></Reveal>)}</div>
-      <Reveal><div className="serviceCta"><p>Not sure what to book?</p><Link href="/booking">Start with a recording session →</Link></div></Reveal>
+      <Reveal><div className="serviceCta"><div><span>Not sure what to book?</span><p>Most artists start with a vocal recording session.</p></div><Link className="softPill" href="/booking?service=vocal-recording">Start here <span>↗</span></Link></div></Reveal>
     </div></section>
 
     <section className="section sessionJourney"><div className="container">
@@ -65,7 +65,7 @@ export default function Home(){
 
     <section id="work" className="section workV12"><div className="container workGrid">
       <Reveal><div><p className="eyebrow">Made at Silkcrayon</p><h2>Hear the room,<br/>not the sales pitch.</h2><p className="muted">Music recorded and developed through Silkcrayon. Real artists, real sessions, real releases.</p></div></Reveal>
-      <Reveal delay={120}><div className="spotifyShell"><iframe style={{borderRadius:'12px'}} src="https://open.spotify.com/embed/playlist/1ZN4MdRbSbvCxsKLjeBiM6?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Recorded at Silkcrayon playlist"></iframe></div></Reveal>
+      <Reveal delay={120}><div className="listenStack"><div className="spotifyShell"><iframe style={{borderRadius:'12px'}} src="https://open.spotify.com/embed/playlist/5IuKX22eXsbJFApMV3c74z?utm_source=generator&theme=0" width="100%" height="380" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Recorded at Silkcrayon playlist"></iframe></div><a className="instagramLink" href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer"><span>Follow the studio</span><strong>@silkcrayon ↗</strong></a></div></Reveal>
     </div></section>
 
     <section className="section standardV12"><div className="container standardGrid">
@@ -77,7 +77,7 @@ export default function Home(){
       <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">From £60/hour · Secure online booking · Cardiff Bay</p></Reveal>
     </div></section>
 
-    <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The space</a><Link href="/booking">Book</Link></div><div><Link href="/account/login">My Studio</Link><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>
+    <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The space</a><Link href="/booking">Book</Link></div><div><Link href="/account/login">My Studio</Link><a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer">Instagram ↗</a><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>
     <Link href="/booking" className="mobileBookBar">Book a session <span>↗</span></Link>
   </main>
 }
