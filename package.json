@@ -1,11 +1,13 @@
 {
   "name": "silkcrayon-studio-os",
-  "version": "14.0.0",
+  "version": "20.2.5",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "check:imports": "node scripts/check-imports.mjs",
+    "prebuild": "npm run check:imports"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
