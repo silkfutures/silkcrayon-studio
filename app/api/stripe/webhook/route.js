@@ -29,8 +29,7 @@ export async function POST(request) {
           await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString() }).eq("id", id);
           if (session.payment_status === "paid") {
             const { data: booking } = await db.from("bookings").select("*,customers(*)").eq("id", id).maybeSingle();
-            if (booking?.customers?.email) { const msg=confirmationEmail(booking,booking.customers); await sendLoggedNotification({booking,customer:booking.customers,type:"booking_confirmation",...msg}); }
-            if(booking){ const owners=await ownerEmails(); const msg=newBookingOwnerEmail(booking,booking.customers||{}); for(const email of owners) await sendStaffLoggedNotification({booking,type:'owner_new_booking',to:email,...msg}); }
+            if(booking){const {data:history=[]}=await db.from("bookings").select("id,amount_pence,payment_status").eq("customer_id",booking.customer_id).in("status",["confirmed","completed"]);const paid=(history||[]).filter(x=>x.payment_status==="paid");const stats={firstTime:paid.length<=1,bookingCount:paid.length,lifetimeSpendPence:paid.reduce((n,x)=>n+Number(x.amount_pence||0),0)};if(booking.customers?.email){const msg=confirmationEmail(booking,booking.customers,{firstTime:stats.firstTime});await sendLoggedNotification({booking,customer:booking.customers,type:"booking_confirmation",...msg});}const owners=await ownerEmails();const msg=newBookingOwnerEmail(booking,booking.customers||{},stats);for(const email of owners)await sendStaffLoggedNotification({booking,type:'owner_new_booking',to:email,...msg});}
           }
         }
       }

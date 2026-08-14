@@ -61,6 +61,7 @@ export async function POST(request) {
     const stripe = getStripe();
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const session = await stripe.checkout.sessions.create({
+      allow_promotion_codes: true,
       mode: "payment",
       customer_email: email,
       client_reference_id: booking.id,
