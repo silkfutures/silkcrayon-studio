@@ -13,7 +13,7 @@ export async function POST(request) {
     if (!service || !service.durations.includes(duration)) throw new Error("Invalid service or duration");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date || "") || !/^\d{2}:\d{2}$/.test(body.start || "")) throw new Error("Invalid date or time");
     if (!body.fullName?.trim() || !body.email?.trim()) throw new Error("Name and email are required");
-    if (!body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the No Harmful Music Policy before booking." }, { status: 400 });
+    if (!body.policyAccepted || !body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the booking terms and policies before booking." }, { status: 400 });
 
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
@@ -56,6 +56,17 @@ export async function POST(request) {
       throw bookingError;
     }
     bookingId = reservedId;
+    const policyVersion = "2026-08-14";
+    const forwarded = request.headers.get("x-forwarded-for") || "";
+    await db.from("bookings").update({
+      terms_version: policyVersion,
+      cancellation_policy_version: policyVersion,
+      harmful_music_policy_version: policyVersion,
+      privacy_policy_version: policyVersion,
+      policy_accepted_at: new Date().toISOString(),
+      policy_acceptance_ip: forwarded.split(",")[0]?.trim() || null,
+      policy_acceptance_user_agent: request.headers.get("user-agent") || null
+    }).eq("id", reservedId);
     const booking = { id: reservedId };
 
     const stripe = getStripe();

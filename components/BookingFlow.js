@@ -72,7 +72,7 @@ export default function BookingFlow() {
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
     body.service = service; body.duration = duration; body.date = date; body.start = slot.start; body.end = slot.end;
-    body.marketingConsent = fd.get("marketingConsent") === "on"; body.harmfulMusicPolicy = fd.get("harmfulMusicPolicy") === "on";
+    body.marketingConsent = fd.get("marketingConsent") === "on"; body.policyAccepted = fd.get("policyAccepted") === "on"; body.harmfulMusicPolicy = body.policyAccepted;
     try {
       const res = await fetch("/api/checkout", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) });
       const data = await res.json();
@@ -85,7 +85,7 @@ export default function BookingFlow() {
     const form = e.currentTarget;
     const fullName = form.elements.fullName?.value?.trim();
     const email = form.elements.email?.value?.trim();
-    const policy = form.elements.harmfulMusicPolicy?.checked;
+    const policy = form.elements.policyAccepted?.checked;
     setDetailsReady(Boolean(fullName && email && policy && form.elements.email?.checkValidity()));
   }
 
@@ -105,7 +105,7 @@ export default function BookingFlow() {
         {loadingSlots ? <p className="muted">Checking the diary…</p> : availabilityError ? <div className="inlineError"><b>We couldn’t load the diary.</b><span>{availabilityError}</span><small>If you just added Vercel environment variables, redeploy the latest deployment and try again.</small></div> : <div className="slotGrid">{slots.length ? slots.map(s=><button type="button" className={`slot ${slot?.start===s.start?"selected":""}`} onClick={()=>setSlot(s)} key={s.start}>{s.start}</button>) : <p className="muted">No spaces available for this duration on this date. Try another day above.</p>}</div>}
       </div></div>
 
-      <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone</span><input name="phone" type="tel" /></label><label className="field"><span>Genre / style</span><input name="genre" /></label><label className="field full"><span>What are you making?</span><textarea name="notes" rows="4" placeholder="Tell us what you're working on and what you want to leave the session with." /></label></div><label className="check policyCheck"><input type="checkbox" name="harmfulMusicPolicy" required/> <span><b>I agree to Silkcrayon’s No Harmful Music Policy.</b> I understand that music glorifying violence, exploitation or the degradation of others may be declined.</span></label><label className="check"><input type="checkbox" name="marketingConsent"/> <span>I’m happy to receive occasional Silkcrayon studio updates. Booking emails are sent regardless.</span></label><p className="legal">By continuing you agree that Silkcrayon can store the information required to manage your booking. Add your final Privacy Policy link before launch.</p></div></div>
+      <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone</span><input name="phone" type="tel" /></label><label className="field"><span>Genre / style</span><input name="genre" /></label><label className="field full"><span>What are you making?</span><textarea name="notes" rows="4" placeholder="Tell us what you're working on and what you want to leave the session with." /></label></div><label className="check policyCheck"><input type="checkbox" name="policyAccepted" required/> <span><b>I agree to Silkcrayon’s <a href="/terms" target="_blank">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank">Cancellation Policy</a> and <a href="/no-harmful-music-policy" target="_blank">No Harmful Music Policy</a>.</b> I have also read the <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label><label className="check"><input type="checkbox" name="marketingConsent"/> <span>I’m happy to receive occasional Silkcrayon studio updates and offers. I can unsubscribe at any time. Booking emails are sent regardless.</span></label></div></div>
       {error && <div className="errorBox">{error}</div>}
       {checkoutReady&&<div className="checkoutBar ready"><div><small>Your booking</small><b>{services[service].name} · {date} at {slot.start}</b></div><button className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to payment →"}</button></div>}
     </form>

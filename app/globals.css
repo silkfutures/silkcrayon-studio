@@ -287,3 +287,9 @@ html.navLocked,body.navLocked{overflow:hidden;overscroll-behavior:none}
 }
 .checkoutBar.ready{animation:checkoutReadyIn .26s ease both}
 @keyframes checkoutReadyIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* V19 — policy centre + true mobile viewport */
+html,body{width:100%;max-width:100%;overflow-x:hidden}
+.policyCheck a,.legalDocument a{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
+.legalPage{min-height:100vh;background:#050505}.legalPage .siteHeader{position:relative;border-bottom:1px solid #211e23;background:#050505}.legalDocument{width:min(820px,calc(100% - 48px));margin:0 auto;padding:100px 0 120px}.legalDocument>h1{font-size:clamp(54px,8vw,92px);line-height:.92;letter-spacing:-.055em;margin:0 0 28px}.legalIntro{font-size:19px;line-height:1.65;color:#c7c0ca;max-width:720px;margin-bottom:64px}.legalSection{padding:28px 0;border-top:1px solid #2a262d}.legalSection h2{font-size:26px;margin:0 0 10px}.legalSection p,.legalSection li{color:#b9b2bd;line-height:1.75}.legalBack{border-top:1px solid #2a262d;margin-top:30px;padding-top:30px}.faqList{border-top:1px solid #302b35}.faqList details{border-bottom:1px solid #302b35}.faqList summary{list-style:none;cursor:pointer;padding:22px 0;display:flex;justify-content:space-between;gap:20px;font-size:19px;font-weight:700}.faqList summary::-webkit-details-marker{display:none}.faqList summary span{color:var(--accent);font-size:24px}.faqList details[open] summary span{transform:rotate(45deg)}.faqList p{color:#b9b2bd;max-width:700px;margin:-5px 0 24px;line-height:1.7}
+@media(max-width:700px){.legalDocument{width:calc(100% - 36px);padding:68px 0 100px}.legalDocument>h1{font-size:52px}.legalIntro{font-size:16px;margin-bottom:42px}.legalPage .siteHeader{position:relative}.faqList summary{font-size:16px}}
