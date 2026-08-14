@@ -13,11 +13,15 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
    const remaining=Math.max(0,Number(current.amount_pence||0)-Number(current.refunded_amount_pence||0));
    const amount=body.amountPence?Math.round(Number(body.amountPence)):remaining;
    if(!amount||amount<1||amount>remaining)return NextResponse.json({error:'Invalid refund amount.'},{status:400});
+   const internalReason=String(body.refundReason||'other').slice(0,80),refundNote=String(body.refundNote||'').trim().slice(0,500)||null;
+   const allowedReasons=['customer_cancelled','studio_cancelled','duplicate','booking_error','goodwill','service_issue','other'];
+   if(!allowedReasons.includes(internalReason))return NextResponse.json({error:'Choose a valid refund reason.'},{status:400});
    const stripe=getStripe();
-   const refund=await stripe.refunds.create({payment_intent:current.stripe_payment_intent_id,amount,reason:'requested_by_customer',metadata:{booking_id:id}});
+   const stripeReason=internalReason==='duplicate'?'duplicate':'requested_by_customer';
+   const refund=await stripe.refunds.create({payment_intent:current.stripe_payment_intent_id,amount,reason:stripeReason,metadata:{booking_id:id,internal_reason:internalReason}});
    const total=Number(current.refunded_amount_pence||0)+amount,full=total>=Number(current.amount_pence||0);
    const {data:updated,error:ue}=await db.from('bookings').update({stripe_refund_id:refund.id,refunded_amount_pence:total,refunded_at:new Date().toISOString(),payment_status:full?'refunded':'part_refunded',status:full?'cancelled':current.status,updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
-   await recordBookingEvent({db,booking:updated,eventType:'refund_issued',reasonCode:'requested_by_customer',note:`Refund £${(amount/100).toFixed(2)}`,ctx});
+   await recordBookingEvent({db,booking:updated,eventType:'refund_issued',reasonCode:internalReason,note:[`Refund £${(amount/100).toFixed(2)}`,refundNote].filter(Boolean).join(' · '),ctx});
    if(updated.customers?.email)await sendEmail({to:updated.customers.email,subject:`Refund issued — ${updated.service_name}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;font-size:11px;letter-spacing:3px">SILKCRAYON STUDIOS</div><h1>Refund issued.</h1><p style="color:#c8c1cc">We’ve issued a refund of <b>£${(amount/100).toFixed(2)}</b> for your ${updated.service_name} booking. The time it takes to appear depends on your bank or card issuer.</p></div></div>`});
    return NextResponse.json({ok:true,refundId:refund.id,status:refund.status,booking:updated});
  }

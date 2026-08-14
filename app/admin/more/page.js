@@ -8,6 +8,7 @@ export const dynamic='force-dynamic';
 export default async function More(){
  const ctx=await requireStaff(),owner=ctx.profile.role==='owner';
  const links=owner?[
+  ['/admin','Owner overview','Bookings, change requests & Stripe sync','⌂'],
   ['/admin/accounting','Accounting','Invoices, refunds & exports','£'],
   ['/admin/activity','Activity log','Cancellations, no-shows & deletions','↻'],
   ['/admin/analytics','Analytics','Revenue, visitors & retention','↗'],
