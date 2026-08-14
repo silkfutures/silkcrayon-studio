@@ -26,13 +26,30 @@ export async function POST(request) {
       const session = event.data.object;
       const studioPaymentId = session.metadata?.studio_payment_id;
       if (studioPaymentId) {
-        const { data: payment } = await db.from('studio_payments').select('*').eq('id', studioPaymentId).maybeSingle();
-        if (payment && payment.status !== 'paid') {
-          const inv=await invoiceFields(session); await db.from('studio_payments').update({status: session.payment_status === 'paid' ? 'paid' : 'pending',stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,paid_at: session.payment_status === 'paid' ? new Date().toISOString() : null,updated_at: new Date().toISOString(),...inv}).eq('id', studioPaymentId);
-          const hours = Number(payment.hours_credit || 0);
-          if(session.payment_status==='paid'){
+        const { data: payment, error: pe } = await db.from('studio_payments').select('*').eq('id', studioPaymentId).maybeSingle();
+        if (pe) throw pe;
+        if (payment) {
+          const inv=await invoiceFields(session);
+          const isPaid=session.payment_status==='paid';
+          const hours=Number(payment.hours_credit||0);
+          if(isPaid && hours>0){
+            // Fulfilment is idempotent: payment_id has a unique index in V20.2.5 SQL.
+            const {error:creditError}=await db.from('credit_ledger').insert({
+              customer_id:payment.customer_id,payment_id:payment.id,hours_delta:hours,
+              note:payment.description,created_by_user_id:payment.created_by_user_id
+            });
+            if(creditError && creditError.code!=='23505') throw creditError;
+          }
+          const {error:updateError}=await db.from('studio_payments').update({
+            status:isPaid?'paid':'pending',
+            stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,
+            paid_at:isPaid?(payment.paid_at||new Date().toISOString()):null,
+            updated_at:new Date().toISOString(),...inv
+          }).eq('id',studioPaymentId);
+          if(updateError) throw updateError;
+          if(isPaid && payment.status!=='paid'){
             const {data:customer}=await db.from('customers').select('*').eq('id',payment.customer_id).maybeSingle();
-            if(hours>0){await db.from('credit_ledger').insert({customer_id:payment.customer_id,payment_id:payment.id,hours_delta:hours,note:payment.description,created_by_user_id:payment.created_by_user_id});if(customer?.email){const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}}
+            if(hours>0&&customer?.email){const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
             if(payment.kind==='mix_master'&&customer?.email){const msg=mixMasterPurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
           }
         }
