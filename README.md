@@ -1,48 +1,26 @@
-# Silkcrayon Studio OS V4
+# Silkcrayon Studio OS — V20.2.6 Release Candidate
 
-V4 adds real Supabase Auth staff accounts and role-based Studio OS access on top of V3.
+Next.js + Supabase + Stripe + Resend + optional Twilio system for the Silkcrayon website, bookings, My Studio customer portal, owner/engineer operations, CRM and lifecycle messaging.
 
-## Upgrade from V3
+## V20.2.6 upgrade
+1. Run `supabase/v20-2-5-audit-hardening.sql` if not already run.
+2. Run `supabase/v20-2-6-release-hardening.sql`.
+3. Configure the variables in `.env.example`.
+4. Deploy to the Vercel preview domain.
+5. Run a real end-to-end test before changing DNS.
 
-1. Run `supabase/v4-auth-roles.sql` once in Supabase SQL Editor.
-2. Add `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Vercel. Find it in Supabase → Project Settings → API / API Keys. This is the **anon/public** key, not the service-role secret.
-3. Ensure `NEXT_PUBLIC_SUPABASE_URL` is present in Vercel.
-4. Deploy V4.
-5. Visit `/admin/setup` once and use your existing `ADMIN_USERNAME` + `ADMIN_PASSWORD` to create your owner account.
-6. Log in at `/admin/login` with the new owner email/password.
-7. Open `/admin/staff` to create engineer accounts.
+## Production rules
+- Keep `ENABLE_SYSTEM_TEST_BOOKING=false`.
+- Remove `ADMIN_USERNAME` / `ADMIN_PASSWORD` after the owner account exists.
+- Configure `CRON_SECRET` or automated reminders cannot run.
+- Essential booking SMS must remain service-only; promotional content belongs in separately consented marketing messages.
+- Studio Finish defaults: £60, within 7 days, 1 revision.
 
-Keep the legacy ADMIN_USERNAME / ADMIN_PASSWORD until the owner bootstrap succeeds. After an owner exists, `/api/auth/bootstrap` refuses to create another first owner.
+## QA commands
+- `npm run check:imports`
+- `npm run test:contracts`
+- `npm run build`
 
-## Permissions
-
-### Owner
-- `/admin` studio/revenue dashboard
-- Customers and customer profiles
-- Engineer assignment
-- Blockouts
-- Staff account creation/deactivation
-- All session reports
-
-### Engineer
-- `/admin/sessions`
-- Only bookings assigned to their own account
-- Only their own session-report history
-- Cannot access revenue/customer/staff administration
-
-## Assignment workflow
-
-An owner assigns the engineer from the Upcoming Sessions table. The booking stores both the auth user ID and display name. When an engineer logs in, their Sessions page only loads bookings assigned to that user ID.
-
-## Important
-
-The Supabase service-role/secret key remains server-only. The anon/public key is intentionally exposed to the browser solely for Supabase authentication.
-
-## V5 Engineer App upgrade
-1. Run `supabase/v5-engineer-app.sql` in Supabase SQL Editor once.
-2. Deploy to Vercel. No new environment variables are required beyond V4.
-3. On iPhone, open `/admin/login` in Safari, log in, then Share → Add to Home Screen. The manifest launches Studio OS standalone.
-4. Engineer home: `/admin/engineer`; artists: `/admin/artists`; payments: `/admin/payments`.
-
-### Tap to Pay on iPhone
-The V5 PWA can create Stripe Checkout payments, but browser PWAs cannot use Stripe Terminal's iPhone NFC reader directly. Stripe's native Tap to Pay integration requires the Terminal iOS or React Native SDK plus Apple's Tap to Pay entitlement. Until a native companion is built, use Stripe Checkout here or Stripe's Dashboard mobile app for no-code Tap to Pay.
+## External endpoints
+- Stripe webhook: `/api/stripe/webhook`
+- Twilio inbound/opt-out webhook: `/api/twilio/inbound`
