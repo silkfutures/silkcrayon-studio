@@ -40,8 +40,15 @@ export function BookingOwnerActions({booking}){
 }
 export function DeleteTestCustomer({id}){
  const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState('');
- async function del(){if(!confirm('Permanently delete this TEST customer and their eligible test bookings?'))return;setBusy(true);const r=await fetch(`/api/admin/customers/${id}`,{method:'DELETE'});const j=await r.json().catch(()=>({}));setBusy(false);if(r.ok){router.push('/admin/customers');router.refresh()}else setMsg(j.error||'Could not delete customer');}
- return <div className="dangerZone"><button className="miniButton danger" disabled={busy} onClick={del}>Delete test customer</button>{msg&&<small>{msg}</small>}</div>
+ async function del(){
+  if(!confirm('Permanently delete this TEST artist, their eligible test bookings and linked CRM test contact? This cannot be undone.'))return;
+  setBusy(true);setMsg('Deleting…');
+  const r=await fetch(`/api/admin/customers/${id}`,{method:'DELETE'});const j=await r.json().catch(()=>({}));
+  setBusy(false);
+  if(r.ok){setMsg('Deleted permanently ✓');setTimeout(()=>{router.push('/admin/artists?deleted=1');router.refresh()},850)}
+  else setMsg(j.error||'Could not delete test artist');
+ }
+ return <div className="dangerZone"><button className="miniButton danger" disabled={busy} onClick={del}>{busy?'Deleting…':'Delete test artist'}</button>{msg&&<small className={msg.includes('✓')?'deleteSuccess':''}>{msg}</small>}</div>
 }
 
 
