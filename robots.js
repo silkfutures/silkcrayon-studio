@@ -1,0 +1,1 @@
+export default function robots(){const base='https://silkcrayon.com';return {rules:[{userAgent:'*',allow:'/',disallow:['/admin/','/account/','/api/','/booking/success']}],sitemap:`${base}/sitemap.xml`,host:base}}
