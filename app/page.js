@@ -24,7 +24,7 @@ export default function Home(){
       <div className="heroGlow"/>
       <div className="container heroContent">
         <p className="eyebrow heroEyebrow">Cardiff Bay · Est. 2020</p>
-        <h1>A studio for artists<br/>who want to <span>go further.</span></h1>
+        <h1>A Studio For Artists<br/>Who Want To <span>Go Further.</span></h1>
         <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
         <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#experience">See why artists stay →</a></div>
         <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span><b>£60</b> per hour</span></div>

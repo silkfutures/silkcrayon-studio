@@ -63,6 +63,7 @@ export async function POST(request) {
     const session = await stripe.checkout.sessions.create({
       allow_promotion_codes: true,
       mode: "payment",
+      invoice_creation: { enabled: true },
       customer_email: email,
       client_reference_id: booking.id,
       metadata: { booking_id: booking.id, service_slug: service.slug },

@@ -25,3 +25,21 @@ export function ChangeRequestActions({id}){
  async function decide(decision){setBusy(true);setMsg(decision==='approve'?'Confirming…':'Declining…');const r=await fetch(`/api/admin/bookings/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({changeRequestDecision:decision})});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?(decision==='approve'?'Change confirmed ✓':'Request declined ✓'):(j.error||'Could not update'));if(r.ok){router.refresh();setTimeout(()=>setMsg(''),1800)}}
  return <div className="requestActions"><button className="miniButton solid" disabled={busy} onClick={()=>decide('approve')}>Confirm change</button><button className="miniButton" disabled={busy} onClick={()=>decide('decline')}>Decline</button>{msg&&<small>{msg}</small>}</div>
 }
+
+export function PaymentReconcileButton(){
+ const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState('');
+ async function run(){setBusy(true);setMsg('Checking Stripe…');const r=await fetch('/api/admin/reconcile-payments',{method:'POST'});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?`Checked ${j.checked} · fixed ${j.paid} paid booking${j.paid===1?'':'s'} ✓`:(j.error||'Sync failed'));if(r.ok)router.refresh();}
+ return <div className="reconcileControl"><button className="miniButton solid" disabled={busy} onClick={run}>{busy?'Syncing…':'Sync Stripe payments'}</button>{msg&&<small>{msg}</small>}</div>
+}
+export function BookingOwnerActions({booking}){
+ const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState('');
+ async function patch(body){setBusy(true);setMsg('Working…');const r=await fetch(`/api/admin/bookings/${booking.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?'Done ✓':(j.error||'Could not update'));if(r.ok)router.refresh();}
+ async function del(){if(!confirm('Delete this TEST booking record permanently? This cannot be undone.'))return;setBusy(true);const r=await fetch(`/api/admin/bookings/${booking.id}`,{method:'DELETE'});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?'Deleted ✓':(j.error||'Could not delete'));if(r.ok)router.refresh();}
+ const refundable=['paid','part_refunded'].includes(booking.payment_status)&&booking.stripe_payment_intent_id;
+ return <div className="ownerBookingActions">{refundable&&<button className="miniButton warning" disabled={busy} onClick={()=>{if(confirm(`Refund £${((booking.amount_pence-(booking.refunded_amount_pence||0))/100).toFixed(2)} and cancel this booking?`))patch({refund:true})}}>Refund & cancel</button>}{booking.status!=='cancelled'&&!refundable&&<button className="miniButton" disabled={busy} onClick={()=>patch({status:'cancelled'})}>Cancel booking</button>}{Number(booking.amount_pence||0)<=100&&<button className="miniButton danger" disabled={busy} onClick={del}>Delete test booking</button>}{msg&&<small>{msg}</small>}</div>
+}
+export function DeleteTestCustomer({id}){
+ const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState('');
+ async function del(){if(!confirm('Permanently delete this TEST customer and their eligible test bookings?'))return;setBusy(true);const r=await fetch(`/api/admin/customers/${id}`,{method:'DELETE'});const j=await r.json().catch(()=>({}));setBusy(false);if(r.ok){router.push('/admin/customers');router.refresh()}else setMsg(j.error||'Could not delete customer');}
+ return <div className="dangerZone"><button className="miniButton danger" disabled={busy} onClick={del}>Delete test customer</button>{msg&&<small>{msg}</small>}</div>
+}
