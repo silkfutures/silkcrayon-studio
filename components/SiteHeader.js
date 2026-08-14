@@ -1,0 +1,18 @@
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+
+export default function SiteHeader(){
+  const [open,setOpen]=useState(false);
+  const [scrolled,setScrolled]=useState(false);
+  useEffect(()=>{const fn=()=>setScrolled(window.scrollY>28);fn();window.addEventListener('scroll',fn,{passive:true});return()=>window.removeEventListener('scroll',fn)},[]);
+  const close=()=>setOpen(false);
+  return <header className={`siteHeader ${scrolled?'isScrolled':''} ${open?'menuOpen':''}`}>
+    <Link href="/" className="brand" onClick={close}><img src="/logo.png" alt="Silkcrayon"/></Link>
+    <nav className="desktopNav"><a href="#experience">Why Silkcrayon</a><a href="#services">Services</a><a href="#space">The space</a><a href="#work">Listen</a><Link href="/account/login">My Studio</Link><Link className="navCta" href="/booking">Book</Link></nav>
+    <button className="menuButton" aria-label="Toggle menu" aria-expanded={open} onClick={()=>setOpen(v=>!v)}><span/><span/></button>
+    <div className="mobileMenu">
+      <a href="#experience" onClick={close}>Why Silkcrayon</a><a href="#services" onClick={close}>Services</a><a href="#space" onClick={close}>The space</a><a href="#work" onClick={close}>Listen</a><Link href="/account/login" onClick={close}>My Studio</Link><Link className="button primary" href="/booking" onClick={close}>Book a session</Link>
+    </div>
+  </header>
+}

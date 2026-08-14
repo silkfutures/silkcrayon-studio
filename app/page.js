@@ -1,66 +1,83 @@
 import Link from "next/link";
+import SiteHeader from "../components/SiteHeader";
+import Reveal from "../components/Reveal";
 
-export default function Home() {
-  return (
-    <main>
-      <header className="siteHeader">
-        <Link href="/" className="brand"><img src="/logo.png" alt="Silkcrayon" /></Link>
-        <nav><a href="#space">The space</a><a href="#services">Services</a><a href="#difference">Why Silkcrayon</a><Link href="/account/login">My Studio</Link><Link className="navCta" href="/booking">Book</Link></nav>
-      </header>
+const services=[
+  {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:'From £60 / hour',href:'/booking?service=vocal-recording',featured:true},
+  {n:'02',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track'},
+  {n:'03',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project'},
+  {n:'04',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:'£450 / day',href:'/booking?service=full-day'}
+];
 
-      <section className="hero">
-        <div className="heroShade" />
-        <div className="container heroContent">
-          <p className="eyebrow">Cardiff Bay · EST. 2020</p>
-          <h1>A Local Studio<br/>With A <span>Worldwide</span><br/>Sound.</h1>
-          <p className="lede">Experts in vocal recording, artist development and release-ready production. Built for artists who want somewhere to grow with.</p>
-          <div className="actions"><Link className="button primary" href="/booking">Book a session</Link><a className="textLink" href="#space">Explore the studio →</a></div>
-        </div>
-      </section>
+const differences=[
+  {title:'Vocal takes that feel finished',copy:'We coach takes, comp performances and build doubles, harmonies and layers with care — not just press record.',img:'/images/booth.webp'},
+  {title:'Leave with something usable',copy:'We mix as we go and work toward a release-ready result while you are in the room. Momentum matters.',img:'/images/workstation.webp'},
+  {title:'Your music stays safe',copy:'Session files are kept organised and backed up so your work does not disappear when the session ends.',img:'/images/doorway.webp'},
+  {title:'A studio you can grow with',copy:'From your first serious session to release strategy and artistic direction, you have people around you who understand the journey.',img:'/images/wide.webp'}
+];
 
-      <section id="space" className="section">
-        <div className="container twoCol">
-          <img className="featureImage" src="/images/vault.webp" alt="Silkcrayon studio interior" />
-          <div className="copyBlock">
-            <p className="eyebrow">The space</p>
-            <h2>Hidden in a <span>1926</span><br/>Bank Vault.</h2>
-            <p>Silkcrayon has been developed around one question: what does an artist actually need to do their best work?</p>
-            <p>The answer isn’t just equipment. It’s environment, energy and someone in the room who genuinely understands where you’re trying to go.</p>
-            <p className="accentText">We’re for the artist.</p>
-            <div className="stats"><div><b>600+</b><small>artists since 2020</small></div><div><b>6+</b><small>years developing talent</small></div><div><b>£60</b><small>per hour</small></div></div>
-          </div>
-        </div>
-      </section>
+export default function Home(){
+  return <main className="marketingSite">
+    <SiteHeader/>
+    <section className="hero heroV12">
+      <div className="heroShade"/>
+      <div className="heroGlow"/>
+      <div className="container heroContent">
+        <p className="eyebrow heroEyebrow">Cardiff Bay · Est. 2020</p>
+        <h1>A studio for artists<br/>who want to <span>go further.</span></h1>
+        <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
+        <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#experience">See why artists stay →</a></div>
+        <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span><b>£60</b> per hour</span></div>
+      </div>
+      <a className="scrollCue" href="#experience"><span>Scroll</span><i/></a>
+    </section>
 
-      <section id="services" className="section">
-        <div className="container">
-          <p className="eyebrow">Services</p><h2>Everything you need to create.</h2><p className="muted">From first recording to final master, all under one roof.</p>
-          <div className="featureCard"><div><span className="chip">Featured</span><h3>Vocal Recording</h3><p>Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.</p><strong>From £60 / hour</strong></div><Link href="/booking?service=vocal-recording">Book now →</Link></div>
-          <div className="cardGrid">
-            <article><h3>Mixing & Mastering</h3><p>Professional mix and master from an engineer who has developed artists from first session to release-ready.</p><strong>POA per track</strong></article>
-            <article><h3>Audiobooks & Podcasts</h3><p>Crystal-clear recording, editing and production for spoken-word projects.</p><strong>POA per project</strong></article>
-            <article><h3>Artist Development</h3><p>Identity, direction, sound, strategy and industry guidance for artists who want more than studio time.</p><strong>Enquire via the studio</strong></article>
-            <article><h3>Full Day Rate</h3><p>Eight hours in the vault for focused recording, development and production.</p><Link href="/booking?service=full-day">£450 / day →</Link></article>
-          </div>
-        </div>
-      </section>
+    <section id="experience" className="section sectionTight proofStrip"><div className="container proofGrid">
+      <Reveal><p className="eyebrow">Not just studio hire</p><h2>You should leave better than you arrived.</h2></Reveal>
+      <Reveal delay={100}><p className="proofCopy">A great studio session is not just a good mic and a clean recording. It is feeling understood, getting the take you actually meant, hearing the record come alive in the room and knowing what to do next.</p></Reveal>
+    </div></section>
 
-      <section id="difference" className="section">
-        <div className="container differenceLayout">
-          <div className="differenceLead"><p className="eyebrow">The Silkcrayon difference</p><h2>A studio built for artists to <span>grow with.</span></h2><p>We’re more than a studio. We’re a creative partner in your journey — from your first idea to your next release and beyond.</p><Link className="button outline" href="/booking">Book a session →</Link></div>
-          <div className="differenceGrid">
-            <article><img src="/images/doorway.webp" alt="Studio doorway"/><h3>Never Lose Your Music</h3><p>We keep your session files safe and organised, so your ideas, vocals and mixes don’t disappear when the session ends.</p></article>
-            <article><img src="/images/workstation.webp" alt="Studio workstation"/><h3>Mix & Master In Session</h3><p>We work toward the finish line while you’re in the room. The aim is that you leave with something you can genuinely release.</p></article>
-            <article><img src="/images/wide.webp" alt="Studio interior"/><h3>Artist Development & Guidance</h3><p>Song structure, artistic identity, strategy and industry guidance for artists building a career rather than just making a record.</p></article>
-            <article><img src="/images/booth.webp" alt="Vocal booth"/><h3>Vocal Experts</h3><p>Takes, doubles, harmonies and layers — recorded, comped and shaped with care to get the best out of every performance.</p></article>
-          </div>
-        </div>
-      </section>
+    <section className="section experienceSection"><div className="container">
+      <Reveal><div className="sectionHeading"><div><p className="eyebrow">The Silkcrayon difference</p><h2>Built around the artist.</h2></div><p>Four things we obsess over because they are what make artists come back.</p></div></Reveal>
+      <div className="experienceGrid">{differences.map((d,i)=><Reveal key={d.title} delay={i*80}><article className="experienceCard"><div className="experienceImage"><img src={d.img} alt=""/><span>0{i+1}</span></div><h3>{d.title}</h3><p>{d.copy}</p></article></Reveal>)}</div>
+    </div></section>
 
-      <section className="section selectedWork"><div className="container"><p className="eyebrow">Selected work</p><h2>Hear what’s been made here.</h2><p className="muted">Drop your Spotify playlist embed into this section when ready.</p></div></section>
+    <section id="services" className="section servicesV12"><div className="container">
+      <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
+      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>Book →</Link>:<a href="mailto:info@silkcrayon.com">Enquire →</a>}</div></article></Reveal>)}</div>
+      <Reveal><div className="serviceCta"><p>Not sure what to book?</p><Link href="/booking">Start with a recording session →</Link></div></Reveal>
+    </div></section>
 
-      <section className="section cta"><div className="container"><p className="eyebrow">Ready?</p><h2>Book the studio.</h2><p>No Wix hand-off. Choose your session, pick a time and pay securely.</p><Link className="button primary" href="/booking">Start booking</Link></div></section>
-      <footer><div className="container footerInner"><img src="/logo.png" alt="Silkcrayon"/><span>Cardiff Bay</span></div></footer>
-    </main>
-  );
+    <section className="section sessionJourney"><div className="container">
+      <Reveal><p className="eyebrow">Your session</p><h2>Simple from booking to bounce.</h2></Reveal>
+      <div className="journeyGrid">
+        <Reveal><article><span>01</span><h3>Book your time</h3><p>Pick a date, duration and pay securely online. Your confirmation lands instantly.</p></article></Reveal>
+        <Reveal delay={90}><article><span>02</span><h3>Tell us the goal</h3><p>Your engineer knows what you are making before you arrive, so the session starts with direction.</p></article></Reveal>
+        <Reveal delay={180}><article><span>03</span><h3>Create properly</h3><p>Record, refine, layer, mix and make decisions while the energy is still in the room.</p></article></Reveal>
+        <Reveal delay={270}><article><span>04</span><h3>Keep building</h3><p>Your files stay safe, your history stays with us and your next session starts where the last one ended.</p></article></Reveal>
+      </div>
+    </div></section>
+
+    <section id="space" className="section spaceV12"><div className="container spaceGrid">
+      <Reveal className="spaceVisual"><div className="imageStack"><img className="spaceMain" src="/images/vault.webp" alt="Silkcrayon studio interior"/><img className="spaceDetail" src="/images/neon.webp" alt="Silkcrayon neon wall"/></div></Reveal>
+      <Reveal delay={120}><div className="copyBlock"><p className="eyebrow">The space</p><h2>Hidden in a <span>1926</span><br/>bank vault.</h2><p>Warm light, proper monitoring, a dedicated vocal booth and enough character to make the room feel like somewhere work matters.</p><p>The equipment is important. The atmosphere is what lets you forget about it.</p><div className="spaceFacts"><span>Neumann U87</span><span>Adam monitoring</span><span>Private vocal booth</span><span>Cardiff Bay</span></div><Link className="textLink" href="/booking">Book the vault →</Link></div></Reveal>
+    </div></section>
+
+    <section id="work" className="section workV12"><div className="container workGrid">
+      <Reveal><div><p className="eyebrow">Made at Silkcrayon</p><h2>Hear the room,<br/>not the sales pitch.</h2><p className="muted">Music recorded and developed through Silkcrayon. Real artists, real sessions, real releases.</p></div></Reveal>
+      <Reveal delay={120}><div className="spotifyShell"><iframe style={{borderRadius:'12px'}} src="https://open.spotify.com/embed/playlist/1ZN4MdRbSbvCxsKLjeBiM6?utm_source=generator&theme=0" width="100%" height="352" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Recorded at Silkcrayon playlist"></iframe></div></Reveal>
+    </div></section>
+
+    <section className="section standardV12"><div className="container standardGrid">
+      <Reveal><div><p className="eyebrow">The standard</p><h2>Music that moves<br/>people forward.</h2><p>We care about what gets made here. Silkcrayon is a positive creative environment and every booking includes agreement to our No Harmful Music Policy.</p></div></Reveal>
+      <Reveal delay={120}><div className="standardPoints"><p>Authenticity over posturing.</p><p>Craft over shortcuts.</p><p>Respect for the room and the people in it.</p><p>Work you can be proud to put your name on.</p></div></Reveal>
+    </div></section>
+
+    <section className="section finalCta"><div className="container">
+      <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">From £60/hour · Secure online booking · Cardiff Bay</p></Reveal>
+    </div></section>
+
+    <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The space</a><Link href="/booking">Book</Link></div><div><Link href="/account/login">My Studio</Link><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>
+    <Link href="/booking" className="mobileBookBar">Book a session <span>↗</span></Link>
+  </main>
 }
