@@ -21,7 +21,7 @@
       "headers": [
         {
           "key": "X-Silkcrayon-Version",
-          "value": "20.2.6.1"
+          "value": "20.2.6.2"
         },
         {
           "key": "X-Content-Type-Options",
