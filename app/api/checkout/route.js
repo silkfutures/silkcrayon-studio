@@ -3,16 +3,23 @@ import { SERVICES, priceFor } from "../../../lib/services";
 import { getAdminDb } from "../../../lib/supabase";
 import { getStripe } from "../../../lib/stripe";
 import { generateSlots } from "../../../lib/availability";
+import { londonDateTimeToUtc } from "../../../lib/time";
+import { rateLimit } from "../../../lib/rateLimit";
 
 export async function POST(request) {
   let bookingId = null;
   try {
     const body = await request.json();
+    if(!await rateLimit(request,{scope:'checkout',limit:20,windowSeconds:900,identity:body.email||''}))return NextResponse.json({error:'Too many booking attempts. Please wait a few minutes and try again.'},{status:429});
     const service = SERVICES[body.service];
     const duration = Number(body.duration);
     if (!service || !service.durations.includes(duration)) throw new Error("Invalid service or duration");
+    if(service.slug==='system-test'&&process.env.ENABLE_SYSTEM_TEST_BOOKING!=='true')return NextResponse.json({error:'Test booking is disabled.'},{status:404});
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date || "") || !/^\d{2}:\d{2}$/.test(body.start || "")) throw new Error("Invalid date or time");
     if (!body.fullName?.trim() || !body.email?.trim()) throw new Error("Name and email are required");
+    if(String(body.fullName).length>120||String(body.email).length>254||String(body.notes||'').length>2000)return NextResponse.json({error:'Some booking details are too long.'},{status:400});
+    const requestedStart=londonDateTimeToUtc(body.date,body.start);
+    if(!requestedStart||requestedStart.getTime()<=Date.now()+5*60*1000)return NextResponse.json({error:'Please choose a future session time.'},{status:400});
     if (!body.policyAccepted || !body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the booking terms and policies before booking." }, { status: 400 });
 
     const db = getAdminDb();
@@ -32,15 +39,23 @@ export async function POST(request) {
     }
     let customer;
     const { data: found } = await db.from("customers").select("*").eq("email", email).maybeSingle();
+    const {data:crmBefore}=await db.from("crm_contacts").select("email_signup_discount_available,marketing_consent").eq("email",email).maybeSingle();
+    const rewardAvailableBefore=Boolean(found?.email_signup_discount_available||crmBefore?.email_signup_discount_available);
+    const newlyJoiningEmailList=!!body.marketingConsent&&!Boolean(found?.marketing_consent||crmBefore?.marketing_consent);
     if (found) {
-      const { data, error } = await db.from("customers").update({ full_name: body.fullName.trim(), phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: found.marketing_consent || !!body.marketingConsent, sms_service_consent: found.sms_service_consent || !!body.smsServiceConsent, sms_marketing_consent: found.sms_marketing_consent || !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || found.preferred_engineer_user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : found.preferred_engineer, updated_at: new Date().toISOString() }).eq("id", found.id).select().single();
+      const { data, error } = await db.from("customers").update({ full_name: body.fullName.trim(), phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: found.marketing_consent || !!body.marketingConsent, sms_service_consent: Boolean(body.phone?.trim()), email_signup_discount_available: found.email_signup_discount_available || newlyJoiningEmailList, sms_marketing_consent: found.sms_marketing_consent || !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || found.preferred_engineer_user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : found.preferred_engineer, updated_at: new Date().toISOString() }).eq("id", found.id).select().single();
       if (error) throw error; customer = data;
     } else {
-      const { data, error } = await db.from("customers").insert({ full_name: body.fullName.trim(), email, phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: !!body.marketingConsent, sms_service_consent: !!body.smsServiceConsent, sms_marketing_consent: !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null }).select().single();
+      const { data, error } = await db.from("customers").insert({ full_name: body.fullName.trim(), email, phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: !!body.marketingConsent, sms_service_consent: Boolean(body.phone?.trim()), email_signup_discount_available: newlyJoiningEmailList, sms_marketing_consent: !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null }).select().single();
       if (error) throw error; customer = data;
     }
 
-    const amountPence = priceFor(service, duration);
+    if(body.marketingConsent){
+      await db.from("crm_contacts").upsert({customer_id:customer.id,full_name:customer.full_name,email,phone:customer.phone,source:'Booking',marketing_status:'subscribed',marketing_consent:true,email_signup_discount_available:rewardAvailableBefore||newlyJoiningEmailList,updated_at:new Date().toISOString()},{onConflict:'email'});
+    }
+    const listPricePence = priceFor(service, duration);
+    const rewardApplied=rewardAvailableBefore&&service.slug!=='system-test';
+    const amountPence = rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence;
     const holdExpires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const { data: reservedId, error: bookingError } = await db.rpc("reserve_booking", {
       p_customer_id: customer.id,
@@ -71,7 +86,7 @@ export async function POST(request) {
       policy_accepted_at: new Date().toISOString(),
       policy_acceptance_ip: forwarded.split(",")[0]?.trim() || null,
       policy_acceptance_user_agent: request.headers.get("user-agent") || null,
-      sms_reminder_consent: !!body.smsServiceConsent,
+      sms_reminder_consent: Boolean(body.phone?.trim()),
       preferred_engineer_user_id: preferredEngineer?.user_id || null,
       preferred_engineer_name: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null
     }).eq("id", reservedId);
@@ -85,8 +100,8 @@ export async function POST(request) {
       invoice_creation: { enabled: true },
       customer_email: email,
       client_reference_id: booking.id,
-      metadata: { booking_id: booking.id, service_slug: service.slug },
-      line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${service.name}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay` } } }],
+      metadata: { booking_id: booking.id, service_slug: service.slug, email_signup_discount_applied:rewardApplied?'true':'false' },
+      line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${service.name}${rewardApplied?' · 5% email reward':''}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay${rewardApplied?' · 5% email-list reward applied':''}` } } }],
       success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/booking?cancelled=1`,
       expires_at: Math.floor(Date.now()/1000) + 30*60,

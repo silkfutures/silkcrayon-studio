@@ -1,12 +1,14 @@
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../lib/notifications';
+import {rateLimit} from '../../../lib/rateLimit';
 
 function e(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 export async function POST(req){
  try{
-  const body=await req.json();
+  const body=await req.json();if(!await rateLimit(req,{scope:'enquiry',limit:8,windowSeconds:3600,identity:body.email||''}))return NextResponse.json({error:'Too many enquiries from this connection. Please try again later.'},{status:429});
   if(!body.full_name||!body.email||!body.enquiry_type)return NextResponse.json({error:'Please complete the required fields.'},{status:400});
+  if(String(body.full_name||'').length>120||String(body.email||'').length>254||String(body.project_details||'').length>4000)return NextResponse.json({error:'Some enquiry details are too long.'},{status:400});
   const allowed=['mixing','audiobook-podcast','bespoke-production','call-request','general'];
   const enquiry_type=allowed.includes(body.enquiry_type)?body.enquiry_type:'general';
   const row={enquiry_type,client_type:body.client_type||'client',full_name:String(body.full_name).trim(),artist_or_company:body.artist_or_company||null,email:String(body.email).trim().toLowerCase(),phone:body.phone||null,preferred_call_time:body.preferred_call_time||null,project_type:body.project_type||null,project_details:body.project_details||null,budget_range:body.budget_range||null,deadline:body.deadline||null,word_count_runtime:body.word_count_runtime||null,speakers:body.speakers||null,editing_required:body.editing_required||null,track_count:body.track_count||null,stems_available:body.stems_available||null,reference_tracks:body.reference_tracks||null,source:'website'};

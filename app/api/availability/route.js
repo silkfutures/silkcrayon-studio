@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import { SERVICES } from "../../../lib/services";
 import { getAdminDb } from "../../../lib/supabase";
 import { generateSlots } from "../../../lib/availability";
+import {rateLimit} from "../../../lib/rateLimit";
 
 export const dynamic = "force-dynamic";
 export async function GET(request) {
   try {
+    if(!await rateLimit(request,{scope:'availability',limit:120,windowSeconds:60}))return NextResponse.json({error:'Too many availability requests.'},{status:429});
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const serviceSlug = searchParams.get("service");

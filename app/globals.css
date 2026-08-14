@@ -358,3 +358,32 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
   .portalRebookActions{justify-content:stretch;display:grid}
   .portalRebookActions .button,.portalOffer button{width:100%}
 }
+
+/* V20.2.6 — full-width mobile booking + email signup */
+.serviceTextNote{color:#9f98a4;font-size:11px;line-height:1.55;margin:12px 0}
+.signupReward span{display:grid;gap:3px}.signupReward small{color:#918999}
+.emailSignup{border:1px solid #4c395b;border-radius:24px;background:radial-gradient(circle at 90% 0%,rgba(195,148,255,.15),transparent 38%),#0a080d;padding:clamp(24px,5vw,48px);display:grid;grid-template-columns:1fr 1fr;gap:28px;align-items:end}
+.emailSignup h3{font-size:clamp(28px,4vw,48px);margin:6px 0 8px}.emailSignup p{color:var(--muted);margin:0}
+.emailSignupFields{display:grid;grid-template-columns:.7fr 1.2fr auto;gap:8px}
+.emailSignup input{background:#08070a;border:1px solid #45384e;color:#fff;border-radius:999px;padding:13px 16px;min-width:0}
+.emailSignup>small{grid-column:1/-1;color:#c8a8ed}
+@media(max-width:850px){
+  .bookingSection{display:block!important;grid-template-columns:none!important;padding:38px 0!important}
+  .bookingSection>.step{display:block!important;margin:0 0 10px!important;font-size:13px!important}
+  .bookingSection>div{width:100%!important;min-width:0!important}
+  .bookingSection h2{font-size:clamp(34px,10vw,50px)!important;line-height:1!important}
+  .durationRow,.dateGrid,.slotGrid{
+    display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden!important;
+    width:100%!important;max-width:100%!important;gap:10px!important;padding:2px 28px 14px 0!important;
+    -webkit-overflow-scrolling:touch!important;scroll-snap-type:x proximity!important;touch-action:auto!important;
+    scrollbar-width:none!important
+  }
+  .durationRow::-webkit-scrollbar,.dateGrid::-webkit-scrollbar,.slotGrid::-webkit-scrollbar{display:none!important}
+  .durationRow>.pill,.durationRow>.activePill{flex:0 0 auto!important;min-width:max-content!important;scroll-snap-align:start}
+  .dateGrid>.dateCard{flex:0 0 104px!important;min-width:104px!important;scroll-snap-align:start}
+  .slotGrid>.slot{flex:0 0 auto!important;min-width:98px!important;padding:15px 18px!important;scroll-snap-align:start}
+  .bookingPanel{width:100%!important}
+  .emailSignup{grid-template-columns:1fr}
+  .emailSignupFields{grid-template-columns:1fr}
+  .emailSignupFields .button{width:100%}
+}
