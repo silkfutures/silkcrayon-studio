@@ -58,3 +58,52 @@ export function BlockoutList({items=[]}) {
   if(!items.length)return <p className="muted">No future studio time is blocked.</p>;
   return <div className="blockoutList">{items.map(x=><div className="blockoutItem" key={x.id}><div><b>{x.booking_date} · {String(x.start_time).slice(0,5)}–{String(x.end_time).slice(0,5)}</b><small>{x.reason||'Blocked time'}</small></div><button className="miniButton" disabled={busy===x.id} onClick={()=>unblock(x.id)}>{busy===x.id?'Unblocking…':'Unblock'}</button></div>)}</div>;
 }
+
+
+export function CancellationRequestActions({booking}){
+ const router=useRouter();
+ const [open,setOpen]=useState(false),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
+ const [outcome,setOutcome]=useState(booking.payment_method==='credits'?'credit':'none');
+ const [note,setNote]=useState('');
+ async function decide(decision){
+   if(decision==='decline'){
+     if(!confirm('Decline this cancellation request and keep the booking confirmed?'))return;
+   }else{
+     const label=outcome==='refund'?'cancel and issue the card refund':outcome==='credit'?'cancel and restore studio credit':'cancel with no refund or credit';
+     if(!confirm(`Confirm: ${label}?`))return;
+   }
+   setBusy(true);setMsg('Working…');
+   const r=await fetch(`/api/admin/bookings/${booking.id}`,{
+     method:'PATCH',headers:{'content-type':'application/json'},
+     body:JSON.stringify({cancellationRequestDecision:decision,cancellationOutcome:outcome,cancellationNote:note})
+   });
+   const j=await r.json().catch(()=>({}));
+   setBusy(false);
+   if(r.ok){setMsg(decision==='decline'?'Request declined ✓':'Cancellation completed ✓');router.refresh()}
+   else setMsg(j.error||'Could not resolve cancellation');
+ }
+ const remaining=Math.max(0,Number(booking.amount_pence||0)-Number(booking.refunded_amount_pence||0));
+ const hours=Number(booking.duration_minutes||0)/60;
+ return <div className="cancelRequestActions">
+   <button className="miniButton solid" disabled={busy} onClick={()=>setOpen(v=>!v)}>{open?'Close':'Review request'}</button>
+   {open&&<div className="cancelDecisionPanel">
+     <div className="cancelPolicyHint"><b>Choose the outcome yourself.</b><span>The system will not refund or credit anything until you confirm.</span></div>
+     <label>Resolution
+       <select value={outcome} onChange={e=>setOutcome(e.target.value)}>
+         {booking.payment_method!=='credits'&&booking.stripe_payment_intent_id&&remaining>0&&<option value="refund">Cancel + refund £{(remaining/100).toFixed(2)}</option>}
+         <option value="credit">Cancel + studio credit {hours.toFixed(hours%1?1:0)}h</option>
+         <option value="none">Cancel · no refund / credit</option>
+       </select>
+     </label>
+     <label>Internal / customer note
+       <textarea rows="2" value={note} onChange={e=>setNote(e.target.value)} placeholder="Optional reason or context"/>
+     </label>
+     <div className="cancelDecisionButtons">
+       <button className="miniButton warning" disabled={busy} onClick={()=>decide('approve')}>Confirm cancellation</button>
+       <button className="miniButton" disabled={busy} onClick={()=>decide('decline')}>Decline request</button>
+       <a className="miniButton" href={`/admin/engineer/session/${booking.id}`}>Open booking</a>
+     </div>
+   </div>}
+   {msg&&<small>{msg}</small>}
+ </div>
+}
