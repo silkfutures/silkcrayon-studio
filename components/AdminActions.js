@@ -43,3 +43,11 @@ export function DeleteTestCustomer({id}){
  async function del(){if(!confirm('Permanently delete this TEST customer and their eligible test bookings?'))return;setBusy(true);const r=await fetch(`/api/admin/customers/${id}`,{method:'DELETE'});const j=await r.json().catch(()=>({}));setBusy(false);if(r.ok){router.push('/admin/customers');router.refresh()}else setMsg(j.error||'Could not delete customer');}
  return <div className="dangerZone"><button className="miniButton danger" disabled={busy} onClick={del}>Delete test customer</button>{msg&&<small>{msg}</small>}</div>
 }
+
+
+export function BlockoutList({items=[]}) {
+  const router=useRouter(); const [busy,setBusy]=useState('');
+  async function unblock(id){if(!confirm('Make this studio time available again?'))return;setBusy(id);const r=await fetch('/api/admin/blockouts',{method:'DELETE',headers:{'content-type':'application/json'},body:JSON.stringify({id})});setBusy('');if(r.ok)router.refresh();else alert('Could not unblock this time.');}
+  if(!items.length)return <p className="muted">No future studio time is blocked.</p>;
+  return <div className="blockoutList">{items.map(x=><div className="blockoutItem" key={x.id}><div><b>{x.booking_date} · {String(x.start_time).slice(0,5)}–{String(x.end_time).slice(0,5)}</b><small>{x.reason||'Blocked time'}</small></div><button className="miniButton" disabled={busy===x.id} onClick={()=>unblock(x.id)}>{busy===x.id?'Unblocking…':'Unblock'}</button></div>)}</div>;
+}
