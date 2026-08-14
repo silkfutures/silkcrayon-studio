@@ -53,3 +53,38 @@
 @media(max-width:700px){button,a{-webkit-tap-highlight-color:transparent}.siteHeader,.mobileBookBar{padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right))}.mobileBookBar{bottom:max(12px,env(safe-area-inset-bottom));}.mobileMenu{padding-bottom:max(40px,env(safe-area-inset-bottom))}.heroV12{min-height:100svh;height:auto;padding-bottom:90px}.heroV12 .heroContent{padding-top:105px}.heroV12 h1{font-size:clamp(48px,14vw,72px)}.button,.miniButton,.menuButton{min-height:46px}.requestActions{display:grid;grid-template-columns:1fr 1fr}.requestActions .miniButton{width:100%}}
 
 .reconciliationBar,.accountingTools{display:flex;align-items:center;justify-content:space-between;gap:24px}.reconcileControl small{display:block;margin-top:8px;color:var(--accent)}.ownerBookingActions{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;align-items:center}.ownerBookingActions small{width:100%;color:var(--accent)}.miniButton.warning{border-color:#c28a3f;color:#ffd89c}.miniButton.danger,.dangerZone .miniButton{border-color:#7a2e3a;color:#ff9cac}.dangerSection{border-color:#482129}.dangerZone{margin-top:14px}.accountingTools .button{white-space:nowrap}@media(max-width:760px){.reconciliationBar,.accountingTools{align-items:flex-start;flex-direction:column}.reconcileControl,.reconcileControl button,.accountingTools .button{width:100%}.ownerBookingActions{display:grid;grid-template-columns:1fr}.ownerBookingActions .miniButton{width:100%;min-height:44px}}
+
+/* V13.1 mobile navigation/scroll fix */
+html.navLocked,body.navLocked{overflow:hidden;overscroll-behavior:none}
+@media(max-width:980px){
+  .marketingSite .siteHeader{isolation:isolate}
+  .mobileMenu{
+    display:flex;
+    position:fixed;
+    inset:0;
+    width:100vw;
+    height:100dvh;
+    min-height:100svh;
+    padding:100px 24px max(34px,env(safe-area-inset-bottom));
+    background:#08070a;
+    flex-direction:column;
+    gap:0;
+    transform:none!important;
+    transition:none!important;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    -webkit-overflow-scrolling:touch;
+    z-index:79;
+  }
+  .mobileMenu>a{
+    flex:0 0 auto;
+  }
+  .siteHeader .brand,.siteHeader .menuButton{z-index:81}
+}
+@media(max-width:700px){
+  .marketingSite{overflow-x:clip}
+  .marketingSite section,.marketingSite footer{overflow:clip}
+  .heroV12{min-height:100svh;height:auto}
+  .mobileBookBar{z-index:60}
+  .navLocked .mobileBookBar{display:none}
+}
