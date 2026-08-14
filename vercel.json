@@ -1,6 +1,29 @@
 {
   "framework": "nextjs",
   "crons": [
-    { "path": "/api/cron/studio-automations", "schedule": "15 9 * * *" }
+    {
+      "path": "/api/cron/studio-automations",
+      "schedule": "15 9 * * *"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/sw.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Silkcrayon-Version",
+          "value": "12.1"
+        }
+      ]
+    }
   ]
 }
