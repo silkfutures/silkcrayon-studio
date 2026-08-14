@@ -4,8 +4,8 @@ import Reveal from "../components/Reveal";
 
 const services=[
   {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:'From £60 / hour',href:'/booking?service=vocal-recording',featured:true},
-  {n:'02',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track'},
-  {n:'03',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project'},
+  {n:'02',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track',href:'/enquire?type=mixing',enquire:true},
+  {n:'03',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project',href:'/enquire?type=audiobook-podcast',enquire:true},
   {n:'04',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:'£450 / day',href:'/booking?service=full-day'}
 ];
 
@@ -46,8 +46,8 @@ export default function Home(){
 
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
-      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>Book →</Link>:<a href="mailto:info@silkcrayon.com">Enquire →</a>}</div></article></Reveal>)}</div>
-      <Reveal><div className="serviceCta"><div><span>Not sure what to book?</span><p>Most artists start with a vocal recording session.</p></div><Link className="softPill" href="/booking?service=vocal-recording">Start here <span>↗</span></Link></div></Reveal>
+      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
+      <Reveal><div className="callCta"><div><span>NOT SURE WHAT YOU NEED?</span><h3>Talk it through with us.</h3><p>Tell us about the project and we’ll give you a call.</p></div><Link className="softPill" href="/request-a-call">Request a call <span>↗</span></Link></div></Reveal><Reveal><div className="serviceCta"><div><span>Not sure what to book?</span><p>Most artists start with a vocal recording session.</p></div><Link className="softPill" href="/booking?service=vocal-recording">Start here <span>↗</span></Link></div></Reveal>
     </div></section>
 
     <section className="section sessionJourney"><div className="container">

@@ -25,13 +25,18 @@ export async function POST(request) {
     if (!chosen) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
 
     const email = body.email.trim().toLowerCase();
+    let preferredEngineer=null;
+    if(body.preferredEngineerUserId){
+      const {data:eng}=await db.from("staff_profiles").select("user_id,full_name,engineer_name,active,role").eq("user_id",body.preferredEngineerUserId).maybeSingle();
+      if(eng?.active&&["owner","engineer"].includes(eng.role))preferredEngineer=eng;
+    }
     let customer;
     const { data: found } = await db.from("customers").select("*").eq("email", email).maybeSingle();
     if (found) {
-      const { data, error } = await db.from("customers").update({ full_name: body.fullName.trim(), phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: !!body.marketingConsent, updated_at: new Date().toISOString() }).eq("id", found.id).select().single();
+      const { data, error } = await db.from("customers").update({ full_name: body.fullName.trim(), phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: found.marketing_consent || !!body.marketingConsent, sms_service_consent: found.sms_service_consent || !!body.smsServiceConsent, sms_marketing_consent: found.sms_marketing_consent || !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || found.preferred_engineer_user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : found.preferred_engineer, updated_at: new Date().toISOString() }).eq("id", found.id).select().single();
       if (error) throw error; customer = data;
     } else {
-      const { data, error } = await db.from("customers").insert({ full_name: body.fullName.trim(), email, phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: !!body.marketingConsent }).select().single();
+      const { data, error } = await db.from("customers").insert({ full_name: body.fullName.trim(), email, phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, marketing_consent: !!body.marketingConsent, sms_service_consent: !!body.smsServiceConsent, sms_marketing_consent: !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null }).select().single();
       if (error) throw error; customer = data;
     }
 
@@ -65,7 +70,10 @@ export async function POST(request) {
       privacy_policy_version: policyVersion,
       policy_accepted_at: new Date().toISOString(),
       policy_acceptance_ip: forwarded.split(",")[0]?.trim() || null,
-      policy_acceptance_user_agent: request.headers.get("user-agent") || null
+      policy_acceptance_user_agent: request.headers.get("user-agent") || null,
+      sms_reminder_consent: !!body.smsServiceConsent,
+      preferred_engineer_user_id: preferredEngineer?.user_id || null,
+      preferred_engineer_name: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null
     }).eq("id", reservedId);
     const booking = { id: reservedId };
 

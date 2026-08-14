@@ -1,0 +1,2 @@
+import SiteHeader from '../../components/SiteHeader';import EnquiryForm from '../../components/EnquiryForm';
+export const metadata={title:'Enquire | Silkcrayon Studios'};export default async function Page({searchParams}){const p=await searchParams;const type=p?.type||'general';return <main className="marketingSite enquiryPage"><SiteHeader/><section className="section"><div className="container"><EnquiryForm type={type}/></div></section></main>}

@@ -13,7 +13,9 @@ export default async function More(){
   ['/admin/activity','Activity log','Cancellations, no-shows & deletions','↻'],
   ['/admin/analytics','Analytics','Revenue, visitors & retention','↗'],
   ['/admin/automation','Automations','Email delivery & reminders','✦'],
-  ['/admin/customers','CRM','Full customer database','◎'],
+  ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
+  ['/admin/marketing','Marketing','Opening offers & email campaigns','✦'],
+  ['/admin/customers','Customers','Booked customer database','◉'],
   ['/admin/staff','Staff','People, roles & access','◌']
  ]:[
   ['/admin/artists','Artists','Profiles & history','◎'],

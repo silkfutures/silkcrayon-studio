@@ -1,0 +1,2 @@
+import {NextResponse} from 'next/server';import {getAdminDb} from '../../../../lib/supabase';
+export async function GET(){try{const {data=[],error}=await getAdminDb().from('staff_profiles').select('user_id,full_name,engineer_name,role,active').eq('active',true).in('role',['owner','engineer']).order('full_name');if(error)throw error;return NextResponse.json({engineers:data.map(x=>({id:x.user_id,name:x.engineer_name||x.full_name}))})}catch{return NextResponse.json({engineers:[]})}}
