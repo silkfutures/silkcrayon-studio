@@ -9,6 +9,9 @@ export async function DELETE(req,{params}){
   if(bookings.some(b=>Number(b.amount_pence||0)>100))return NextResponse.json({error:'This customer has real bookings. Test-customer deletion is only available when every booking is £1 or less.'},{status:409});
   if(bookings.some(b=>['paid','part_refunded'].includes(b.payment_status)))return NextResponse.json({error:'Refund any paid test bookings before deleting this customer.'},{status:409});
   if(bookings.length){const {error:be}=await db.from('bookings').delete().eq('customer_id',id);if(be)throw be;}
+  const {data:customer}=await db.from('customers').select('email').eq('id',id).maybeSingle();
+  await db.from('crm_contacts').delete().eq('customer_id',id);
+  if(customer?.email)await db.from('crm_contacts').delete().eq('email',String(customer.email).toLowerCase());
   const {error:ce}=await db.from('customers').delete().eq('id',id);if(ce)throw ce;
   return NextResponse.json({ok:true});
  }catch(e){return NextResponse.json({error:e.message||'Could not delete customer.'},{status:500})}

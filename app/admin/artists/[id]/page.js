@@ -4,6 +4,7 @@ import {EngineerHeader,EngineerBottomNav} from '../../../../components/EngineerS
 import {requireStaff} from '../../../../lib/auth';
 import {getAdminDb} from '../../../../lib/supabase';
 import {formatGBP} from '../../../../lib/services';
+import {DeleteTestCustomer} from '../../../../components/AdminActions';
 export const dynamic='force-dynamic';
 export default async function ArtistProfile({params}){
  const ctx=await requireStaff(); const {id}=await params; const db=getAdminDb();
@@ -15,6 +16,6 @@ export default async function ArtistProfile({params}){
    <section className="engProfileStats"><div><small>Credits</small><b>{balance}h</b></div><div><small>Sessions</small><b>{reports.length}</b></div><div className={noShows>=2?'attentionMetric':''}><small>No-shows</small><b>{noShows}</b></div>{!eng&&<div><small>Lifetime spend</small><b>{formatGBP(bookingSpend+directSpend)}</b></div>}</section>
    <section className="engActionStrip"><Link className="engPrimaryAction" href={`/admin/payments?customer=${c.id}`}>Take payment <span>→</span></Link><Link className="engSecondaryAction" href={`/admin/payments?customer=${c.id}&package=5`}>Sell hours</Link><Link className="engSecondaryAction" href="/admin/sessions">Log session</Link></section>
    <section className="engSection"><div className="engSectionHead"><div><h2>Details</h2><p>What you need in the room.</p></div></div><div className="engDetails"><div><small>Phone</small><b>{c.phone||'—'}</b></div><div><small>Email</small><b>{c.email||'—'}</b></div><div><small>Postcode</small><b>{c.postcode||'—'}</b></div><div><small>Instagram</small><b>{c.instagram||'—'}</b></div><div className="wide"><small>Goals</small><p>{c.goals||'No goals recorded yet.'}</p></div></div></section>
-   <section className="engSection"><div className="engSectionHead"><div><h2>Recent sessions</h2><p>Context before the next one.</p></div></div>{reports.length?reports.slice(0,6).map(r=><article className="engHistoryRow" key={r.id}><div><b>{r.session_date}</b><small>{r.actual_hours}h · {r.engineer}</small></div><p>{r.work_completed||'Session logged.'}</p></article>):<div className="engEmpty"><b>No session reports yet.</b></div>}</section>
+   <section className="engSection"><div className="engSectionHead"><div><h2>Recent sessions</h2><p>Context before the next one.</p></div></div>{reports.length?reports.slice(0,6).map(r=><article className="engHistoryRow" key={r.id}><div><b>{r.session_date}</b><small>{r.actual_hours}h · {r.engineer}</small></div><p>{r.work_completed||'Session logged.'}</p></article>):<div className="engEmpty"><b>No session reports yet.</b></div>}</section>{ctx.profile.role==='owner'&&<section className="engSection dangerSection"><p className="eyebrow">Test data</p><h2>Delete test artist</h2><p className="muted">Only test artists whose bookings are all £1 or less can be hard-deleted. Refund any paid test bookings first.</p><DeleteTestCustomer id={c.id}/></section>}
    {eng&&<EngineerBottomNav profile={ctx.profile}/>}</main>
 }
