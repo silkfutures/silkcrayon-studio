@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getStripe } from "../../../../lib/stripe";
 import { getAdminDb } from "../../../../lib/supabase";
-import { sendLoggedNotification, sendStaffLoggedNotification, confirmationEmail, newBookingOwnerEmail, ownerEmails, packagePurchaseEmail, sendEmail } from "../../../../lib/notifications";
+import { sendLoggedNotification, sendStaffLoggedNotification, confirmationEmail, newBookingOwnerEmail, ownerEmails, packagePurchaseEmail, mixMasterPurchaseEmail, sendEmail } from "../../../../lib/notifications";
 
 export async function POST(request) {
   try {
@@ -28,7 +28,11 @@ export async function POST(request) {
         if (payment && payment.status !== 'paid') {
           const inv=await invoiceFields(session); await db.from('studio_payments').update({status: session.payment_status === 'paid' ? 'paid' : 'pending',stripe_payment_intent_id: typeof session.payment_intent === 'string' ? session.payment_intent : null,paid_at: session.payment_status === 'paid' ? new Date().toISOString() : null,updated_at: new Date().toISOString(),...inv}).eq('id', studioPaymentId);
           const hours = Number(payment.hours_credit || 0);
-          if (session.payment_status === 'paid' && hours > 0) { await db.from('credit_ledger').insert({customer_id: payment.customer_id,payment_id: payment.id,hours_delta: hours,note: payment.description,created_by_user_id: payment.created_by_user_id}); const {data:customer}=await db.from('customers').select('*').eq('id',payment.customer_id).maybeSingle(); if(customer?.email){const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});} }
+          if(session.payment_status==='paid'){
+            const {data:customer}=await db.from('customers').select('*').eq('id',payment.customer_id).maybeSingle();
+            if(hours>0){await db.from('credit_ledger').insert({customer_id:payment.customer_id,payment_id:payment.id,hours_delta:hours,note:payment.description,created_by_user_id:payment.created_by_user_id});if(customer?.email){const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}}
+            if(payment.kind==='mix_master'&&customer?.email){const msg=mixMasterPurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
+          }
         }
       } else {
         const id = session.metadata?.booking_id || session.client_reference_id;

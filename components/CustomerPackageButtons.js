@@ -1,4 +1,4 @@
 "use client";
 import {useState} from 'react';
-const packs=[{hours:2,price:'£120',tag:'Flexible'},{hours:5,price:'£275',tag:'Save £25'},{hours:10,price:'£500',tag:'Save £100'}];
+const packs=[{hours:2,price:'£110',tag:'Save £10'},{hours:5,price:'£275',tag:'Save £25'},{hours:10,price:'£500',tag:'Save £100'}];
 export default function CustomerPackageButtons(){const [loading,setLoading]=useState(null),[err,setErr]=useState('');async function buy(hours){setLoading(hours);setErr('');const r=await fetch('/api/customer/packages',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({hours})});const j=await r.json();if(!r.ok){setErr(j.error||'Could not start checkout.');setLoading(null);return}window.location.href=j.url}return <><div className="portalPackageGrid">{packs.map(p=><button className={`portalPackage ${p.hours===5?'featured':''}`} key={p.hours} onClick={()=>buy(p.hours)} disabled={!!loading}><small>{p.tag}</small><b>{p.hours} HOURS</b><strong>{p.price}</strong><span>{loading===p.hours?'Opening checkout…':'Buy hours →'}</span></button>)}</div>{err&&<p className="errorBox">{err}</p>}</>}
