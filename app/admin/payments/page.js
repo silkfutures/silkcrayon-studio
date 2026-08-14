@@ -13,5 +13,5 @@ export default async function Payments({searchParams}){
    {sp?.paid==='1'&&<div className="successBanner">✓ Payment complete. The artist account will update automatically.</div>}
    <section className="engSection"><PaymentCreateForm customers={customers} defaultCustomerId={sp?.customer||''} defaultAmount={sp?.amount||''} defaultDescription={sp?.description||''} defaultPackage={sp?.package||''}/></section>
    <section className="engSection"><div className="engSectionHead"><div><h2>Recent payments</h2><p>Latest studio charges.</p></div></div><div className="engArtistList">{payments.slice(0,8).map(p=><div key={p.id} className="engArtistRow paymentRow"><div className="engAvatar">£</div><div><b>{p.customers?.artist_name||p.customers?.full_name||'Customer'}</b><small>{p.description} · {p.status}</small></div><span>{formatGBP(p.amount_pence)}</span></div>)}</div></section>
-   {eng&&<EngineerBottomNav/>}</main>
+   {eng&&<EngineerBottomNav profile={ctx.profile}/>}</main>
 }

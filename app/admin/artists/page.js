@@ -15,5 +15,5 @@ export default async function Artists({searchParams}){
    {showNew?<section className="engSection"><CustomerCreateForm compact/></section>:<>
    <section className="engSearchBar"><form><input name="q" defaultValue={q} placeholder="Search artists…" autoComplete="off"/><button>Search</button></form><Link href="/admin/artists?new=1" className="engNewButton">＋ New artist</Link></section>
    <section className="engSection"><div className="engSectionHead"><div><h2>{q?'Search results':'Recent artists'}</h2><p>{customers.length} artist{customers.length===1?'':'s'}</p></div></div><div className="engArtistList">{customers.map(c=><Link key={c.id} href={`/admin/artists/${c.id}`} className="engArtistRow"><div className="engAvatar">{(c.artist_name||c.full_name||'?').slice(0,1).toUpperCase()}</div><div><b>{c.artist_name||c.full_name}</b><small>{c.full_name}{c.preferred_genre?' · '+c.preferred_genre:''}</small></div><span>→</span></Link>)}{!customers.length&&<div className="engEmpty"><b>No artists found.</b><p>Try another search or register a new artist.</p></div>}</div></section></>}
-   {eng&&<EngineerBottomNav/>}</main>
+   {eng&&<EngineerBottomNav profile={ctx.profile}/>}</main>
 }

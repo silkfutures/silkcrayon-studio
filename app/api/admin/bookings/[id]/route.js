@@ -3,6 +3,7 @@ import { getAdminDb } from '../../../../../lib/supabase';
 import { getStaffContext } from '../../../../../lib/auth';
 import { engineerAssignedEmail, sendStaffLoggedNotification, staffEmail, sendEmail } from '../../../../../lib/notifications';
 import { getStripe } from '../../../../../lib/stripe';
+import { recordBookingEvent } from '../../../../../lib/bookingEvents';
 export async function PATCH(request,{params}){try{const ctx=await getStaffContext();if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});const {id}=await params;const body=await request.json();const patch={updated_at:new Date().toISOString()};let assigned=null;if(body.status){const allowed=['pending','confirmed','cancelled','completed','no_show'];if(!allowed.includes(body.status))return NextResponse.json({error:'Invalid status'},{status:400});patch.status=body.status;}if('internalNotes' in body)patch.internal_notes=body.internalNotes||null;if('engineerUserId' in body){if(body.engineerUserId){const db=getAdminDb();const {data:eng,error:ee}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,active,role').eq('user_id',body.engineerUserId).single();if(ee||!eng||!eng.active||eng.role!=='engineer')return NextResponse.json({error:'Engineer not found or inactive.'},{status:400});patch.engineer_user_id=eng.user_id;patch.assigned_engineer=eng.engineer_name||eng.full_name;assigned=eng;}else{patch.engineer_user_id=null;patch.assigned_engineer=null;}}
  const db=getAdminDb();
  if(body.refund){
@@ -16,6 +17,7 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
    const refund=await stripe.refunds.create({payment_intent:current.stripe_payment_intent_id,amount,reason:'requested_by_customer',metadata:{booking_id:id}});
    const total=Number(current.refunded_amount_pence||0)+amount,full=total>=Number(current.amount_pence||0);
    const {data:updated,error:ue}=await db.from('bookings').update({stripe_refund_id:refund.id,refunded_amount_pence:total,refunded_at:new Date().toISOString(),payment_status:full?'refunded':'part_refunded',status:full?'cancelled':current.status,updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+   await recordBookingEvent({db,booking:updated,eventType:'refund_issued',reasonCode:'requested_by_customer',note:`Refund £${(amount/100).toFixed(2)}`,ctx});
    if(updated.customers?.email)await sendEmail({to:updated.customers.email,subject:`Refund issued — ${updated.service_name}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;font-size:11px;letter-spacing:3px">SILKCRAYON STUDIOS</div><h1>Refund issued.</h1><p style="color:#c8c1cc">We’ve issued a refund of <b>£${(amount/100).toFixed(2)}</b> for your ${updated.service_name} booking. The time it takes to appear depends on your bank or card issuer.</p></div></div>`});
    return NextResponse.json({ok:true,refundId:refund.id,status:refund.status,booking:updated});
  }
@@ -49,9 +51,11 @@ export async function DELETE(request,{params}){
  try{
   const ctx=await getStaffContext();if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
   const {id}=await params,db=getAdminDb();
-  const {data:b,error}=await db.from('bookings').select('*').eq('id',id).single();if(error)throw error;
+  const body=await request.json().catch(()=>({}));
+  const {data:b,error}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(error)throw error;
   if(Number(b.amount_pence||0)>100)return NextResponse.json({error:'Hard delete is restricted to test bookings of £1 or less. Cancel/refund real bookings instead.'},{status:409});
   if(['paid','part_refunded'].includes(b.payment_status))return NextResponse.json({error:'Refund this test payment before deleting the booking record.'},{status:409});
+  await recordBookingEvent({db,booking:b,eventType:'test_booking_deleted',reasonCode:String(body.reason||'test_data').slice(0,80),note:'Hard-deleted test record',ctx,snapshot:b});
   const {error:de}=await db.from('bookings').delete().eq('id',id);if(de)throw de;
   return NextResponse.json({ok:true});
  }catch(e){return NextResponse.json({error:e.message||'Could not delete booking.'},{status:500})}

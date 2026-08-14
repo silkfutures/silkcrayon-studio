@@ -1,7 +1,18 @@
 import Link from 'next/link';
 import { LogoutButton } from './AuthForms';
+import StaffBottomNav from './StaffBottomNav';
+
 export default function AdminNav({profile}){
  const owner=profile?.role==='owner';
- if(!owner)return <nav className="engineerTopLinks"><Link href="/admin/engineer">Engineer home</Link><Link href="/">Website ↗</Link><LogoutButton/></nav>;
- return <nav className="osNav"><Link href="/admin">Overview</Link><Link href="/admin/engineer">Engineer view</Link><Link href="/admin/artists">Artists</Link><Link href="/admin/payments">Payments</Link><Link href="/admin/accounting">Accounting</Link><Link href="/admin/analytics">Analytics</Link><Link href="/admin/automation">Automations</Link><Link href="/admin/sessions">Sessions</Link><Link href="/admin/customers">CRM</Link><Link href="/admin/staff">Staff</Link><Link href="/">Website ↗</Link><span className="navIdentity">{profile?.full_name}<small>{profile?.role}</small></span><LogoutButton/></nav>
+ if(!owner)return <><nav className="engineerTopLinks"><Link href="/admin/engineer">Engineer home</Link><Link href="/">Website ↗</Link><LogoutButton/></nav><StaffBottomNav role="engineer"/></>;
+ return <>
+  <nav className="osNav">
+    <Link href="/admin">Overview</Link><Link href="/admin/engineer">Engineer view</Link><Link href="/admin/artists">Artists</Link>
+    <Link href="/admin/payments">Payments</Link><Link href="/admin/accounting">Accounting</Link><Link href="/admin/analytics">Analytics</Link>
+    <Link href="/admin/automation">Automations</Link><Link href="/admin/activity">Activity</Link><Link href="/admin/sessions">Sessions</Link>
+    <Link href="/admin/customers">CRM</Link><Link href="/admin/staff">Staff</Link><Link href="/">Website ↗</Link>
+    <span className="navIdentity">{profile?.full_name}<small>{profile?.role}</small></span><LogoutButton/>
+  </nav>
+  <StaffBottomNav role="owner"/>
+ </>;
 }
