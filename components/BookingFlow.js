@@ -48,8 +48,10 @@ export default function BookingFlow() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [detailsReady, setDetailsReady] = useState(false);
+  const [engineers, setEngineers] = useState([]);
 
   useEffect(() => { setDuration(services[service].durations[0]); setSlot(null); }, [service]);
+  useEffect(() => { fetch("/api/public/engineers").then(r=>r.json()).then(j=>setEngineers(j.engineers||[])).catch(()=>setEngineers([])); }, []);
   useEffect(() => {
     if (!date || !duration) return;
     setLoadingSlots(true); setSlot(null); setAvailabilityError(""); setError("");
@@ -72,7 +74,11 @@ export default function BookingFlow() {
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
     body.service = service; body.duration = duration; body.date = date; body.start = slot.start; body.end = slot.end;
-    body.marketingConsent = fd.get("marketingConsent") === "on"; body.policyAccepted = fd.get("policyAccepted") === "on"; body.harmfulMusicPolicy = body.policyAccepted;
+    body.marketingConsent = fd.get("marketingConsent") === "on";
+    body.smsServiceConsent = fd.get("smsServiceConsent") === "on";
+    body.smsMarketingConsent = fd.get("smsMarketingConsent") === "on";
+    body.preferredEngineerName = engineers.find(x=>x.id===body.preferredEngineerUserId)?.name || "";
+    body.policyAccepted = fd.get("policyAccepted") === "on"; body.harmfulMusicPolicy = body.policyAccepted;
     try {
       const res = await fetch("/api/checkout", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) });
       const data = await res.json();
@@ -105,7 +111,7 @@ export default function BookingFlow() {
         {loadingSlots ? <p className="muted">Checking the diary…</p> : availabilityError ? <div className="inlineError"><b>We couldn’t load the diary.</b><span>{availabilityError}</span><small>If you just added Vercel environment variables, redeploy the latest deployment and try again.</small></div> : <div className="slotGrid">{slots.length ? slots.map(s=><button type="button" className={`slot ${slot?.start===s.start?"selected":""}`} onClick={()=>setSlot(s)} key={s.start}>{s.start}</button>) : <p className="muted">No spaces available for this duration on this date. Try another day above.</p>}</div>}
       </div></div>
 
-      <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone</span><input name="phone" type="tel" /></label><label className="field"><span>Genre / style</span><input name="genre" /></label><label className="field full"><span>What are you making?</span><textarea name="notes" rows="4" placeholder="Tell us what you're working on and what you want to leave the session with." /></label></div><label className="check policyCheck"><input type="checkbox" name="policyAccepted" required/> <span><b>I agree to Silkcrayon’s <a href="/terms" target="_blank">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank">Cancellation Policy</a> and <a href="/no-harmful-music-policy" target="_blank">No Harmful Music Policy</a>.</b> I have also read the <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label><label className="check"><input type="checkbox" name="marketingConsent"/> <span>I’m happy to receive occasional Silkcrayon studio updates and offers. I can unsubscribe at any time. Booking emails are sent regardless.</span></label></div></div>
+      <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone</span><input name="phone" type="tel" /></label><label className="field"><span>Genre / style</span><input name="genre" /></label><label className="field"><span>Preferred engineer <small>Optional</small></span><select name="preferredEngineerUserId"><option value="">No preference — assign anyone</option>{engineers.map(e=><option value={e.id} key={e.id}>{e.name}</option>)}</select></label><label className="field full"><span>What are you making?</span><textarea name="notes" rows="4" placeholder="Tell us what you're working on and what you want to leave the session with." /></label></div><label className="check policyCheck"><input type="checkbox" name="policyAccepted" required/> <span><b>I agree to Silkcrayon’s <a href="/terms" target="_blank">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank">Cancellation Policy</a> and <a href="/no-harmful-music-policy" target="_blank">No Harmful Music Policy</a>.</b> I have also read the <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label><div className="communicationChoices"><label className="check"><input type="checkbox" name="smsServiceConsent"/> <span><b>Text me about this booking.</b> Send useful booking/reminder texts to the mobile number above.</span></label><label className="check"><input type="checkbox" name="marketingConsent"/> <span>Send me occasional Silkcrayon studio updates and offers by <b>email</b>. I can unsubscribe at any time.</span></label><label className="check"><input type="checkbox" name="smsMarketingConsent"/> <span>Send me occasional Silkcrayon studio updates and offers by <b>text</b>. Reply STOP to opt out.</span></label></div></div></div>
       {error && <div className="errorBox">{error}</div>}
       {checkoutReady&&<div className="checkoutBar ready"><div><small>Your booking</small><b>{services[service].name} · {date} at {slot.start}</b></div><button className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to payment →"}</button></div>}
     </form>

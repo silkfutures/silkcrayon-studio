@@ -10,7 +10,7 @@ export default function AdminNav({profile}){
     <Link href="/admin">Overview</Link><Link href="/admin/engineer">Engineer view</Link><Link href="/admin/artists">Artists</Link>
     <Link href="/admin/payments">Payments</Link><Link href="/admin/accounting">Accounting</Link><Link href="/admin/analytics">Analytics</Link>
     <Link href="/admin/automation">Automations</Link><Link href="/admin/activity">Activity</Link><Link href="/admin/sessions">Sessions</Link>
-    <Link href="/admin/customers">CRM</Link><Link href="/admin/staff">Staff</Link><Link href="/">Website ↗</Link>
+    <Link href="/admin/leads">Enquiries</Link><Link href="/admin/contacts">Contacts</Link><Link href="/admin/marketing">Marketing</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/staff">Staff</Link><Link href="/">Website ↗</Link>
     <span className="navIdentity">{profile?.full_name}<small>{profile?.role}</small></span><LogoutButton/>
   </nav>
   <StaffBottomNav role="owner"/>
