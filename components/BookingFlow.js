@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 const services = {
   "vocal-recording": { name: "Vocal Recording", durations: [60,120,180,240,300,360,420], price: (d)=>`£${d}` },
   "full-day": { name: "Full Day Studio", durations: [480], price: ()=>"£450" },
+  "system-test": { name: "30p Test Booking", durations: [60], price: ()=>"£0.30" },
 };
 
 function durationLabel(m) { return m >= 60 ? `${m/60} ${m === 60 ? "hour" : "hours"}` : `${m} mins`; }
@@ -35,7 +36,9 @@ function prettyDay(d) {
 
 export default function BookingFlow() {
   const params = useSearchParams();
-  const initial = params.get("service") && services[params.get("service")] ? params.get("service") : "vocal-recording";
+  const showTest = params.get("test") === "1";
+  const requestedService=params.get("service");
+  const initial = requestedService && services[requestedService] && (requestedService!=="system-test"||showTest) ? requestedService : "vocal-recording";
   const quickDates = useMemo(() => nextBookableDays(18), []);
   const [service, setService] = useState(initial);
   const [duration, setDuration] = useState(services[initial].durations[0]);
@@ -98,7 +101,7 @@ export default function BookingFlow() {
 
   return (
     <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).map(([slug,s])=><button type="button" key={slug} className={`option ${service===slug?"active":""}`} onClick={()=>setService(slug)}><b>{s.name}</b><small>{slug==="full-day"?"£450":slug==="system-test"?"£0.30":"£60 / hour"}</small></button>)}</div></div></div>
+      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} className={`option ${service===slug?"active":""}`} onClick={()=>setService(slug)}><b>{s.name}</b><small>{slug==="full-day"?"£450":slug==="system-test"?"£0.30":"£60 / hour"}</small></button>)}</div></div></div>
 
       <div className="bookingSection"><span className="step">02</span><div><h2>Choose duration & date</h2><div className="durationRow">{services[service].durations.map(d=><button type="button" className={duration===d?"activePill":"pill"} key={d} onClick={()=>setDuration(d)}>{durationLabel(d)} · {services[service].price(d)}</button>)}</div>
         <p className="dateHint">Choose a day — no typing required.</p>

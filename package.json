@@ -1,6 +1,6 @@
 {
   "name": "silkcrayon-studio-os",
-  "version": "20.2.6",
+  "version": "20.2.6.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -17,5 +17,6 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "stripe": "^18.5.0"
-  }
+  },
+  "type": "module"
 }
