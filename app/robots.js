@@ -1,1 +1,1 @@
-export default function robots(){const base=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';return {rules:[{userAgent:'*',allow:'/',disallow:['/admin/','/account/','/api/','/booking/success']}],sitemap:`${base}/sitemap.xml`,host:base}}
+export default function robots(){const base='https://silkcrayon.com';return {rules:[{userAgent:'*',allow:'/',disallow:['/admin/','/account/','/api/','/booking/success']}],sitemap:`${base}/sitemap.xml`,host:base}}
