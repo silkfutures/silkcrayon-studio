@@ -319,3 +319,42 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 .enquiryForm>div,.enquiryForm>button{position:relative;z-index:1}.enquiryGrid input,.enquiryGrid select,.enquiryGrid textarea{background:#0d0a10;border-color:#51435b}.enquiryGrid input:focus,.enquiryGrid select:focus,.enquiryGrid textarea:focus{outline:none;border-color:#C394FF;box-shadow:0 0 0 3px rgba(195,148,255,.08)}
 .blockedTimes{margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}.blockedTimes h3{font-size:15px}.blockoutList{display:grid;gap:7px}.blockoutItem{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:11px;padding:10px}.blockoutItem b,.blockoutItem small{display:block}.blockoutItem b{font-size:11px}.blockoutItem small{font-size:9px;color:var(--muted);margin-top:3px}
 @media(max-width:700px){.enquiryPage .section{padding-top:105px}.enquiryForm{margin:8px 0 40px;border-radius:18px}.hoursControls{grid-template-columns:48px minmax(140px,1fr) 48px}.hoursControls input[type=range]{height:48px}.blockoutItem{align-items:flex-start;flex-direction:column}.blockoutItem .miniButton{width:100%}}
+
+/* V20.2.4 — reliable mobile swipe rails */
+@media(max-width:850px){
+  .bookingSection{min-width:0}
+  .bookingSection>div{min-width:0}
+  .durationRow,.dateGrid,.slotGrid{
+    display:flex!important;
+    flex-wrap:nowrap!important;
+    overflow-x:auto!important;
+    overflow-y:hidden!important;
+    width:100%!important;
+    max-width:100%!important;
+    gap:9px!important;
+    padding:2px 2px 12px!important;
+    margin-left:0!important;
+    scroll-snap-type:x proximity;
+    -webkit-overflow-scrolling:touch;
+    overscroll-behavior-x:contain;
+    touch-action:pan-x!important;
+    scrollbar-width:none;
+  }
+  .durationRow::-webkit-scrollbar,.dateGrid::-webkit-scrollbar,.slotGrid::-webkit-scrollbar{display:none}
+  .durationRow>.pill,.durationRow>.activePill{flex:0 0 auto!important;white-space:nowrap;scroll-snap-align:start}
+  .dateGrid>.dateCard{flex:0 0 78px!important;min-width:78px!important;scroll-snap-align:start}
+  .slotGrid>.slot{flex:0 0 auto!important;min-width:76px;white-space:nowrap;scroll-snap-align:start}
+  .bookingPanel,.bookingPage,.container{overflow-x:clip}
+}
+.portalRebookCard{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;border:1px solid #4e3a60;border-radius:18px;padding:22px;background:linear-gradient(135deg,#110b16,#09080b)}
+.portalRebookCard h2{margin:5px 0 7px}.portalRebookCard p{margin:0;color:var(--muted)}
+.portalRebookActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.portalOffer{margin-top:12px;display:grid;grid-template-columns:1fr auto;gap:16px;align-items:center;border:1px solid #76539a;border-radius:18px;padding:20px;background:radial-gradient(circle at 90% 10%,rgba(195,148,255,.2),transparent 45%),#0e0913}
+.portalOffer .eyebrow{margin:0}.portalOffer h3{font-size:25px;margin:5px 0}.portalOffer p{color:#bdb4c2;margin:0}.portalOffer strong{color:#C394FF}.portalOffer button{min-width:170px}
+.deleteSuccess{color:#bdf1cc!important;font-weight:800}
+.deletedBanner{margin:14px 0 22px;border:1px solid #3f7550;background:#0a130d;color:#bdf1cc;padding:13px 15px;border-radius:10px}
+@media(max-width:700px){
+  .portalRebookCard,.portalOffer{grid-template-columns:1fr}
+  .portalRebookActions{justify-content:stretch;display:grid}
+  .portalRebookActions .button,.portalOffer button{width:100%}
+}

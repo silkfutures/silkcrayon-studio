@@ -5,14 +5,14 @@ export async function DELETE(req,{params}){
  try{
   const ctx=await getStaffContext();if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
   const {id}=await params,db=getAdminDb();
-  const {data:bookings=[],error}=await db.from('bookings').select('id,amount_pence,payment_status').eq('customer_id',id);if(error)throw error;
-  if(bookings.some(b=>Number(b.amount_pence||0)>100))return NextResponse.json({error:'This customer has real bookings. Test-customer deletion is only available when every booking is £1 or less.'},{status:409});
-  if(bookings.some(b=>['paid','part_refunded'].includes(b.payment_status)))return NextResponse.json({error:'Refund any paid test bookings before deleting this customer.'},{status:409});
-  if(bookings.length){const {error:be}=await db.from('bookings').delete().eq('customer_id',id);if(be)throw be;}
-  const {data:customer}=await db.from('customers').select('email').eq('id',id).maybeSingle();
-  await db.from('crm_contacts').delete().eq('customer_id',id);
-  if(customer?.email)await db.from('crm_contacts').delete().eq('email',String(customer.email).toLowerCase());
-  const {error:ce}=await db.from('customers').delete().eq('id',id);if(ce)throw ce;
-  return NextResponse.json({ok:true});
- }catch(e){return NextResponse.json({error:e.message||'Could not delete customer.'},{status:500})}
+  const {data,error}=await db.rpc('delete_test_customer',{p_customer_id:id});
+  if(error){
+    const m=String(error.message||'');
+    if(m.includes('customer_not_found'))return NextResponse.json({error:'This customer no longer exists.'},{status:404});
+    if(m.includes('real_booking_exists'))return NextResponse.json({error:'This artist has a booking over £1, so they cannot be hard-deleted as test data.'},{status:409});
+    if(m.includes('paid_test_booking_exists'))return NextResponse.json({error:'Refund the paid test booking first, then delete the artist.'},{status:409});
+    throw error;
+  }
+  return NextResponse.json({ok:true,result:data});
+ }catch(e){console.error('Delete test customer failed',e);return NextResponse.json({error:e.message||'Could not delete customer.'},{status:500})}
 }
