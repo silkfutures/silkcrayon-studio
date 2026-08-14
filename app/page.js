@@ -42,7 +42,7 @@ export default function Home(){
 
     <section className="section experienceSection"><div className="container">
       <Reveal><div className="sectionHeading"><div><p className="eyebrow">The Silkcrayon difference</p><h2>Built around the artist.</h2></div><p>Four things we obsess over because they are what make artists come back.</p></div></Reveal>
-      <div className="experienceGrid">{differences.map((d,i)=><Reveal key={d.title} delay={i*80}><article className="experienceCard"><div className="experienceImage"><img src={d.img} alt=""/><span>0{i+1}</span></div><h3>{d.title}</h3><p>{d.copy}</p></article></Reveal>)}</div>
+      <div className="experienceGrid">{differences.map((d,i)=><Reveal key={d.title} delay={i*80}><article className="experienceCard"><div className="experienceImage"><img src={d.img} alt={`${d.title} at Silkcrayon Studios Cardiff`}/><span>0{i+1}</span></div><h3>{d.title}</h3><p>{d.copy}</p></article></Reveal>)}</div>
     </div></section>
 
     <section id="services" className="section servicesV12"><div className="container">
@@ -63,7 +63,7 @@ export default function Home(){
 
     <section id="space" className="section spaceV12"><div className="container spaceGrid">
       <Reveal className="spaceVisual"><div className="imageStack"><img className="spaceMain" src="/images/vault.webp" alt="Silkcrayon studio interior"/><img className="spaceDetail" src="/images/neon.webp" alt="Silkcrayon neon wall"/></div></Reveal>
-      <Reveal delay={120}><div className="copyBlock"><p className="eyebrow">The space</p><h2>Hidden in a <span>1926</span><br/>bank vault.</h2><p>Warm light, proper monitoring, a dedicated vocal booth and enough character to make the room feel like somewhere work matters.</p><p>The equipment is important. The atmosphere is what lets you forget about it.</p><div className="spaceFacts"><span>Neumann U87</span><span>Adam monitoring</span><span>Private vocal booth</span><span>Cardiff Bay</span></div><Link className="textLink" href="/booking">Book the vault →</Link></div></Reveal>
+      <Reveal delay={120}><div className="copyBlock"><p className="eyebrow">The Space</p><h2>Hidden in a <span>1926</span><br/>bank vault.</h2><p>Warm light, proper monitoring, a dedicated vocal booth and enough character to make the room feel like somewhere work matters.</p><p>The equipment is important. The atmosphere is what lets you forget about it.</p><div className="spaceFacts"><span>Neumann U87</span><span>Adam monitoring</span><span>Private vocal booth</span><span>Cardiff Bay</span></div><Link className="textLink" href="/booking">Book the vault →</Link></div></Reveal>
     </div></section>
 
     <section id="work" className="section workV12"><div className="container workGrid">
@@ -81,7 +81,9 @@ export default function Home(){
       <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">From £60/hour · Secure online booking · Cardiff Bay</p></Reveal>
     </div></section>
 
-    <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The space</a><Link href="/booking">Book</Link></div><div><Link href="/account/login">My Studio</Link><Link href="/faq">FAQ</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/cancellation-policy">Cancellation & refunds</Link><Link href="/no-harmful-music-policy">No Harmful Music</Link><a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer">Instagram ↗</a><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>
+    <section className="section homeGallery"><div className="container"><Reveal><div className="sectionHeading"><div><p className="eyebrow">Inside Silkcrayon</p><h2>A room made for making.</h2></div><p>Purpose-built recording spaces, a private vocal booth and the character of a 1926 Cardiff Bay bank vault.</p></div></Reveal><div className="homeGalleryGrid"><Reveal><img src="/images/room.webp" alt="Silkcrayon recording studio room in Cardiff Bay"/></Reveal><Reveal delay={80}><img src="/images/booth.webp" alt="Private vocal recording booth at Silkcrayon Studios Cardiff"/></Reveal><Reveal delay={160}><img src="/images/workstation.webp" alt="Music production workstation at Silkcrayon Studios"/></Reveal></div></div></section>
+
+    <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The Space</a><Link href="/booking">Book</Link></div><div><Link href="/account/login">My Studio</Link><Link href="/faq">FAQ</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/cancellation-policy">Cancellation & refunds</Link><Link href="/no-harmful-music-policy">No Harmful Music</Link><a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer">Instagram ↗</a><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>
     <Link href="/booking" className="mobileBookBar">Book a session <span>↗</span></Link>
   </main>
 }
