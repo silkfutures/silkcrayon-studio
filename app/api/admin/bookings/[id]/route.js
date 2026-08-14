@@ -26,6 +26,61 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
    if(updated.customers?.email)await sendEmail({to:updated.customers.email,subject:`Refund issued — ${updated.service_name}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;font-size:11px;letter-spacing:3px">SILKCRAYON STUDIOS</div><h1>Refund issued.</h1><p style="color:#c8c1cc">We’ve issued a refund of <b>£${(amount/100).toFixed(2)}</b> for your ${updated.service_name} booking. The time it takes to appear depends on your bank or card issuer.</p></div></div>`});
    return NextResponse.json({ok:true,refundId:refund.id,status:refund.status,booking:updated});
  }
+ if(body.cancellationRequestDecision){
+   const {data:current,error:ce}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(ce)throw ce;
+   if(!current.cancellation_requested_at)return NextResponse.json({error:'No pending cancellation request.'},{status:409});
+   const decision=body.cancellationRequestDecision;
+   const outcome=String(body.cancellationOutcome||'none');
+   const note=String(body.cancellationNote||current.cancellation_request_note||'').trim().slice(0,500)||null;
+   const artist=current.customers?.artist_name||current.customers?.full_name||'Artist';
+   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon-studio.vercel.app';
+
+   if(decision==='decline'){
+     const {data:kept,error:de}=await db.from('bookings').update({
+       cancellation_requested_at:null,cancellation_request_note:null,updated_at:new Date().toISOString()
+     }).eq('id',id).select('*,customers(*)').single();if(de)throw de;
+     await recordBookingEvent({db,booking:kept,eventType:'cancellation_request_declined',reasonCode:'owner_declined',note,ctx,snapshot:current});
+     if(kept.customers?.email)await sendEmail({to:kept.customers.email,subject:'Your Silkcrayon cancellation request',html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Your session remains booked.</h1><p style="color:#c8c1cc">Hi ${artist}, we couldn’t approve your cancellation request this time. Your session remains confirmed for <b>${kept.booking_date} at ${String(kept.start_time).slice(0,5)}</b>.</p>${note?`<p style="color:#c8c1cc">${note}</p>`:''}<p><a style="color:#C394FF" href="${site}/account">Open My Studio →</a></p></div></div>`});
+     return NextResponse.json({ok:true,decision:'declined',booking:kept});
+   }
+   if(decision!=='approve')return NextResponse.json({error:'Invalid cancellation decision.'},{status:400});
+   if(!['refund','credit','none'].includes(outcome))return NextResponse.json({error:'Choose a valid cancellation outcome.'},{status:400});
+
+   let refundId=null,creditHours=0;
+   if(outcome==='refund'){
+     if(!current.stripe_payment_intent_id||!['paid','part_refunded'].includes(current.payment_status))return NextResponse.json({error:'No refundable Stripe payment is attached to this booking.'},{status:409});
+     const remaining=Math.max(0,Number(current.amount_pence||0)-Number(current.refunded_amount_pence||0));
+     if(!remaining)return NextResponse.json({error:'Nothing remains to refund.'},{status:409});
+     const stripe=getStripe();
+     const idem=`silkcrayon-cancel-refund-${id}-${Number(current.refunded_amount_pence||0)}-${remaining}`;
+     const refund=await stripe.refunds.create({payment_intent:current.stripe_payment_intent_id,amount:remaining,reason:'requested_by_customer',metadata:{booking_id:id,internal_reason:'customer_cancelled'}},{idempotencyKey:idem});
+     refundId=refund.id;
+     const {error:ae}=await db.rpc('apply_booking_refund',{p_booking_id:id,p_stripe_refund_id:refund.id,p_amount_pence:remaining});if(ae)throw ae;
+   }
+   if(outcome==='credit'){
+     creditHours=Number(current.duration_minutes||0)/60;
+     if(creditHours<=0)return NextResponse.json({error:'This booking has no restorable studio hours.'},{status:409});
+     const {error:creditError}=await db.from('credit_ledger').insert({
+       customer_id:current.customer_id,booking_id:id,hours_delta:creditHours,
+       note:'Cancellation request approved — studio credit restored',created_by_user_id:ctx.user.id
+     });
+     if(creditError&&creditError.code!=='23505')throw creditError;
+   }
+
+   const now=new Date().toISOString();
+   const paymentPatch=outcome==='refund'?{}:{payment_status:current.payment_status};
+   const {data:cancelled,error:ue}=await db.from('bookings').update({
+     status:'cancelled',cancellation_reason_code:'customer_cancelled',cancellation_reason_note:note,
+     cancelled_at:now,cancelled_by_user_id:ctx.user.id,cancellation_requested_at:null,cancellation_request_note:null,
+     updated_at:now,...paymentPatch
+   }).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+   await recordBookingEvent({db,booking:cancelled,eventType:'cancellation_request_approved',reasonCode:outcome,note:[note,outcome==='refund'?'Full card refund issued':outcome==='credit'?`${creditHours} studio hours restored`:'No refund or credit'].filter(Boolean).join(' · '),ctx,snapshot:current});
+   if(cancelled.customers?.email){
+     const outcomeText=outcome==='refund'?'A full card refund has been issued. Your bank/card provider controls how quickly it appears.':outcome==='credit'?`${creditHours} studio hour${creditHours===1?' has':'s have'} been restored to your My Studio balance.`:'No refund or studio credit has been issued for this cancellation.';
+     await sendEmail({to:cancelled.customers.email,subject:`Your Silkcrayon session has been cancelled — ${cancelled.booking_date}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Session cancelled.</h1><p style="color:#c8c1cc">Hi ${artist}, your <b>${cancelled.service_name}</b> session on ${cancelled.booking_date} at ${String(cancelled.start_time).slice(0,5)} has been cancelled.</p><p style="color:#fff"><b>${outcomeText}</b></p>${note?`<p style="color:#c8c1cc">${note}</p>`:''}<p><a style="color:#C394FF" href="${site}/account">Open My Studio →</a></p></div></div>`});
+   }
+   return NextResponse.json({ok:true,decision:'approved',outcome,refundId,creditHours,booking:cancelled});
+ }
  if(body.changeRequestDecision){
    const {data:current,error:ce}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(ce)throw ce;
    if(current.change_request_status!=='pending')return NextResponse.json({error:'No pending change request.'},{status:409});
