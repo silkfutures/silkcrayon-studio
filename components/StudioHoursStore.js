@@ -1,6 +1,6 @@
 "use client";
 import {useState} from "react";
-const OPTIONS=[1,2,4,8];
+const OPTIONS=[1,2,3,4,5,6,7,8];
 export default function StudioHoursStore({gift=false}){
  const [hours,setHours]=useState(2),[busy,setBusy]=useState(false),[msg,setMsg]=useState("");
  async function submit(e){
