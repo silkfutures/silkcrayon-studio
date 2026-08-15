@@ -19,7 +19,7 @@ export async function POST(req){try{
  const when=londonDateTimeToUtc(b.date,b.start);if(!when||when.getTime()<=Date.now())return NextResponse.json({error:'Choose a future session.'},{status:400});
  const {data:customer,error:ce}=await db.from('customers').select('*').eq('id',b.customerId).single();if(ce||!customer)return NextResponse.json({error:'Artist not found.'},{status:404});
  let engineer=null;
- if(b.engineerUserId){const {data:e}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,email,active,role').eq('user_id',b.engineerUserId).maybeSingle();if(e?.active)engineer=e}
+ if(b.engineerUserId){const {data:e}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,email,phone,photo_url,active,role').eq('user_id',b.engineerUserId).maybeSingle();if(e?.active)engineer=e}
  const {data:id,error:re}=await db.rpc('reserve_booking',{
   p_customer_id:customer.id,p_service_slug:'vocal-recording',p_service_name:'Vocal Recording',
   p_booking_date:b.date,p_start_time:b.start,p_end_time:b.end,p_duration_minutes:duration,
@@ -41,7 +41,7 @@ export async function POST(req){try{
  let portalUrl=null;try{const token=newToken(),expires=new Date(Date.now()+7*24*60*60*1000).toISOString();const {error:te}=await db.from('customer_access_tokens').insert({customer_id:customer.id,token_hash:tokenHash(token),expires_at:expires});if(!te)portalUrl=`${process.env.NEXT_PUBLIC_SITE_URL||new URL(req.url).origin}/account/access?token=${encodeURIComponent(token)}`;}catch{}
  const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).in('status',['confirmed','completed']);
  const paymentLabel=isManualPaid?`£${(amount/100).toFixed(2)} · Paid by bank transfer`:`£${(amount/100).toFixed(2)} · Payment due`;
- const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl});
+ const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
  await sendLoggedNotification({booking,customer,type:'admin_booking_confirmation',...msg});
  if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:`Silkcrayon: you're booked for ${booking.booking_date} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
  if(engineer?.email){const em=engineerAssignedEmail(booking,customer,engineer.engineer_name||engineer.full_name);await sendStaffLoggedNotification({booking,type:'engineer_assignment',to:engineer.email,...em})}
