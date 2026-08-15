@@ -52,7 +52,8 @@ export async function POST(req){
   if(pe) throw pe;
 
   const stripe=getStripe();
-  const base=process.env.NEXT_PUBLIC_SITE_URL||new URL(req.url).origin;
+  const configured=String(process.env.NEXT_PUBLIC_SITE_URL||'').trim().replace(/\/$/,'');
+  const base=(!configured||/silkcrayon-studio\.vercel\.app/i.test(configured))?'https://silkcrayon.com':configured;
   const productName=kind==="gift"
    ? `Silkcrayon — Gift ${hours} studio hour${hours===1?"":"s"}`
    : `Silkcrayon — ${hours} prepaid studio hour${hours===1?"":"s"}`;
@@ -78,7 +79,7 @@ export async function POST(req){
      product_data:{name:productName,description:productDescription}
     }
    }],
-   success_url:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?paid=1`,
+   success_url:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?paid=1&hours=${hours}`,
    cancel_url:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?cancelled=1`
   });
 
