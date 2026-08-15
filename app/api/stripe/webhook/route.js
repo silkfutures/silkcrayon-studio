@@ -57,7 +57,12 @@ export async function POST(request) {
           }
           if(isPaid && payment.status!=='paid'){
             const {data:customer}=await db.from('customers').select('*').eq('id',payment.customer_id).maybeSingle();
-            if(hours>0&&customer?.email){const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
+            if(hours>0&&customer?.email){
+              if(payment.kind==='gift'){
+                const giftMessage=String(session.metadata?.gift_message||'').trim();
+                await sendEmail({to:customer.email,subject:`You’ve been gifted ${hours} Silkcrayon studio hour${hours===1?'':'s'}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Studio time, gifted.</h1><p style="color:#c8c1cc;line-height:1.7">${String(session.metadata?.buyer_name||'Someone') } has gifted you <b>${hours} studio hour${hours===1?'':'s'}</b> at Silkcrayon Studios in Cardiff Bay.</p>${giftMessage?`<p style="padding:16px;border-left:2px solid #C394FF;color:#fff">${giftMessage.replace(/[<>&]/g,'')}</p>`:''}<p style="color:#c8c1cc">The hours are now saved to ${customer.email}. Sign into My Studio with this email whenever you’re ready to choose a date.</p><p><a href="${process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon.com'}/account/login" style="color:#C394FF;font-weight:bold">Open My Studio →</a></p></div></div>`});
+              }else{const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
+            }
             if(payment.kind==='mix_master'&&customer?.email){const msg=mixMasterPurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
           }
         }

@@ -76,6 +76,7 @@ export default function Home(){
       <Reveal delay={120}><div className="standardPoints"><p>Authenticity over posturing.</p><p>Craft over shortcuts.</p><p>Respect for the room and the people in it.</p><p>Work you can be proud to put your name on.</p></div></Reveal>
     </div></section>
 
+    <section className="section ownershipSection"><div className="container ownershipGrid"><Reveal><div><p className="eyebrow">Studio time, your way</p><h2>Buy the hours.<br/>Choose the date later.</h2><p>Prepay studio time for yourself, gift it to an artist, or give a young creator somewhere meaningful to make.</p></div></Reveal><Reveal delay={90}><div className="ownershipActions"><Link href="/buy-hours"><b>Buy studio hours</b><span>No date required →</span></Link><Link href="/gift-studio-time"><b>Gift studio time</b><span>1, 2, 4 or 8 hours →</span></Link><Link href="/young-creators"><b>For young creators</b><span>Why creative space matters →</span></Link></div></Reveal></div></section>
     <section className="section newsletterSection"><div className="container"><EmailSignup/></div></section>
     <section className="section finalCta"><div className="container">
       <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">From £60/hour · Secure online booking · Cardiff Bay</p></Reveal>
