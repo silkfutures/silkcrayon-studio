@@ -1,6 +1,7 @@
 "use client";
 import {useMemo,useState} from 'react';
 export default function ArtistSearchSelect({customers=[],value='',onChange}){
+ customers=Array.isArray(customers)?customers:[];
  const selected=customers.find(c=>c.id===value);const [q,setQ]=useState(selected?(selected.artist_name||selected.full_name||''):'');const [open,setOpen]=useState(false);
  const results=useMemo(()=>{const term=q.trim().toLowerCase();if(!term)return customers.slice(0,8);return customers.filter(c=>`${c.artist_name||''} ${c.full_name||''} ${c.email||''}`.toLowerCase().includes(term)).slice(0,10)},[q,customers]);
  function choose(c){onChange(c.id);setQ(c.artist_name||c.full_name||c.email);setOpen(false)}

@@ -9,6 +9,8 @@ function addMinutes(time,mins){
  const total=h*60+m+mins; return `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
 }
 export default function ManualBookingForm({customers=[],engineers=[]}){
+ customers=Array.isArray(customers)?customers:[];
+ engineers=Array.isArray(engineers)?engineers:[];
  const router=useRouter();
  const [customerId,setCustomerId]=useState('');
  const [date,setDate]=useState('');
