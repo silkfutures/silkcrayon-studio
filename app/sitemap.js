@@ -1,2 +1,10 @@
-export default function sitemap(){const base='https://silkcrayon.com',now=new Date();return [
-    { url: 'https://silkcrayon.com/services', lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },{url:base,lastModified:now,changeFrequency:'weekly',priority:1},{url:`${base}/cardiff-bay`,lastModified:now,changeFrequency:'monthly',priority:.9},{url:`${base}/booking`,lastModified:now,changeFrequency:'weekly',priority:.9},{url:`${base}/request-a-call`,lastModified:now,changeFrequency:'monthly',priority:.7},{url:`${base}/enquire`,lastModified:now,changeFrequency:'monthly',priority:.7},{url:`${base}/contact`,lastModified:now,changeFrequency:'monthly',priority:.6},{url:`${base}/buy-hours`,lastModified:now,changeFrequency:'monthly',priority:.7},{url:`${base}/gift-studio-time`,lastModified:now,changeFrequency:'monthly',priority:.7},{url:`${base}/young-creators`,lastModified:now,changeFrequency:'monthly',priority:.7}]}
+const BASE='https://silkcrayon.com';
+export default function sitemap(){
+ const routes=["/", "/services", "/cardiff-bay", "/booking", "/request-a-call", "/enquire", "/contact", "/faq", "/terms", "/privacy", "/cancellation-policy", "/no-harmful-music-policy", "/recording-studio-cardiff", "/vocal-recording-cardiff", "/music-production-cardiff", "/mixing-mastering-cardiff", "/podcast-recording-cardiff", "/buy-hours", "/gift-studio-time", "/young-creators"];
+ return routes.map((route)=>({
+  url:`${BASE}${route}`,
+  lastModified:new Date(),
+  changeFrequency:route==='/'?'daily':'weekly',
+  priority:route==='/'?1:(route==='/booking'?0.95:0.8)
+ }));
+}

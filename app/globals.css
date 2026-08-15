@@ -424,13 +424,18 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 @media(max-width:900px){.servicesHero{padding-top:118px}.servicesHeroGrid,.servicesStoryGrid{grid-template-columns:1fr;gap:38px}.servicesHeroImage{min-height:470px}.servicesStoryImage{height:470px}.servicesHeroCopy h1{font-size:clamp(48px,12vw,78px)}}
 @media(max-width:600px){.servicesHero{padding:105px 0 46px}.servicesHeroImage{min-height:390px;border-radius:18px}.servicesHeroBadge{left:12px;right:12px;bottom:12px;padding:14px;display:grid}.servicesStoryImage{height:400px;border-radius:18px}}
 
-/* V20.3.3 admin home primary booking action */
-.adminHomePrimaryAction{display:flex;align-items:center;gap:14px;margin-top:22px;flex-wrap:wrap}
-.adminHomePrimaryAction .button{display:inline-flex;align-items:center;justify-content:center;text-decoration:none}
-.adminHomePrimaryAction .muted{font-size:12px}
-
 /* V20.3.5 prepaid hours, gifting and young creators */
 .storeHero,.youthHero{padding:145px 0 65px;background:radial-gradient(circle at 82% 15%,rgba(195,148,255,.14),transparent 32%),#050505}.storeHeroGrid,.youthHeroGrid{display:grid;grid-template-columns:1fr .9fr;gap:60px;align-items:center}.storeHero h1,.youthHero h1{font-size:clamp(50px,7vw,94px);line-height:.92;letter-spacing:-.055em;margin:15px 0 26px}.youthHero h1 span{color:#C394FF}.storeImage,.youthHeroImage{height:520px;border-radius:24px;overflow:hidden;border:1px solid rgba(255,255,255,.09)}.storeImage img,.youthHeroImage img{width:100%;height:100%;object-fit:cover}
 .hoursStore{border:1px solid #3b3340;border-radius:22px;padding:28px;background:#09070b}.hoursChoice{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.hoursChoice button{border:1px solid #3c3442;background:#0d0a10;color:#fff;border-radius:15px;padding:18px 10px;display:grid;gap:4px;cursor:pointer}.hoursChoice button.active{border-color:#C394FF;background:#170f20}.hoursChoice b{font-size:25px}.hoursChoice span{font-size:11px;color:#aaa2ae}.hoursStoreFields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}.hoursStoreFields label{display:grid;gap:7px}.hoursStoreFields label>span{font-size:10px;color:#99909e;text-transform:uppercase;letter-spacing:.1em}.hoursStoreFields input,.hoursStoreFields textarea{background:#070608;color:#fff;border:1px solid #3a323e;border-radius:11px;padding:13px}.hoursStoreFields .full{grid-column:1/-1}.hoursStoreSummary{margin-top:22px;padding-top:20px;border-top:1px solid #302a34;display:flex;justify-content:space-between;align-items:end;gap:22px}.hoursStoreSummary>div{display:grid;gap:4px}.hoursStoreSummary small{color:#C394FF;letter-spacing:.12em}.hoursStoreSummary b{font-size:22px}.hoursStoreSummary span,.storeFine{color:#918995;font-size:11px}.storeFine{margin-top:15px}.storeCrossSell{background:#0b090d}.storeCrossSell h2{font-size:clamp(38px,5vw,65px);margin:8px 0 15px}.storeCrossSell p{max-width:800px;color:#aaa2ae;line-height:1.7}
 .ownershipGrid,.youthFuturesGrid{display:grid;grid-template-columns:1fr 1fr;gap:70px;align-items:start}.ownershipGrid h2,.youthFuturesGrid h2{font-size:clamp(42px,5vw,70px);line-height:.95;margin:8px 0 18px}.ownershipGrid p,.youthFuturesGrid p{color:#aaa2ae;line-height:1.7}.ownershipActions{display:grid;border-top:1px solid #353039}.ownershipActions a{display:flex;justify-content:space-between;gap:20px;padding:22px 0;border-bottom:1px solid #353039;color:#fff;text-decoration:none}.ownershipActions a span{color:#C394FF;font-size:12px}.youthFutures{background:#0b090d}.youthFuturesGrid p+b{color:#fff}
 @media(max-width:850px){.storeHeroGrid,.youthHeroGrid,.ownershipGrid,.youthFuturesGrid{grid-template-columns:1fr;gap:34px}.storeImage,.youthHeroImage{height:420px}.hoursChoice{grid-template-columns:repeat(2,1fr)}.hoursStoreFields{grid-template-columns:1fr}.hoursStoreFields .full{grid-column:auto}.hoursStoreSummary{align-items:stretch;flex-direction:column}.hoursStoreSummary .button{width:100%}}
+
+.serviceExtraGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.serviceExtraGrid a{min-height:150px;border:1px solid #3b3340;border-radius:18px;padding:24px;color:#fff;text-decoration:none;display:flex;flex-direction:column;justify-content:space-between;background:#0c090e}.serviceExtraGrid b{font-size:22px}.serviceExtraGrid span{font-size:12px;color:#C394FF}@media(max-width:760px){.serviceExtraGrid{grid-template-columns:1fr}}
+
+/* V20.3.7 booking action placement */
+.sessionsTopAction{display:flex;justify-content:space-between;align-items:end;gap:24px}
+.sessionsTopAction .button{flex:0 0 auto}
+@media(max-width:700px){
+  .sessionsTopAction{align-items:stretch;flex-direction:column}
+  .sessionsTopAction .button{width:100%;text-align:center}
+}
