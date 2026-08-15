@@ -15,7 +15,7 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
  const [customerId,setCustomerId]=useState('');
  const [date,setDate]=useState('');
  const [start,setStart]=useState('');
- const [hours,setHours]=useState(1);
+ const [hours,setHours]=useState('1');
  const [amount,setAmount]=useState('60');
  const [engineerUserId,setEngineerUserId]=useState('');
  const [paymentMode,setPaymentMode]=useState('pay_by_bank');
@@ -23,11 +23,27 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
  const [msg,setMsg]=useState('');
  const [busy,setBusy]=useState(false);
  const customer=useMemo(()=>customers.find(c=>c.id===customerId),[customers,customerId]);
- const end=addMinutes(start,Math.round(Number(hours)*60));
- function setH(v){const h=Math.max(.5,Math.min(8,Number(v)||1));setHours(h);setAmount(String(Math.round(h*60*100)/100))}
+ const numericHours=Number(hours);
+ const validHours=Number.isFinite(numericHours)&&numericHours>=.5&&numericHours<=8;
+ const end=validHours?addMinutes(start,Math.round(numericHours*60)):'';
+ function changeHours(v){
+  setHours(v);
+  const h=Number(v);
+  if(Number.isFinite(h)&&h>=.5&&h<=8)setAmount(String(Math.round(h*60*100)/100));
+ }
+ function normaliseHours(){
+  let h=Number(hours);
+  if(!Number.isFinite(h))h=1;
+  h=Math.max(.5,Math.min(8,Math.round(h*2)/2));
+  setHours(String(h));
+  setAmount(String(Math.round(h*60*100)/100));
+ }
  async function submit(e){
   e.preventDefault();
   if(!customerId)return setMsg('Choose an artist.');
+  const h=Number(hours);
+  if(!Number.isFinite(h)||h<.5||h>8)return setMsg('Choose between 0.5 and 8 hours.');
+  if(!end)return setMsg('Choose a valid session duration.');
   setBusy(true);setMsg('Creating booking…');
   const r=await fetch('/api/admin/bookings/manual',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({
    customerId,date,start,end,hours:Number(hours),amount:Number(amount),engineerUserId:engineerUserId||null,paymentMode,notes
@@ -43,7 +59,7 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
   <section className="commercialStep"><div className="stepBadge">02</div><div><p className="eyebrow">Session</p><h2>Add it to the calendar.</h2><div className="formGrid">
    <label className="field"><span>Date</span><input type="date" required value={date} onChange={e=>setDate(e.target.value)}/></label>
    <label className="field"><span>Start</span><input type="time" required value={start} onChange={e=>setStart(e.target.value)}/></label>
-   <label className="field"><span>Hours</span><input type="number" min=".5" max="8" step=".5" value={hours} onChange={e=>setH(e.target.value)}/></label>
+   <label className="field"><span>Hours</span><input type="number" inputMode="decimal" min=".5" max="8" step=".5" value={hours} onChange={e=>changeHours(e.target.value)} onBlur={normaliseHours}/><small>0.5–8 hours</small></label>
    <label className="field"><span>End</span><input value={end} readOnly/></label>
    <label className="field"><span>Session value (£)</span><input type="number" min=".30" step=".01" value={amount} onChange={e=>setAmount(e.target.value)}/></label>
    <label className="field"><span>Engineer</span><select value={engineerUserId} onChange={e=>setEngineerUserId(e.target.value)}><option value="">Assign later</option>{engineers.map(x=><option key={x.user_id} value={x.user_id}>{x.engineer_name||x.full_name}</option>)}</select></label>
@@ -55,6 +71,6 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
    <button type="button" className={paymentMode==='manual_paid'?'active':''} onClick={()=>setPaymentMode('manual_paid')}><b>Already paid by direct bank transfer</b><span>Marks the booking paid manually.</span><small>No Stripe processing fee.</small></button>
    <button type="button" className={paymentMode==='unpaid'?'active':''} onClick={()=>setPaymentMode('unpaid')}><b>Book now · payment later</b><span>Reserve the session and send confirmation only.</span><small>You can take payment later from the artist profile.</small></button>
   </div><label className="check policyCheck"><input type="checkbox" required/><span><b>Customer booking confirmed</b><br/>I have agreed the date/time and Silkcrayon booking policies with the customer.</span></label></div></section>
-  <section className="checkoutDock"><div><small>SESSION</small><b>{date||'Choose date'} {start&&`· ${start}–${end}`}</b><span>{hours}h · £{Number(amount||0).toFixed(2)}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button>{msg&&<p>{msg}</p>}</section>
+  <section className="checkoutDock"><div><small>SESSION</small><b>{date||'Choose date'} {start&&`· ${start}–${end}`}</b><span>{validHours?`${numericHours}h`:'Choose hours'} · £{Number(amount||0).toFixed(2)}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button>{msg&&<p>{msg}</p>}</section>
  </form>
 }
