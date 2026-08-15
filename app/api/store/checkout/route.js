@@ -3,7 +3,7 @@ import {getAdminDb} from "../../../../lib/supabase";
 import {getStripe} from "../../../../lib/stripe";
 import {rateLimit} from "../../../../lib/rateLimit";
 
-const ALLOWED=[1,2,4,8];
+const ALLOWED=[1,2,3,4,5,6,7,8];
 function clean(v,n=254){return String(v||"").trim().slice(0,n)}
 
 export async function POST(req){
@@ -11,7 +11,7 @@ export async function POST(req){
   const b=await req.json();
   const hours=Number(b.hours);
   const kind=b.kind==="gift"?"gift":"hours";
-  if(!ALLOWED.includes(hours)) return NextResponse.json({error:"Choose a valid studio-hour package."},{status:400});
+  if(!ALLOWED.includes(hours)) return NextResponse.json({error:"Choose between 1 and 8 studio hours."},{status:400});
 
   const buyerName=clean(b.buyerName,120);
   const buyerEmail=clean(b.buyerEmail).toLowerCase();
