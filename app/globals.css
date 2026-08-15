@@ -396,3 +396,11 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 
 /* V20.3 migration: balanced homepage imagery */
 .homeGallery{padding-top:20px}.homeGalleryGrid{display:grid;grid-template-columns:1.35fr .825fr .825fr;gap:12px;margin-top:34px}.homeGalleryGrid img{display:block;width:100%;height:420px;object-fit:cover}.homeGalleryGrid .reveal{min-width:0}@media(max-width:980px){.homeGalleryGrid{grid-template-columns:1fr 1fr}.homeGalleryGrid .reveal:first-child{grid-column:1/-1}.homeGalleryGrid .reveal:first-child img{height:480px}}@media(max-width:700px){.homeGallery{padding-top:0}.homeGalleryGrid{grid-template-columns:1fr;gap:10px;margin-top:24px}.homeGalleryGrid .reveal:first-child{grid-column:auto}.homeGalleryGrid img,.homeGalleryGrid .reveal:first-child img{height:300px}}
+
+/* Admin manual booking */
+.paymentMethodCards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}
+.paymentMethodCards button{appearance:none;text-align:left;border:1px solid #39323f;background:#09070b;color:#fff;border-radius:16px;padding:16px;display:grid;gap:6px;cursor:pointer}
+.paymentMethodCards button.active{border-color:#C394FF;background:#150d1d;box-shadow:inset 0 0 0 1px rgba(195,148,255,.25)}
+.paymentMethodCards b{font-size:15px}.paymentMethodCards span{font-size:11px;color:#b4acb9;line-height:1.45}.paymentMethodCards small{font-size:9px;color:#817887;text-transform:uppercase;letter-spacing:.08em}
+.adminHeadActions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:700px){.paymentMethodCards{grid-template-columns:1fr}.adminHeadActions{display:grid;width:100%}.adminHeadActions .button{width:100%}}

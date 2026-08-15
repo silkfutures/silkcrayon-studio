@@ -7,7 +7,7 @@ export default function AdminNav({profile}){
  if(!owner)return <><nav className="engineerTopLinks"><Link href="/admin/engineer">Engineer home</Link><Link href="/">Website ↗</Link><LogoutButton/></nav><StaffBottomNav role="engineer"/></>;
  return <>
   <nav className="osNav">
-    <Link href="/admin">Overview</Link><Link href="/admin/engineer">Engineer view</Link><Link href="/admin/artists">Artists</Link>
+    <Link href="/admin">Overview</Link><Link href="/admin/bookings/new">New booking</Link><Link href="/admin/engineer">Engineer view</Link><Link href="/admin/artists">Artists</Link>
     <Link href="/admin/payments">Payments</Link><Link href="/admin/accounting">Accounting</Link><Link href="/admin/analytics">Analytics</Link>
     <Link href="/admin/automation">Automations</Link><Link href="/admin/activity">Activity</Link><Link href="/admin/sessions">Sessions</Link>
     <Link href="/admin/leads">Enquiries</Link><Link href="/admin/contacts">Contacts</Link><Link href="/admin/marketing">Marketing</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/staff">Staff</Link><Link href="/">Website ↗</Link>

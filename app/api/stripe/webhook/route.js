@@ -47,6 +47,14 @@ export async function POST(request) {
             updated_at:new Date().toISOString(),...inv
           }).eq('id',studioPaymentId);
           if(updateError) throw updateError;
+          if(isPaid&&payment.booking_id){
+            const {error:bookingPayError}=await db.from('bookings').update({
+              status:'confirmed',payment_status:'paid',payment_method:'stripe',
+              stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,
+              stripe_checkout_session_id:session.id,hold_expires_at:null,updated_at:new Date().toISOString(),...inv
+            }).eq('id',payment.booking_id);
+            if(bookingPayError)throw bookingPayError;
+          }
           if(isPaid && payment.status!=='paid'){
             const {data:customer}=await db.from('customers').select('*').eq('id',payment.customer_id).maybeSingle();
             if(hours>0&&customer?.email){const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
