@@ -1,13 +1,24 @@
 "use client";
-import {useMemo,useState} from 'react';
+import {useEffect,useMemo,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import ArtistSearchSelect from './ArtistSearchSelect';
+import {formatUkDate} from '../lib/dates';
 
 function addMinutes(time,mins){
  const [h,m]=String(time||'').split(':').map(Number);
  if(!Number.isFinite(h)||!Number.isFinite(m))return '';
  const total=h*60+m+mins; return `${String(Math.floor(total/60)%24).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
 }
+const DRAFT_KEY='silkcrayon:manual-booking-draft:v1';
+
+function readDraft(){
+ try{
+  const raw=localStorage.getItem(DRAFT_KEY);
+  return raw?JSON.parse(raw):null;
+ }catch{return null}
+}
+function clearDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch{}}
+
 export default function ManualBookingForm({customers=[],engineers=[]}){
  customers=Array.isArray(customers)?customers:[];
  engineers=Array.isArray(engineers)?engineers:[];
@@ -22,7 +33,35 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
  const [notes,setNotes]=useState('');
  const [msg,setMsg]=useState('');
  const [busy,setBusy]=useState(false);
+ const [policyConfirmed,setPolicyConfirmed]=useState(false);
+ const [draftReady,setDraftReady]=useState(false);
  const customer=useMemo(()=>customers.find(c=>c.id===customerId),[customers,customerId]);
+
+ useEffect(()=>{
+  const d=readDraft();
+  if(d){
+   if(d.customerId)setCustomerId(String(d.customerId));
+   if(d.date)setDate(String(d.date));
+   if(d.start)setStart(String(d.start));
+   if(d.hours!==undefined&&d.hours!==null)setHours(String(d.hours));
+   if(d.amount!==undefined&&d.amount!==null)setAmount(String(d.amount));
+   if(d.engineerUserId)setEngineerUserId(String(d.engineerUserId));
+   if(d.paymentMode)setPaymentMode(String(d.paymentMode));
+   if(d.notes)setNotes(String(d.notes));
+   if(d.policyConfirmed)setPolicyConfirmed(true);
+  }
+  setDraftReady(true);
+ },[]);
+
+ useEffect(()=>{
+  if(!draftReady)return;
+  try{
+   localStorage.setItem(DRAFT_KEY,JSON.stringify({
+    customerId,date,start,hours,amount,engineerUserId,paymentMode,notes,policyConfirmed,
+    savedAt:new Date().toISOString()
+   }));
+  }catch{}
+ },[draftReady,customerId,date,start,hours,amount,engineerUserId,paymentMode,notes,policyConfirmed]);
  const numericHours=Number(hours);
  const validHours=Number.isFinite(numericHours)&&numericHours>=.5&&numericHours<=8;
  const end=validHours?addMinutes(start,Math.round(numericHours*60)):'';
@@ -41,6 +80,7 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
  async function submit(e){
   e.preventDefault();
   if(!customerId)return setMsg('Choose an artist.');
+  if(!policyConfirmed)return setMsg('Confirm the customer booking policies first.');
   const h=Number(hours);
   if(!Number.isFinite(h)||h<.5||h>8)return setMsg('Choose between 0.5 and 8 hours.');
   if(!end)return setMsg('Choose a valid session duration.');
@@ -51,6 +91,7 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
   const j=await r.json().catch(()=>({}));
   setBusy(false);
   if(!r.ok)return setMsg(j.error||'Could not create booking.');
+  clearDraft();
   setMsg(j.paymentUrl?'Booked + payment link sent ✓':'Booked + confirmation sent ✓');
   setTimeout(()=>router.push(`/admin/customers/${customerId}`),900);
  }
@@ -70,7 +111,7 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
    <button type="button" className={paymentMode==='card_or_bank'?'active':''} onClick={()=>setPaymentMode('card_or_bank')}><b>Send card + bank link</b><span>Let them choose card, Apple Pay/eligible wallet or Pay by Bank.</span><small>Stripe fee depends on method.</small></button>
    <button type="button" className={paymentMode==='manual_paid'?'active':''} onClick={()=>setPaymentMode('manual_paid')}><b>Already paid by direct bank transfer</b><span>Marks the booking paid manually.</span><small>No Stripe processing fee.</small></button>
    <button type="button" className={paymentMode==='unpaid'?'active':''} onClick={()=>setPaymentMode('unpaid')}><b>Book now · payment later</b><span>Reserve the session and send confirmation only.</span><small>You can take payment later from the artist profile.</small></button>
-  </div><label className="check policyCheck"><input type="checkbox" required/><span><b>Customer booking confirmed</b><br/>I have agreed the date/time and Silkcrayon booking policies with the customer.</span></label></div></section>
-  <section className="checkoutDock"><div><small>SESSION</small><b>{date||'Choose date'} {start&&`· ${start}–${end}`}</b><span>{validHours?`${numericHours}h`:'Choose hours'} · £{Number(amount||0).toFixed(2)}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button>{msg&&<p>{msg}</p>}</section>
+  </div><label className="check policyCheck"><input type="checkbox" required checked={policyConfirmed} onChange={e=>setPolicyConfirmed(e.target.checked)}/><span><b>Customer booking confirmed</b><br/>I have agreed the date/time and Silkcrayon booking policies with the customer.</span></label></div></section>
+  <section className="checkoutDock"><div><small>SESSION</small><b>{date?formatUkDate(date):'Choose date'} {start&&`· ${start}–${end}`}</b><span>{validHours?`${numericHours}h`:'Choose hours'} · £{Number(amount||0).toFixed(2)}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button><button type="button" className="draftClearButton" onClick={()=>{clearDraft();setCustomerId('');setDate('');setStart('');setHours('1');setAmount('60');setEngineerUserId('');setPaymentMode('pay_by_bank');setNotes('');setPolicyConfirmed(false);setMsg('Draft cleared.')}}>Clear draft</button>{msg&&<p>{msg}</p>}</section>
  </form>
 }

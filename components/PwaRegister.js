@@ -6,7 +6,7 @@ export default function PwaRegister(){
   let refreshing=false;
   const onChange=()=>{if(refreshing)return;refreshing=true;window.location.reload()};
   navigator.serviceWorker.addEventListener('controllerchange',onChange);
-  navigator.serviceWorker.register('/sw.js?v=20.2.6',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),60*60*1000)}).catch(()=>{});
+  navigator.serviceWorker.register('/sw.js?v=20.4.7',{updateViaCache:'none'}).then(reg=>{reg.update();setInterval(()=>reg.update(),60*60*1000)}).catch(()=>{});
   return()=>navigator.serviceWorker.removeEventListener('controllerchange',onChange);
  },[]);
  return null;

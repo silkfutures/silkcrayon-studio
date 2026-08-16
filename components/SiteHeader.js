@@ -41,15 +41,11 @@ export default function SiteHeader(){
     </button>
 
     {open&&<div className="mobileMenu" role="dialog" aria-modal="true" aria-label="Site navigation">
-      <a href="/#experience" onClick={close}>Why Silkcrayon</a>
       <a href="/#services" onClick={close}>Services</a>
       <a href="/#space" onClick={close}>The Space</a>
-      <a href="/#work" onClick={close}>Listen</a>
-      <Link href="/buy-hours" onClick={close}>Buy Hours</Link>
-      <Link href="/gift-studio-time" onClick={close}>Gift Studio Time</Link>
-      <Link href="/young-creators" onClick={close}>Young Creators</Link><Link href="/getting-here" onClick={close}>Getting Here</Link>
+      <Link href="/young-creators" onClick={close}>Young Creators</Link>
+      <Link href="/getting-here" onClick={close}>Getting Here</Link>
       <Link href="/account/login" onClick={close}>My Studio</Link>
-      <a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer" onClick={close}>Instagram ↗</a>
       <Link className="button primary" href="/booking" onClick={close}>Book a session</Link>
     </div>}
   </header>
