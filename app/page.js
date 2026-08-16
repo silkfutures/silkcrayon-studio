@@ -2,7 +2,7 @@ import Link from "next/link";
 import SiteHeader from "../components/SiteHeader";
 import Reveal from "../components/Reveal";
 import EmailSignup from "../components/EmailSignup";
-import PromotionBanner from "../components/PromotionBanner";
+import {getLivePromotions,publicPromotion} from "../lib/promotions";
 
 const services=[
   {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:'From £60 / hour',href:'/booking?service=vocal-recording',featured:true},
@@ -18,7 +18,9 @@ const differences=[
   {title:'A studio you can grow with',copy:'From your first serious session to release strategy and artistic direction, you have people around you who understand the journey.',img:'/images/wide.webp'}
 ];
 
-export default function Home(){
+export const dynamic="force-dynamic";
+export default async function Home(){
+  const promo=publicPromotion((await getLivePromotions()).find(p=>p.show_on_homepage));
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
   const business={"@context":"https://schema.org","@type":"LocalBusiness","@id":`${site}/#studio`,name:"Silkcrayon Studios",url:site,image:`${site}/images/wide.webp`,description:"Premium vocal recording, mixing and release-ready music production in Cardiff Bay.",priceRange:"££",address:{"@type":"PostalAddress",streetAddress:process.env.STUDIO_STREET_ADDRESS||"113-116 Portland House",addressLocality:process.env.STUDIO_LOCALITY||"Cardiff",postalCode:process.env.STUDIO_POSTCODE||undefined,addressCountry:"GB"},sameAs:["https://instagram.com/silkcrayon",process.env.GOOGLE_BUSINESS_URL].filter(Boolean)};
   return <main className="marketingSite"><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(business)}}/>
@@ -40,6 +42,8 @@ export default function Home(){
       <Reveal><p className="eyebrow">Not just studio hire</p><h2>You should leave better than you arrived.</h2></Reveal>
       <Reveal delay={100}><p className="proofCopy">A great studio session is not just a good mic and a clean recording. It is feeling understood, getting the take you actually meant, hearing the record come alive in the room and knowing what to do next.</p></Reveal>
     </div></section>
+
+    {promo&&<section className="section relaunchBand relaunchBandHigh"><div className="container relaunchBandGrid"><Reveal><div><p className="eyebrow">Studio relaunch · limited offer</p><h2>{promo.durationMinutes/60} hours.<br/><span>£{promo.offerPricePence/100}.</span></h2><p>{promo.description||`Usually £${promo.normalPricePence/100}. A focused session at the relaunch rate.`}</p><div className="offerBadges"><span>Save £{(promo.normalPricePence-promo.offerPricePence)/100}</span>{promo.usageLimitPerCustomer&&<span>{promo.usageLimitPerCustomer} per customer</span>}{promo.endsAt&&<span>Ends {new Date(promo.endsAt).toLocaleDateString('en-GB',{day:'numeric',month:'long'})}</span>}</div></div></Reveal><Reveal delay={90}><div className="relaunchBandCard editorialOffer"><small>{promo.badgeText||'LIMITED OFFER'}</small><strong>£{promo.offerPricePence/100}</strong><span>{promo.durationMinutes/60} studio hours</span><s>Normally £{promo.normalPricePence/100}</s><Link className="button primary" href={`/booking?service=${promo.serviceSlug}&duration=${promo.durationMinutes}`}>{promo.ctaText||'Book the offer'} →</Link></div></Reveal></div></section>}
 
     <section className="section experienceSection"><div className="container">
       <Reveal><div className="sectionHeading"><div><p className="eyebrow">The Silkcrayon difference</p><h2>Built around the artist.</h2></div><p>Four things we obsess over because they are what make artists come back.</p></div></Reveal>
@@ -77,7 +81,6 @@ export default function Home(){
       <Reveal delay={120}><div className="standardPoints"><p>Authenticity over posturing.</p><p>Craft over shortcuts.</p><p>Respect for the room and the people in it.</p><p>Work you can be proud to put your name on.</p></div></Reveal>
     </div></section>
 
-    <PromotionBanner/>
     <section className="section ownershipSection"><div className="container ownershipGrid"><Reveal><div><p className="eyebrow">Studio time, your way</p><h2>Buy the hours.<br/>Choose the date later.</h2><p>Prepay studio time for yourself, gift it to an artist, or give a young creator somewhere meaningful to make.</p></div></Reveal><Reveal delay={90}><div className="ownershipActions"><Link href="/buy-hours"><b>Studio hour packs</b><span>3–10 hours · save as you commit →</span></Link><Link href="/gift-studio-time"><b>Gift studio time</b><span>Choose 1–8 hours →</span></Link><Link href="/young-creators"><b>For young creators</b><span>Why creative space matters →</span></Link></div></Reveal></div></section>
     <section className="section newsletterSection"><div className="container"><EmailSignup/></div></section>
     <section className="section finalCta"><div className="container">

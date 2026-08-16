@@ -2,7 +2,7 @@ import {NextResponse} from "next/server";
 import {getAdminDb} from "../../../../lib/supabase";
 import {getStripe} from "../../../../lib/stripe";
 import {rateLimit} from "../../../../lib/rateLimit";
-import {getActivePromotion} from "../../../../lib/promotions";
+import {getPromotionFor} from "../../../../lib/promotions";
 
 const PACKS={3:17000,4:22000,5:27000,6:32000,7:37000,8:42000,9:47000,10:52000};
 const GIFTS=[1,2,3,4,5,6,7,8];
@@ -18,8 +18,8 @@ export async function POST(req){
   const hours=kind==="relaunch"?2:requestedHours;
   if(kind==="gift"&&!GIFTS.includes(hours))return NextResponse.json({error:"Choose between 1 and 8 gift hours."},{status:400});
   if(kind==="hours"&&!PACKS[hours])return NextResponse.json({error:"Choose a studio-hour pack between 3 and 10 hours."},{status:400});
-  const relaunchPromo=kind==="relaunch"?await getActivePromotion("relaunch-2h-100"):null;
-  if(kind==="relaunch"&&!relaunchPromo)return NextResponse.json({error:"That studio offer is not currently active."},{status:410});
+  const relaunch=kind==="relaunch"?await getPromotionFor("vocal-recording",120):null;
+  if(kind==="relaunch"&&!relaunch)return NextResponse.json({error:"The relaunch offer is not currently available."},{status:410});
 
   const buyerName=clean(b.buyerName,120);
   const buyerEmail=clean(b.buyerEmail).toLowerCase();
@@ -53,8 +53,8 @@ export async function POST(req){
    if((used||[]).length)return NextResponse.json({error:"This Silkcrayon account has already used the 2 hours for £100 relaunch offer."},{status:409});
   }
 
-  const amount=kind==="relaunch"?Number(relaunchPromo.amount_pence):kind==="gift"?hours*6000:PACKS[hours];
-  const listAmount=kind==="relaunch"?Number(relaunchPromo.list_amount_pence||hours*6000):hours*6000;
+  const amount=kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="gift"?hours*6000:PACKS[hours];
+  const listAmount=hours*6000;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch"
@@ -64,7 +64,7 @@ export async function POST(req){
   const {data:payment,error:pe}=await db.from("studio_payments").insert({
    customer_id:customer.id,kind:kind==="gift"?"gift":"package",description,
    amount_pence:amount,list_amount_pence:listAmount,hours_credit:hours,status:"pending",
-   discount_code:kind==="relaunch"?RELAUNCH_CODE:null,
+   discount_code:kind==="relaunch"?relaunch.code:null,
    discount_amount_pence:Math.max(0,listAmount-amount),
    created_by_name:kind==="gift"?buyerName:kind==="relaunch"?"Relaunch offer":"Website"
   }).select().single();
@@ -90,7 +90,7 @@ export async function POST(req){
    metadata:{
     studio_payment_id:payment.id,customer_id:customer.id,payment_kind:kind,
     hours_credit:String(hours),buyer_name:buyerName,recipient_name:recipientName,
-    recipient_email:recipientEmail,gift_message:message,offer_code:kind==="relaunch"?RELAUNCH_CODE:""
+    recipient_email:recipientEmail,gift_message:message,offer_code:kind==="relaunch"?relaunch.code:""
    },
    line_items:[{quantity:1,price_data:{currency:"gbp",unit_amount:amount,product_data:{name:productName,description:productDescription}}}],
    success_url:kind==="relaunch"?`${base}/relaunch-offer?paid=1`:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?paid=1&hours=${hours}`,
