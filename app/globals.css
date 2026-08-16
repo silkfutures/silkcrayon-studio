@@ -520,3 +520,9 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 
 /* V20.4.9 — relaunch post-purchase booking choice */
 .postPurchaseChoice{margin-top:32px}.postPurchaseChoiceGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.postPurchaseAction{border:1px solid #38303d;background:#09070a;padding:24px;display:grid;gap:9px;text-decoration:none;min-height:190px;transition:transform .16s ease,border-color .16s ease}.postPurchaseAction:hover{transform:translateY(-2px);border-color:#705487}.postPurchaseAction.primaryChoice{border-color:#684d7d;background:linear-gradient(145deg,rgba(195,148,255,.14),#09070a 70%)}.postPurchaseAction>span{font-size:10px;letter-spacing:.15em;color:#C394FF;font-weight:800}.postPurchaseAction b{font-size:21px;color:#fff}.postPurchaseAction small{font-size:13px;line-height:1.55;color:#9e96a3}.postPurchaseAction strong{margin-top:auto;color:#C394FF;font-size:12px}.creditBookFlow .creditBalanceBar+*{scroll-margin-top:20px}@media(max-width:700px){.postPurchaseChoiceGrid{grid-template-columns:1fr}.postPurchaseAction{min-height:160px}}
+
+/* V20.4.9 inline-offers patch */
+.offerSticker{display:inline-block;margin-left:9px;padding:4px 7px;border-radius:999px;background:#C394FF;color:#0a070d;font-size:8px;letter-spacing:.08em;vertical-align:middle;white-space:nowrap}
+.offerDuration{position:relative;border-color:#C394FF!important}.offerDuration em{font-style:normal;font-size:8px;letter-spacing:.08em;background:#C394FF;color:#09060c;padding:3px 5px;border-radius:999px;margin-left:5px}
+.inlinePackSection{width:100%}.inlineHourWheel{max-width:760px;margin-top:18px}
+@media(max-width:650px){.offerSticker{display:block;width:max-content;margin:6px 0 0}.offerDuration em{display:block;width:max-content;margin:5px auto 0}}
