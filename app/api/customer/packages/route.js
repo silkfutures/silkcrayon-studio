@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server';
 import { getCustomerContext } from '../../../../lib/customerAuth';
 import { getAdminDb } from '../../../../lib/supabase';
 import { getStripe } from '../../../../lib/stripe';
-const CODE='RELAUNCH_2H_100',END=new Date('2026-08-31T22:59:59Z').getTime();
-const PACKAGES={2:{hours:2,amount:10000,listAmount:12000,label:'2 studio hours — Relaunch offer'}};
+import {getActivePromotion} from '../../../../lib/promotions';
+const CODE='RELAUNCH_2H_100';
 export async function POST(req){try{
  const ctx=await getCustomerContext();if(!ctx)return NextResponse.json({error:'Sign in again.'},{status:401});
- if(Date.now()>END)return NextResponse.json({error:'The 2 hours for £100 relaunch offer has ended.'},{status:410});
- const b=await req.json(),p=PACKAGES[Number(b.hours)];if(!p)return NextResponse.json({error:'Package not found.'},{status:400});
+ const b=await req.json();if(Number(b.hours)!==2)return NextResponse.json({error:'Package not found.'},{status:400});
+ const promo=await getActivePromotion('relaunch-2h-100');if(!promo)return NextResponse.json({error:'That studio offer is not currently active.'},{status:410});
+ const p={hours:2,amount:Number(promo.amount_pence),listAmount:Number(promo.list_amount_pence||12000),label:promo.name||'2 studio hours — Studio offer'};
  const db=getAdminDb();
  const {data:used,error:ue}=await db.from('studio_payments').select('id').eq('customer_id',ctx.customer.id).eq('discount_code',CODE).eq('status','paid').limit(1);if(ue)throw ue;
  if((used||[]).length)return NextResponse.json({error:'You have already used the 2 hours for £100 relaunch offer.'},{status:409});

@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "../components/SiteHeader";
 import Reveal from "../components/Reveal";
 import EmailSignup from "../components/EmailSignup";
+import PromotionBanner from "../components/PromotionBanner";
 
 const services=[
   {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:'From £60 / hour',href:'/booking?service=vocal-recording',featured:true},
@@ -76,7 +77,7 @@ export default function Home(){
       <Reveal delay={120}><div className="standardPoints"><p>Authenticity over posturing.</p><p>Craft over shortcuts.</p><p>Respect for the room and the people in it.</p><p>Work you can be proud to put your name on.</p></div></Reveal>
     </div></section>
 
-    <section className="section relaunchBand"><div className="container relaunchBandGrid"><Reveal><div><p className="eyebrow">Silkcrayon is back</p><h2>2 hours.<br/><span>£100.</span></h2><p>Usually £120. Buy the time now, choose your session date later, and use the two hours to start something or finish what you’ve been sitting on.</p><div className="offerBadges"><span>Save £20</span><span>One per customer</span><span>Ends 31 August</span></div></div></Reveal><Reveal delay={90}><div className="relaunchBandCard"><small>LIMITED RELAUNCH OFFER</small><strong>£100</strong><span>2 studio hours</span><s>Normally £120</s><Link className="button primary" href="/relaunch-offer">Get the offer →</Link><Link className="textLink" href="/buy-hours">Need more? See hour packs →</Link></div></Reveal></div></section>
+    <PromotionBanner/>
     <section className="section ownershipSection"><div className="container ownershipGrid"><Reveal><div><p className="eyebrow">Studio time, your way</p><h2>Buy the hours.<br/>Choose the date later.</h2><p>Prepay studio time for yourself, gift it to an artist, or give a young creator somewhere meaningful to make.</p></div></Reveal><Reveal delay={90}><div className="ownershipActions"><Link href="/buy-hours"><b>Studio hour packs</b><span>3–10 hours · save as you commit →</span></Link><Link href="/gift-studio-time"><b>Gift studio time</b><span>Choose 1–8 hours →</span></Link><Link href="/young-creators"><b>For young creators</b><span>Why creative space matters →</span></Link></div></Reveal></div></section>
     <section className="section newsletterSection"><div className="container"><EmailSignup/></div></section>
     <section className="section finalCta"><div className="container">

@@ -32,7 +32,7 @@ export default function BookingFlow() {
   const [packHours,setPackHours]=useState(5);
   const [date,setDate]=useState(()=>isoLocal(nextBookableDays(1)[0])),[slots,setSlots]=useState([]),[slot,setSlot]=useState(null);
   const [loadingSlots,setLoadingSlots]=useState(false),[availabilityError,setAvailabilityError]=useState(""),[error,setError]=useState("");
-  const [submitting,setSubmitting]=useState(false),[detailsReady,setDetailsReady]=useState(false),[engineers,setEngineers]=useState([]);
+  const [submitting,setSubmitting]=useState(false),[detailsReady,setDetailsReady]=useState(false),[engineers,setEngineers]=useState([]),[promotions,setPromotions]=useState([]);
   const availabilityRequest=useRef(0);
 
   function chooseService(slug){
@@ -41,7 +41,7 @@ export default function BookingFlow() {
     setMode("session");setAvailabilityError("");setSlots([]);setSlot(null);setService(slug);setDuration(next.durations[0]);
   }
 
-  useEffect(()=>{fetch("/api/public/engineers").then(r=>r.json()).then(j=>setEngineers(j.engineers||[])).catch(()=>setEngineers([]))},[]);
+  useEffect(()=>{fetch("/api/public/engineers").then(r=>r.json()).then(j=>setEngineers(j.engineers||[])).catch(()=>setEngineers([]));fetch("/api/public/promotions").then(r=>r.json()).then(j=>setPromotions(j.promotions||[])).catch(()=>setPromotions([]))},[]);
   useEffect(()=>{
     if(mode!=="session")return;
     const currentService=services[service];
@@ -59,6 +59,9 @@ export default function BookingFlow() {
 
   const minDate=useMemo(()=>isoLocal(new Date()),[]);
   const packPrice=PACKS[packHours],packList=packHours*60,packSaving=packList-packPrice,packRate=packPrice/packHours;
+  const promoFor=(slug,d)=>promotions.find(p=>p.serviceSlug===slug&&Number(p.durationMinutes)===Number(d));
+  const vocalPromo=promotions.find(p=>p.serviceSlug==="vocal-recording");
+  const displayPrice=(slug,d)=>{const pr=promoFor(slug,d);return pr?`£${(pr.amountPence/100).toFixed(pr.amountPence%100?2:0)}`:services[slug].price(d)};
 
   async function submit(e){
     e.preventDefault();setSubmitting(true);setError("");
@@ -90,7 +93,7 @@ export default function BookingFlow() {
 
   return <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}>
     <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">
-      {Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} className={`option ${mode==="session"&&service===slug?"active":""}`} onClick={()=>chooseService(slug)}><b>{s.name}{slug==="vocal-recording"&&<span className="offerSticker">2H FOR £100</span>}</b><small>{slug==="full-day"?"£450":slug==="system-test"?"£0.30":"£60 / hour · 2h relaunch offer £100"}</small></button>)}
+      {Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} className={`option ${mode==="session"&&service===slug?"active":""}`} onClick={()=>chooseService(slug)}><b>{s.name}{slug==="vocal-recording"&&vocalPromo&&<span className="offerSticker saleBurstMini">{vocalPromo.badgeText||"OFFER"}</span>}</b><small>{slug==="full-day"?"£450":slug==="system-test"?"£0.30":vocalPromo?`£60 / hour · ${vocalPromo.name}`:"£60 / hour"}</small></button>)}
       <button type="button" className={`option ${mode==="pack"?"active":""}`} onClick={()=>chooseService("hour-packs")}><b>Studio Hour Packs</b><small>3–10 hours · save more as you commit</small></button>
       <a className="option optionLink giftOption" href="/gift-studio-time"><b>Gift Studio Time</b><small>Choose 1–8 hours</small><span>→</span></a>
     </div></div></div>
@@ -103,7 +106,7 @@ export default function BookingFlow() {
         </div>
       </div></div>
     </>:<>
-      <div className="bookingSection"><span className="step">02</span><div><h2>Choose duration & date</h2><div className="durationRow">{services[service].durations.map(d=><button type="button" className={`${duration===d?"activePill":"pill"} ${service==="vocal-recording"&&d===120?"offerDuration":""}`} key={d} onClick={()=>setDuration(d)}>{durationLabel(d)} · {services[service].price(d)}{service==="vocal-recording"&&d===120&&<em> SAVE £20</em>}</button>)}</div>
+      <div className="bookingSection"><span className="step">02</span><div><h2>Choose duration & date</h2><div className="durationRow">{services[service].durations.map(d=><button type="button" className={`${duration===d?"activePill":"pill"} ${promoFor(service,d)?"offerDuration":""}`} key={d} onClick={()=>setDuration(d)}>{durationLabel(d)} · {displayPrice(service,d)}{promoFor(service,d)&&<em> SAVE £{Math.max(0,Math.round(((promoFor(service,d).listAmountPence||0)-(promoFor(service,d).amountPence||0))/100))}</em>}</button>)}</div>
         <p className="dateHint">Choose a day — no typing required.</p>
         <div className="dateGrid">{quickDates.map(d=>{const v=isoLocal(d),p=prettyDay(d);return <button type="button" key={v} className={`dateCard ${date===v?"selected":""}`} onClick={()=>setDate(v)}><span>{p.weekday}</span><b>{p.day}</b><small>{p.month}</small></button>})}</div>
         <details className="moreDates"><summary>Choose a later date</summary><label className="field"><span>Date</span><input type="date" value={date} min={minDate} onChange={e=>setDate(e.target.value)} required/></label></details>

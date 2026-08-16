@@ -5,6 +5,7 @@ import { getStripe } from "../../../lib/stripe";
 import { generateSlots } from "../../../lib/availability";
 import { londonDateTimeToUtc } from "../../../lib/time";
 import { rateLimit } from "../../../lib/rateLimit";
+import { getBookingPromotion } from "../../../lib/promotions";
 
 export async function POST(request) {
   let bookingId = null;
@@ -54,15 +55,15 @@ export async function POST(request) {
       await db.from("crm_contacts").upsert({customer_id:customer.id,full_name:customer.full_name,email,phone:customer.phone,source:'Booking',marketing_status:'subscribed',marketing_consent:true,email_signup_discount_available:rewardAvailableBefore||newlyJoiningEmailList,updated_at:new Date().toISOString()},{onConflict:'email'});
     }
     const listPricePence = priceFor(service, duration);
-    const relaunchEligible=service.slug==='vocal-recording'&&duration===120&&Date.now()<=new Date('2026-08-31T22:59:59Z').getTime();
-    let relaunchApplied=false;
-    if(relaunchEligible){
-      const {data:priorOffer}=await db.from('bookings').select('id').eq('customer_id',customer.id).eq('duration_minutes',120).eq('amount_pence',10000).eq('payment_status','paid').limit(1);
-      const {data:priorCreditOffer}=await db.from('studio_payments').select('id').eq('customer_id',customer.id).eq('discount_code','RELAUNCH_2H_100').eq('status','paid').limit(1);
-      relaunchApplied=!(priorOffer||[]).length&&!(priorCreditOffer||[]).length;
+    const promotion=service.slug!=='system-test'?await getBookingPromotion(service.slug,duration):null;
+    let promotionApplied=null;
+    if(promotion){
+      const maxUses=Math.max(1,Number(promotion.max_uses_per_customer||1));
+      const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).eq('promotion_slug',promotion.slug).eq('payment_status','paid');
+      if(Number(count||0)<maxUses)promotionApplied=promotion;
     }
-    const rewardApplied=!relaunchApplied&&rewardAvailableBefore&&service.slug!=='system-test';
-    const amountPence=relaunchApplied?10000:rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence;
+    const rewardApplied=!promotionApplied&&rewardAvailableBefore&&service.slug!=='system-test';
+    const amountPence=promotionApplied?Number(promotionApplied.amount_pence):rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence;
     const holdExpires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const { data: reservedId, error: bookingError } = await db.rpc("reserve_booking", {
       p_customer_id: customer.id,
@@ -95,7 +96,8 @@ export async function POST(request) {
       policy_acceptance_user_agent: request.headers.get("user-agent") || null,
       sms_reminder_consent: Boolean(body.phone?.trim()),
       preferred_engineer_user_id: preferredEngineer?.user_id || null,
-      preferred_engineer_name: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null
+      preferred_engineer_name: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null,
+      promotion_slug: promotionApplied?.slug || null
     }).eq("id", reservedId);
     const booking = { id: reservedId };
 
@@ -107,8 +109,8 @@ export async function POST(request) {
       invoice_creation: { enabled: true },
       customer_email: email,
       client_reference_id: booking.id,
-      metadata: { booking_id: booking.id, service_slug: service.slug, email_signup_discount_applied:rewardApplied?'true':'false', relaunch_offer_applied:relaunchApplied?'true':'false' },
-      line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${service.name}${relaunchApplied?' · 2 Hours for £100':rewardApplied?' · 5% email reward':''}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay${relaunchApplied?' · Relaunch offer applied':rewardApplied?' · 5% email-list reward applied':''}` } } }],
+      metadata: { booking_id: booking.id, service_slug: service.slug, email_signup_discount_applied:rewardApplied?'true':'false', promotion_slug:promotionApplied?.slug||'' },
+      line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${service.name}${promotionApplied?` · ${promotionApplied.name}`:rewardApplied?' · 5% email reward':''}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay${promotionApplied?' · Studio offer applied':rewardApplied?' · 5% email-list reward applied':''}` } } }],
       success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/booking?cancelled=1`,
       expires_at: Math.floor(Date.now()/1000) + 30*60,

@@ -16,6 +16,7 @@ export default async function More(){
   ['/admin/automation','Automations','Email delivery & reminders','✦'],
   ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
   ['/admin/marketing','Marketing','Opening offers & email campaigns','✦'],
+  ['/admin/promotions','Promotions','Turn website offers on or off','%'],
   ['/admin/customers','Customers','Booked customer database','◉'],
   ['/admin/staff','Staff','People, roles & access','◌']
  ]:[

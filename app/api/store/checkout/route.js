@@ -2,11 +2,12 @@ import {NextResponse} from "next/server";
 import {getAdminDb} from "../../../../lib/supabase";
 import {getStripe} from "../../../../lib/stripe";
 import {rateLimit} from "../../../../lib/rateLimit";
+import {getActivePromotion} from "../../../../lib/promotions";
 
 const PACKS={3:17000,4:22000,5:27000,6:32000,7:37000,8:42000,9:47000,10:52000};
 const GIFTS=[1,2,3,4,5,6,7,8];
 const RELAUNCH_CODE="RELAUNCH_2H_100";
-const RELAUNCH_END=new Date("2026-08-31T22:59:59Z").getTime();
+
 function clean(v,n=254){return String(v||"").trim().slice(0,n)}
 
 export async function POST(req){
@@ -17,7 +18,8 @@ export async function POST(req){
   const hours=kind==="relaunch"?2:requestedHours;
   if(kind==="gift"&&!GIFTS.includes(hours))return NextResponse.json({error:"Choose between 1 and 8 gift hours."},{status:400});
   if(kind==="hours"&&!PACKS[hours])return NextResponse.json({error:"Choose a studio-hour pack between 3 and 10 hours."},{status:400});
-  if(kind==="relaunch"&&Date.now()>RELAUNCH_END)return NextResponse.json({error:"The 2 hours for £100 relaunch offer has ended."},{status:410});
+  const relaunchPromo=kind==="relaunch"?await getActivePromotion("relaunch-2h-100"):null;
+  if(kind==="relaunch"&&!relaunchPromo)return NextResponse.json({error:"That studio offer is not currently active."},{status:410});
 
   const buyerName=clean(b.buyerName,120);
   const buyerEmail=clean(b.buyerEmail).toLowerCase();
@@ -51,8 +53,8 @@ export async function POST(req){
    if((used||[]).length)return NextResponse.json({error:"This Silkcrayon account has already used the 2 hours for £100 relaunch offer."},{status:409});
   }
 
-  const amount=kind==="relaunch"?10000:kind==="gift"?hours*6000:PACKS[hours];
-  const listAmount=hours*6000;
+  const amount=kind==="relaunch"?Number(relaunchPromo.amount_pence):kind==="gift"?hours*6000:PACKS[hours];
+  const listAmount=kind==="relaunch"?Number(relaunchPromo.list_amount_pence||hours*6000):hours*6000;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch"
