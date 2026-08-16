@@ -1,6 +1,6 @@
 {
   "name": "silkcrayon-studio-os",
-  "version": "20.4.4",
+  "version": "20.4.7",
   "private": true,
   "scripts": {
     "dev": "next dev",

@@ -1,4 +1,4 @@
-const CACHE='silkcrayon-os-v20-2-6';
+const CACHE='silkcrayon-os-v20-4-7';
 const CORE=['/logo.png','/icons/icon-192.png','/icons/icon-512.png'];
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil((async()=>{for(const k of await caches.keys())if(k!==CACHE)await caches.delete(k);await self.clients.claim()})()));
