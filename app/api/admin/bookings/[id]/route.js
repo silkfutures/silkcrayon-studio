@@ -7,6 +7,28 @@ import { recordBookingEvent } from '../../../../../lib/bookingEvents';
 import {formatUkDate} from '../../../../../lib/dates';
 export async function PATCH(request,{params}){try{const ctx=await getStaffContext();if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});const {id}=await params;const body=await request.json();const patch={updated_at:new Date().toISOString()};let assigned=null;if(body.status){const allowed=['pending','confirmed','cancelled','completed','no_show'];if(!allowed.includes(body.status))return NextResponse.json({error:'Invalid status'},{status:400});patch.status=body.status;}if('internalNotes' in body)patch.internal_notes=body.internalNotes||null;if('engineerUserId' in body){if(body.engineerUserId){const db=getAdminDb();const {data:eng,error:ee}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,active,role').eq('user_id',body.engineerUserId).single();if(ee||!eng||!eng.active||!['engineer','owner'].includes(eng.role))return NextResponse.json({error:'Engineer not found or inactive.'},{status:400});patch.engineer_user_id=eng.user_id;patch.assigned_engineer=eng.engineer_name||eng.full_name;assigned=eng;}else{patch.engineer_user_id=null;patch.assigned_engineer=null;}}
  const db=getAdminDb();
+ if(body.manualPaymentStatus){
+   const {data:current,error:ce}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(ce)throw ce;
+   if(current.stripe_payment_intent_id)return NextResponse.json({error:'Stripe-paid bookings must be managed through Stripe/refunds.'},{status:409});
+   if(current.payment_method==='credits')return NextResponse.json({error:'Credit bookings cannot be manually marked paid/unpaid.'},{status:409});
+   if(body.manualPaymentStatus==='paid'){
+     if(['paid','part_refunded'].includes(current.payment_status))return NextResponse.json({error:'This booking is already paid.'},{status:409});
+     const method=String(body.manualPaymentMethod||'');
+     if(!['bank_transfer','cash','other'].includes(method))return NextResponse.json({error:'Choose bank transfer, cash or other.'},{status:400});
+     const now=new Date().toISOString();
+     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'paid',payment_method:method,paid_at:now,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+     await recordBookingEvent({db,booking:updated,eventType:'payment_marked_paid',reasonCode:method,note:`Manually marked paid · £${(Number(updated.amount_pence||0)/100).toFixed(2)}`,ctx,snapshot:current});
+     return NextResponse.json({ok:true,booking:updated});
+   }
+   if(body.manualPaymentStatus==='unpaid'){
+     if(current.payment_status!=='paid')return NextResponse.json({error:'This booking is not currently marked paid.'},{status:409});
+     const oldMethod=current.payment_method;
+     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'unpaid',payment_method:null,paid_at:null,updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+     await recordBookingEvent({db,booking:updated,eventType:'payment_marked_unpaid',reasonCode:'owner_correction',note:`Manual payment reversed · previous method ${oldMethod||'unknown'}`,ctx,snapshot:current});
+     return NextResponse.json({ok:true,booking:updated});
+   }
+   return NextResponse.json({error:'Invalid manual payment status.'},{status:400});
+ }
  if(body.refund){
    const {data:current,error:ce}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(ce)throw ce;
    if(!current.stripe_payment_intent_id)return NextResponse.json({error:'No Stripe payment is attached to this booking.'},{status:409});
