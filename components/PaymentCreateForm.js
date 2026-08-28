@@ -2,15 +2,14 @@
 import {useMemo,useState} from 'react';
 import ArtistSearchSelect from './ArtistSearchSelect';
 const discounts=[['none','No extra discount'],['loyalty5','5% loyalty'],['approved10','10% approved']];
-const perHour=h=>h>=10?50:h>=8?52.5:h>=5?55:60;
-const packBase=h=>h===2?110:Math.round(h*perHour(h)*100)/100;
-export default function PaymentCreateForm({customers=[],defaultCustomerId='',defaultAmount='',defaultDescription='',defaultPackage='',defaultKind=''}){
+const packBase=h=>Math.round(h*50*100)/100;
+export default function PaymentCreateForm({customers=[],defaultCustomerId='',defaultAmount='',defaultDescription='',defaultPackage='',defaultKind='',studioFinishPrice=60}){
  const initialKind=defaultKind||defaultPackage?'package':'session';
  const [kind,setKind]=useState(initialKind);const [customerId,setCustomerId]=useState(defaultCustomerId);const [hours,setHours]=useState(Math.max(1,Math.min(20,Number(defaultPackage||5))));const [discountCode,setDiscountCode]=useState('none');const [manualAmount,setManualAmount]=useState(defaultAmount||'60');const [description,setDescription]=useState(defaultDescription||'Studio session');const [msg,setMsg]=useState('');
  const customer=useMemo(()=>customers.find(c=>c.id===customerId),[customers,customerId]);
  const discountPct=discountCode==='loyalty5'?5:discountCode==='approved10'?10:0;
- const standard=hours*60,bulk=packBase(hours),finalPack=Math.round(bulk*(1-discountPct/100)*100)/100;
- const mixBase=60,mixFinal=Math.round(mixBase*(1-discountPct/100)*100)/100;
+ const standard=hours*50,bulk=packBase(hours),finalPack=Math.round(bulk*(1-discountPct/100)*100)/100;
+ const mixBase=Number(studioFinishPrice)||60,mixFinal=Math.round(mixBase*(1-discountPct/100)*100)/100;
  async function submit(){if(!customerId)return setMsg('Choose an artist first.');setMsg('Creating secure payment…');const body={customerId,kind,hours:kind==='package'?hours:0,discountCode,amount:kind==='session'||kind==='other'?manualAmount:undefined,description:kind==='package'?`${hours} prepaid studio hours`:kind==='mix_master'?'Studio Finish':description};const r=await fetch('/api/admin/payments',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json().catch(()=>({}));if(!r.ok)return setMsg(j.error||'Could not create payment.');window.location.href=j.url}
  return <div className="commercialPayFlow">
   <section className="commercialStep"><div className="stepBadge">01</div><div><p className="eyebrow">Artist</p><h2>Who are we charging?</h2><ArtistSearchSelect customers={customers} value={customerId} onChange={setCustomerId}/>{customer&&<p className="selectionNote">Selected <b>{customer.artist_name||customer.full_name}</b></p>}</div></section>

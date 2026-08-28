@@ -1,0 +1,6 @@
+import AdminNav from '../../../components/AdminNav';
+import StudioSettingsForm from '../../../components/StudioSettingsForm';
+import {requireOwner} from '../../../lib/auth';
+import {getStudioSettings} from '../../../lib/studioSettings';
+export const dynamic='force-dynamic';
+export default async function Settings(){const ctx=await requireOwner(),settings=await getStudioSettings();return <main className="adminPage"><header className="adminHeader"><div><p className="eyebrow">Silkcrayon OS</p><h1>Studio settings</h1><p className="muted">Control customer-facing studio products without redeploying the website.</p></div><AdminNav profile={ctx.profile}/></header><section className="adminSection settingsPanel"><div className="adminSectionHead"><div><p className="eyebrow">Product settings</p><h2>Studio Finish</h2><p className="muted">Price, turnaround and included revisions update future Studio Finish purchases immediately.</p></div><div className="settingsCurrent"><small>CURRENT PRICE</small><b>£{(settings.studioFinishPricePence/100).toFixed(settings.studioFinishPricePence%100?2:0)}</b></div></div><StudioSettingsForm initial={settings}/></section></main>}
