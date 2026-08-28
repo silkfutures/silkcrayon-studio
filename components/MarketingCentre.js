@@ -7,15 +7,20 @@ const templates=[
 ];
 const initial={name:'Payday Studio Relaunch — 2 Hours £100',subject:'Silkcrayon is back — 2 hours for £100',preheader:'A little something to mark the studio relaunch.',headline:'We’re back.',body:'Over the last few weeks, we’ve been quietly rebuilding Silkcrayon.\n\nThe studio is open, the diary is live, and we’ve made it much easier to book your sessions and keep track of your studio time.\n\nTwo hours in the studio with an engineer. Record a new track, finish something that’s been sitting on your laptop, work on vocals, or just come and create.\n\nYou can choose your session time when you buy, or bank the two hours and book them when you’re ready.\n\nSame studio. Same focus on making your music sound right. Just a much better way of doing things.\n\nSee you in the studio,\nNathan',ctaLabel:'BOOK 2 HOURS FOR £100',ctaUrl:'https://silkcrayon.com/booking?service=vocal-recording',imageUrl:'',imageAlt:'Silkcrayon Studios',template:'payday-relaunch',testEmail:'info@silkcrayon.com',scheduledAt:''};
 
-export default function MarketingCentre({eligible,campaigns}){
- const [sync,setSync]=useState(''),[state,setState]=useState('idle'),[form,setForm]=useState(initial),[device,setDevice]=useState('phone');
+export default function MarketingCentre({audience,campaigns}){
+ const [sync,setSync]=useState(''),[state,setState]=useState('idle'),[form,setForm]=useState(initial),[device,setDevice]=useState('phone'),[audienceKey,setAudienceKey]=useState('subscribers');
+ const audienceOptions=[
+  {id:'subscribers',name:'All email subscribers',count:audience.subscribed,desc:'Everyone who has permission recorded for email marketing.'},
+  {id:'previous_customers',name:'Previous customers',count:audience.previousSubscribed,desc:'Previous booking customers who also have email marketing permission.'}
+ ];
+ const selectedAudience=audienceOptions.find(x=>x.id===audienceKey)||audienceOptions[0];
  function set(k,v){setForm(f=>({...f,[k]:v}))}
  async function uploadImage(file){if(!file)return;setState('image');const fd=new FormData();fd.append('image',file);const r=await fetch('/api/admin/marketing/image',{method:'POST',body:fd});const j=await r.json().catch(()=>({}));setState('idle');if(!r.ok)return alert(j.error||'Image upload failed.');set('imageUrl',j.url)}
- async function syncNow(){setSync('Syncing…');const r=await fetch('/api/admin/marketing/sync',{method:'POST'});const j=await r.json().catch(()=>({}));setSync(r.ok?`${j.eligible} eligible · ${j.created} added · ${j.existing} already in Resend${j.failed?` · ${j.failed} failed`:''}`:(j.error||'Sync failed'))}
+ async function syncNow(){setSync('Syncing…');const r=await fetch('/api/admin/marketing/sync',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({audienceKey})});const j=await r.json().catch(()=>({}));setSync(r.ok?`${j.eligible} eligible · ${j.created} added · ${j.existing} already in Resend${j.failed?` · ${j.failed} failed`:''}`:(j.error||'Sync failed'))}
  async function act(action){
-  if(action==='send'&&!confirm(`Send this marketing email to approximately ${eligible} opted-in contacts now?`))return;
+  if(action==='send'&&!confirm(`Send this email to ${selectedAudience.count} people in “${selectedAudience.name}”?`))return;
   if(action==='schedule'&&!confirm(`Schedule this campaign for ${form.scheduledAt}?`))return;
-  setState(action);const r=await fetch('/api/admin/marketing/broadcast',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...form,action})});const j=await r.json().catch(()=>({}));setState('idle');
+  setState(action);const r=await fetch('/api/admin/marketing/broadcast',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...form,action,audienceKey})});const j=await r.json().catch(()=>({}));setState('idle');
   if(!r.ok)return alert(j.error||'Could not create campaign.');
   if(action==='test')alert(`Test sent to ${form.testEmail}. Check it on your actual phone before sending.`);
   else if(action==='draft')alert('Draft saved in Resend.');
@@ -23,7 +28,13 @@ export default function MarketingCentre({eligible,campaigns}){
   else alert(`Broadcast created for ${j.recipientCount} eligible contacts.`);
  }
  return <div className="marketingCentre marketingV2">
-  <section className="marketingSetup"><div><p className="eyebrow">Audience</p><h2>{eligible} opted-in contacts.</h2><p>Only subscribed contacts are included. Sync before a campaign so Resend has the current audience.</p></div><button className="miniButton solid" onClick={syncNow}>Sync audience</button>{sync&&<small>{sync}</small>}</section>
+  <section className="marketingSetup audienceBuilder">
+   <div className="audienceHeading"><div><p className="eyebrow">00 · Audience</p><h2>Who should receive this?</h2><p className="muted">Choose the group before you build the campaign. Counts update from Studio OS data.</p></div><div className="audienceTotal"><strong>{audience.total}</strong><span>contacts with email</span></div></div>
+   <div className="audienceCards">{audienceOptions.map(a=><button type="button" key={a.id} className={`audienceCard ${audienceKey===a.id?'active':''}`} onClick={()=>{setAudienceKey(a.id);setSync('')}}><span className="audienceRadio">{audienceKey===a.id?'●':'○'}</span><div><b>{a.name}</b><small>{a.desc}</small></div><strong>{a.count}</strong></button>)}</div>
+   <div className="audienceBreakdown"><span><b>{audience.subscribed}</b> subscribed</span><span><b>{audience.previousCustomers}</b> previous customers</span><span><b>{audience.notAsked}</b> not asked / unknown</span><span><b>{audience.unsubscribed}</b> declined / unsubscribed</span></div>
+   <div className="audienceSelected"><div><small>SELECTED AUDIENCE</small><b>{selectedAudience.name}</b><span>{selectedAudience.count} recipients</span></div><button className="miniButton" onClick={syncNow}>Sync selected audience</button></div>
+   {sync&&<small className="audienceSyncResult">{sync}</small>}
+  </section>
 
   <section className="templatePicker"><div><p className="eyebrow">01 · Campaign type</p><h2>What are you sending?</h2></div><div className="templateCards">{templates.map(t=><button type="button" key={t.id} className={`templateCard ${form.template===t.id?'active':''}`} onClick={()=>set('template',t.id)}><b>{t.name}</b><small>{t.desc}</small></button>)}</div></section>
 
@@ -45,7 +56,7 @@ export default function MarketingCentre({eligible,campaigns}){
   <section className="campaignLaunch"><div><p className="eyebrow">04 · Test & send</p><h2>See it in a real inbox first.</h2><p className="muted">The preview is useful, but the test email is the source of truth. Open it in Gmail on your phone before sending the campaign.</p></div>
    <div className="testSendRow"><input type="email" value={form.testEmail} onChange={e=>set('testEmail',e.target.value)} aria-label="Test email"/><button className="miniButton" disabled={state!=='idle'} onClick={()=>act('test')}>Send test email</button></div>
    <div className="scheduleRow"><input type="datetime-local" value={form.scheduledAt} onChange={e=>set('scheduledAt',e.target.value)}/><button className="miniButton" disabled={!form.scheduledAt||state!=='idle'} onClick={()=>act('schedule')}>Schedule</button></div>
-   <div className="campaignActions"><button className="miniButton" disabled={state!=='idle'} onClick={()=>act('draft')}>Save draft</button><button className="miniButton solid" disabled={!eligible||state!=='idle'} onClick={()=>act('send')}>Send to {eligible} subscribers</button></div>
+   <div className="campaignActions"><button className="miniButton" disabled={state!=='idle'} onClick={()=>act('draft')}>Save draft</button><button className="miniButton solid" disabled={!selectedAudience.count||state!=='idle'} onClick={()=>act('send')}>Send to {selectedAudience.count} recipients</button></div>
   </section>
 
   <section className="campaignHistory"><p className="eyebrow">History</p><h2>Campaigns</h2>{campaigns.length?campaigns.map(c=><div className="campaignRow" key={c.id}><div><b>{c.name}</b><small>{c.subject}</small></div><span>{c.status}</span><span>{c.recipient_count} recipients</span><small>{new Date(c.created_at).toLocaleString('en-GB')}</small></div>):<p className="muted">No campaigns yet.</p>}</section>
