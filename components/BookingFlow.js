@@ -3,8 +3,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const services = {
-  "vocal-recording": { name: "Vocal Recording", durations: [60,120,180,240,300,360,420], price: (d)=>`£${d}` },
-  "full-day": { name: "Full Day Studio", durations: [480], price: ()=>"£450" },
+  "vocal-recording": { name: "Vocal Recording", durations: [60,120,180,240,300,360,420], price: (d)=>`£${Math.round((d/60)*50)}` },
+  "full-day": { name: "Full Day Studio", durations: [480], price: ()=>"£400" },
   "system-test": { name: "30p Test Booking", durations: [60], price: ()=>"£0.30" },
 };
 
@@ -137,7 +137,7 @@ export default function BookingFlow({promotions=[]}) {
 
   return (
     <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{slug==="full-day"?"£450":slug==="system-test"?"£0.30":"£60 / hour"}</small>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}<a className="option optionLink" href="/buy-hours"><b>Studio Hour Packs</b><small>3–10 hours · better rates · date later</small><span>→</span></a><a className="option optionLink giftOption" href="/gift-studio-time"><b>Gift Studio Time</b><small>Choose 1–8 hours</small><span>→</span></a></div></div></div>
+      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{slug==="full-day"?"£400":slug==="system-test"?"£0.30":"£50 / hour"}</small>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}<a className="option optionLink" href="/buy-hours"><b>Studio Hour Packs</b><small>3–10 hours · better rates · date later</small><span>→</span></a><a className="option optionLink giftOption" href="/gift-studio-time"><b>Gift Studio Time</b><small>Choose 1–8 hours</small><span>→</span></a></div></div></div>
 
       <div className="bookingSection"><span className="step">02</span><div><h2>Choose duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=promotions.find(p=>p.showOnBooking&&p.serviceSlug===service&&Number(p.durationMinutes)===d);return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} onClick={()=>setDuration(d)}><span>{durationLabel(d)} · {offer?`£${offer.offerPricePence/100}`:services[service].price(d)}</span>{offer&&<small><s>£{offer.normalPricePence/100}</s> · SAVE £{(offer.normalPricePence-offer.offerPricePence)/100} · OFFER</small>}</button>})}</div>
         <p className="dateHint">Choose a day — no typing required.</p>

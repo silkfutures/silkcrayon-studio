@@ -85,7 +85,7 @@ export default function YoungCreators(){
 
   <section className="ycFinal">
    <div className="container">
-    <Reveal><p className="eyebrow">A different kind of gift</p><h2>Give their creativity<br/><span>somewhere to go.</span></h2><p>Studio hours from £60. Buy now. They choose the date later.</p><div className="actions"><Link className="button primary large" href="/gift-studio-time">Gift studio time <span>↗</span></Link><Link className="textLink" href="/buy-hours">Buy hours for yourself →</Link></div></Reveal>
+    <Reveal><p className="eyebrow">A different kind of gift</p><h2>Give their creativity<br/><span>somewhere to go.</span></h2><p>Studio hours from £50. Buy now. They choose the date later.</p><div className="actions"><Link className="button primary large" href="/gift-studio-time">Gift studio time <span>↗</span></Link><Link className="textLink" href="/buy-hours">Buy hours for yourself →</Link></div></Reveal>
    </div>
   </section>
  </main>

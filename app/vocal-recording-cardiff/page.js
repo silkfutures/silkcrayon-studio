@@ -5,7 +5,7 @@ export default function Page(){return <SeoServicePage
  title="Your voice deserves"
  accent="more than record."
  intro="A great vocal session is performance, detail and judgement — not just pressing the red button. Record through a Neumann U87 with an engineer helping you get the take, layers and finish the song needs."
- proof={["Neumann U87","Engineer included","Takes + layers","From £60/hour"]}
+ proof={["Neumann U87","Engineer included","Takes + layers","From £50/hour"]}
  points={[{title:"Get the take you meant",copy:"We listen for delivery, tone, timing and emotion — helping you comp the strongest performance rather than settling for the first clean take."},{title:"Build vocals with intention",copy:"Doubles, harmonies, ad-libs and layers are shaped around the record so they add energy and depth instead of clutter."},{title:"Hear the record come alive",copy:"We work toward a useful, polished session sound while you are in the room, so you can make creative decisions with confidence."}]}
  storyTitle="Recording should feel collaborative."
  story={["Whether you make rap, R&B, pop, melodic music or something harder to label, the session is built around your voice and your record. You do not need to arrive knowing studio language or how many layers you need.","Bring the beat, stems or session files you have. Your engineer will help organise the workflow, capture the performance and keep the focus on making the song better rather than making the session complicated."]}

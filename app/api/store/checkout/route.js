@@ -4,7 +4,7 @@ import {getStripe} from "../../../../lib/stripe";
 import {rateLimit} from "../../../../lib/rateLimit";
 import {getPromotionFor} from "../../../../lib/promotions";
 
-const PACKS={3:17000,4:22000,5:27000,6:32000,7:37000,8:42000,9:47000,10:52000};
+const PACKS={3:15000,4:20000,5:25000,6:30000,7:35000,8:40000,9:45000,10:50000};
 const GIFTS=[1,2,3,4,5,6,7,8];
 const RELAUNCH_CODE="RELAUNCH_2H_100";
 
@@ -50,11 +50,11 @@ export async function POST(req){
   if(kind==="relaunch"){
    const {data:used,error:ue}=await db.from("studio_payments").select("id,status").eq("customer_id",customer.id).eq("discount_code",RELAUNCH_CODE).in("status",["paid"]).limit(1);
    if(ue)throw ue;
-   if((used||[]).length)return NextResponse.json({error:"This Silkcrayon account has already used the 2 hours for £100 relaunch offer."},{status:409});
+   if((used||[]).length)return NextResponse.json({error:"This Silkcrayon account has already used the 2 hours for £90 relaunch offer."},{status:409});
   }
 
-  const amount=kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="gift"?hours*6000:PACKS[hours];
-  const listAmount=hours*6000;
+  const amount=kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="gift"?hours*5000:PACKS[hours];
+  const listAmount=hours*5000;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch"
@@ -76,7 +76,7 @@ export async function POST(req){
   const productName=kind==="gift"
    ? `Silkcrayon — Gift ${hours} studio hour${hours===1?"":"s"}`
    :kind==="relaunch"
-    ? "Silkcrayon — 2 Hours for £100 Relaunch Offer"
+    ? "Silkcrayon — 2 Hours for £90 Relaunch Offer"
     : `Silkcrayon — ${hours}-Hour Studio Pack`;
   const productDescription=kind==="gift"
    ? `Studio-time gift for ${recipientName}`
