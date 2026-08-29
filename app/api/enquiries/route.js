@@ -2,11 +2,17 @@ import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../lib/notifications';
 import {rateLimit} from '../../../lib/rateLimit';
+import {looksLikeObviousSpam} from '../../../lib/leadSpam';
 
 function e(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 export async function POST(req){
  try{
-  const body=await req.json();if(!await rateLimit(req,{scope:'enquiry',limit:8,windowSeconds:3600,identity:body.email||''}))return NextResponse.json({error:'Too many enquiries from this connection. Please try again later.'},{status:429});
+  const body=await req.json();
+  const started=Number(body.form_started_at||0),elapsed=Date.now()-started;
+  if(String(body.website||'').trim()||!started||elapsed<1800||elapsed>7200000||looksLikeObviousSpam(body))return NextResponse.json({ok:true});
+  const ipOk=await rateLimit(req,{scope:'enquiry-ip',limit:20,windowSeconds:3600});
+  const emailOk=await rateLimit(req,{scope:'enquiry-email',limit:4,windowSeconds:3600,identity:body.email||''});
+  if(!ipOk||!emailOk)return NextResponse.json({error:'Too many enquiries from this connection. Please try again later.'},{status:429});
   if(!body.full_name||!body.email||!body.enquiry_type)return NextResponse.json({error:'Please complete the required fields.'},{status:400});
   if(String(body.full_name||'').length>120||String(body.email||'').length>254||String(body.project_details||'').length>4000)return NextResponse.json({error:'Some enquiry details are too long.'},{status:400});
   const allowed=['mixing','audiobook-podcast','bespoke-production','call-request','general'];

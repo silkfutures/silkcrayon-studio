@@ -1,0 +1,4 @@
+import {NextResponse} from 'next/server';
+import {requireOwner} from '../../../../../lib/auth';
+import {getAdminDb} from '../../../../../lib/supabase';
+export async function DELETE(req,{params}){try{await requireOwner();const {id}=await params,db=getAdminDb(),{data:lead,error}=await db.from('leads').select('*').eq('id',id).single();if(error||!lead)return NextResponse.json({error:'Enquiry not found.'},{status:404});const {error:de}=await db.from('leads').delete().eq('id',id);if(de)throw de;const {data:customer}=await db.from('customers').select('id').eq('email',lead.email).maybeSingle();if(!customer)await db.from('crm_contacts').delete().eq('email',lead.email).eq('source','Website enquiry');return NextResponse.json({ok:true});}catch(e){return NextResponse.json({error:e.message||'Could not delete enquiry.'},{status:500})}}

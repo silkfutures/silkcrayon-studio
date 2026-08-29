@@ -4,6 +4,7 @@ import {getAdminDb} from '../../../lib/supabase';
 import {EngineerHeader,EngineerBottomNav} from '../../../components/EngineerShell';
 import AdminNav from '../../../components/AdminNav';
 import {formatUkDate,formatUkMonth} from '../../../lib/dates';
+import {calendarFeedUrl,webcalUrl} from '../../../lib/calendarFeed';
 export const dynamic='force-dynamic';
 
 function validMonth(v){return /^\d{4}-\d{2}$/.test(String(v||''))}
@@ -13,7 +14,7 @@ function weekdayMonday(date){const d=new Date(`${date}T12:00:00Z`).getUTCDay();r
 
 export default async function CalendarPage({searchParams}){
  const ctx=await requireStaff(),sp=await searchParams,db=getAdminDb(),now=new Date();
- const current=`${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}`;
+ const current=`${now.getUTCFullYear()}-${String(now.getUTCMonth()+1).padStart(2,'0')}`,feedUrl=ctx.profile.role==='owner'?calendarFeedUrl():null,appleUrl=webcalUrl(feedUrl);
  const month=validMonth(sp?.month)?sp.month:current,{start,end,days}=monthBounds(month),eng=ctx.profile.role==='engineer';
  let q=db.from('bookings').select('id,booking_date,start_time,end_time,service_name,status,payment_status,engineer_user_id,customers(id,full_name,artist_name)').gte('booking_date',start).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time');
  if(eng)q=q.eq('engineer_user_id',ctx.user.id);
@@ -31,6 +32,7 @@ export default async function CalendarPage({searchParams}){
    <div className="calendarMonthNav"><Link href={`/admin/calendar?month=${addMonth(month,-1)}`}>←</Link><div><p className="eyebrow">Schedule</p><h2>{formatUkMonth(month)}</h2></div><Link href={`/admin/calendar?month=${addMonth(month,1)}`}>→</Link></div>
    <div className="calendarActions"><Link className="button primary" href="/admin/bookings/new">+ New booking</Link><Link className="button outline" href="/admin/sessions">Session reports</Link></div>
   </section>
+  {!eng&&<section className="adminSection calendarSyncPanel"><div><p className="eyebrow">Apple Calendar</p><h2>Keep Studio OS on your calendar.</h2><p className="muted">Subscribe once and new, moved or cancelled Studio OS sessions will update from the private calendar feed when Apple refreshes the subscription.</p></div>{feedUrl?<div className="calendarSyncActions"><a className="button primary" href={appleUrl}>Subscribe in Apple Calendar</a><details><summary>Manual subscription URL</summary><code>{feedUrl}</code><p className="muted">Keep this URL private — anyone with it can read the studio schedule.</p></details></div>:<div className="portalNotice"><b>Calendar feed unavailable.</b><span>Add CALENDAR_FEED_TOKEN in Vercel, or make sure the Supabase server secret is configured, then redeploy.</span></div>}</section>}
   <section className={eng?'engSection':'adminSection'}>
    <div className="calendarWeekdays">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=><span key={x}>{x}</span>)}</div>
    <div className="studioCalendar">{cells.map((date,i)=>{
