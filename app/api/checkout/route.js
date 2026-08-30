@@ -6,6 +6,7 @@ import { generateSlots } from "../../../lib/availability";
 import { londonDateTimeToUtc } from "../../../lib/time";
 import { rateLimit } from "../../../lib/rateLimit";
 import { getPromotionFor } from "../../../lib/promotions";
+import {getStudioSettings} from "../../../lib/studioSettings";
 
 export async function POST(request) {
   let bookingId = null;
@@ -54,7 +55,8 @@ export async function POST(request) {
     if(body.marketingConsent){
       await db.from("crm_contacts").upsert({customer_id:customer.id,full_name:customer.full_name,email,phone:customer.phone,source:'Booking',marketing_status:'subscribed',marketing_consent:true,email_signup_discount_available:rewardAvailableBefore||newlyJoiningEmailList,updated_at:new Date().toISOString()},{onConflict:'email'});
     }
-    const listPricePence = priceFor(service, duration);
+    const commercial=await getStudioSettings();
+    const listPricePence = service.slug==="vocal-recording"?Math.round(duration/60*commercial.studioHourlyPricePence):service.slug==="full-day"?commercial.fullDayPricePence:priceFor(service,duration);
     let promotion=service.slug==='system-test'?null:await getPromotionFor(service.slug,duration);
     if(promotion?.usage_limit_per_customer){
       const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).eq('promotion_id',promotion.id).in('status',['pending','confirmed','completed']);

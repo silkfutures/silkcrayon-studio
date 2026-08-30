@@ -3,8 +3,8 @@ import {getAdminDb} from "../../../../lib/supabase";
 import {getStripe} from "../../../../lib/stripe";
 import {rateLimit} from "../../../../lib/rateLimit";
 import {getPromotionFor} from "../../../../lib/promotions";
+import {getStudioSettings} from "../../../../lib/studioSettings";
 
-const PACKS={3:15000,4:20000,5:25000,6:30000,7:35000,8:40000,9:45000,10:50000};
 const GIFTS=[1,2,3,4,5,6,7,8];
 const RELAUNCH_CODE="RELAUNCH_2H_100";
 
@@ -17,7 +17,7 @@ export async function POST(req){
   const kind=b.kind==="gift"?"gift":b.kind==="relaunch"?"relaunch":"hours";
   const hours=kind==="relaunch"?2:requestedHours;
   if(kind==="gift"&&!GIFTS.includes(hours))return NextResponse.json({error:"Choose between 1 and 8 gift hours."},{status:400});
-  if(kind==="hours"&&!PACKS[hours])return NextResponse.json({error:"Choose a studio-hour pack between 3 and 10 hours."},{status:400});
+  if(kind==="hours"&&(!Number.isInteger(hours)||hours<3||hours>10))return NextResponse.json({error:"Choose a studio-hour pack between 3 and 10 hours."},{status:400});
   const relaunch=kind==="relaunch"?await getPromotionFor("vocal-recording",120):null;
   if(kind==="relaunch"&&!relaunch)return NextResponse.json({error:"The relaunch offer is not currently available."},{status:410});
 
@@ -53,8 +53,9 @@ export async function POST(req){
    if((used||[]).length)return NextResponse.json({error:"This Silkcrayon account has already used the 2 hours for £90 relaunch offer."},{status:409});
   }
 
-  const amount=kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="gift"?hours*5000:PACKS[hours];
-  const listAmount=hours*5000;
+  const pricing=await getStudioSettings();
+  const listAmount=Math.round(hours*pricing.studioHourlyPricePence);
+  const amount=kind==="relaunch"?Number(relaunch.offer_price_pence):listAmount;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch"
@@ -76,7 +77,7 @@ export async function POST(req){
   const productName=kind==="gift"
    ? `Silkcrayon — Gift ${hours} studio hour${hours===1?"":"s"}`
    :kind==="relaunch"
-    ? "Silkcrayon — 2 Hours for £90 Relaunch Offer"
+    ? `Silkcrayon — 2 Hours for £${(amount/100).toFixed(amount%100?2:0)} Relaunch Offer`
     : `Silkcrayon — ${hours}-Hour Studio Pack`;
   const productDescription=kind==="gift"
    ? `Studio-time gift for ${recipientName}`

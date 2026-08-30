@@ -3,6 +3,7 @@ import { getAdminDb } from '../../../../lib/supabase';
 import { getStaffContext } from '../../../../lib/auth';
 import { sessionFollowupEmail, sendLoggedNotification } from '../../../../lib/notifications';
 import { recordBookingEvent } from '../../../../lib/bookingEvents';
+import { getStudioSettings } from '../../../../lib/studioSettings';
 
 export async function POST(req){
  try{
@@ -49,7 +50,7 @@ export async function POST(req){
    const {data:done}=await db.from('bookings').select('*,customers(*)').eq('id',b.bookingId).maybeSingle();
    if(done){await recordBookingEvent({db,booking:done,eventType:'completed',note:b.workCompleted||null,ctx});}
    if(done?.customers?.email){
-    const msg=sessionFollowupEmail(done,done.customers);
+    const pricing=await getStudioSettings();const msg=sessionFollowupEmail(done,done.customers,pricing);
     await sendLoggedNotification({booking:done,customer:done.customers,type:'session_followup',...msg});
    }
   }

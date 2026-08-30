@@ -4,6 +4,7 @@ import { getAdminDb } from "../../../../lib/supabase";
 import { sendLoggedNotification, sendStaffLoggedNotification, confirmationEmail, newBookingOwnerEmail, ownerEmails, packagePurchaseEmail, mixMasterPurchaseEmail, sendEmail } from "../../../../lib/notifications";
 import { newToken, tokenHash } from "../../../../lib/customerAuth";
 import { sendLoggedSms } from "../../../../lib/sms";
+import { getStudioSettings } from "../../../../lib/studioSettings";
 
 function canonicalBase(){
  const configured=String(process.env.NEXT_PUBLIC_SITE_URL||'').trim().replace(/\/$/,'');
@@ -74,7 +75,7 @@ export async function POST(request) {
                 if(buyerEmail&&buyerEmail!==String(customer.email||'').toLowerCase())await sendEmail({to:buyerEmail,subject:`Your ${hours}-hour Silkcrayon gift for ${recipientName} is confirmed`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Your gift is ready.</h1><p style="color:#c8c1cc;line-height:1.7">Payment is complete for <b>${hours} studio hour${hours===1?'':'s'}</b> for ${recipientName}.</p><p style="color:#c8c1cc;line-height:1.7">We’ve emailed the recipient with instructions to open My Studio and choose their own session date. No date is required at purchase.</p><p style="color:#8f8894;font-size:12px">Paid: £${(Number(payment.amount_pence||0)/100).toFixed(2)}</p></div></div>`});
               }else{const msg=packagePurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
             }
-            if(payment.kind==='mix_master'&&customer?.email){const msg=mixMasterPurchaseEmail(payment,customer);await sendEmail({to:customer.email,...msg});}
+            if(payment.kind==='mix_master'&&customer?.email){const pricing=await getStudioSettings();const msg=mixMasterPurchaseEmail(payment,customer,pricing);await sendEmail({to:customer.email,...msg});}
           }
         }
       } else {

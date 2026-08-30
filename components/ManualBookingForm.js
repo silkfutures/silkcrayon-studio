@@ -19,7 +19,7 @@ function readDraft(){
 }
 function clearDraft(){try{localStorage.removeItem(DRAFT_KEY)}catch{}}
 
-export default function ManualBookingForm({customers=[],engineers=[]}){
+export default function ManualBookingForm({customers=[],engineers=[],hourlyPrice=50}){
  customers=Array.isArray(customers)?customers:[];
  engineers=Array.isArray(engineers)?engineers:[];
  const router=useRouter();
@@ -27,7 +27,7 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
  const [date,setDate]=useState('');
  const [start,setStart]=useState('');
  const [hours,setHours]=useState('1');
- const [amount,setAmount]=useState('60');
+ const [amount,setAmount]=useState(String(hourlyPrice));
  const [engineerUserId,setEngineerUserId]=useState('');
  const [paymentMode,setPaymentMode]=useState('pay_by_bank');
  const [notes,setNotes]=useState('');
@@ -68,14 +68,14 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
  function changeHours(v){
   setHours(v);
   const h=Number(v);
-  if(Number.isFinite(h)&&h>=.5&&h<=8)setAmount(String(Math.round(h*60*100)/100));
+  if(Number.isFinite(h)&&h>=.5&&h<=8)setAmount(String(Math.round(h*hourlyPrice*100)/100));
  }
  function normaliseHours(){
   let h=Number(hours);
   if(!Number.isFinite(h))h=1;
   h=Math.max(.5,Math.min(8,Math.round(h*2)/2));
   setHours(String(h));
-  setAmount(String(Math.round(h*60*100)/100));
+  setAmount(String(Math.round(h*hourlyPrice*100)/100));
  }
  async function submit(e){
   e.preventDefault();
@@ -112,6 +112,6 @@ export default function ManualBookingForm({customers=[],engineers=[]}){
    <button type="button" className={paymentMode==='manual_paid'?'active':''} onClick={()=>setPaymentMode('manual_paid')}><b>Already paid by direct bank transfer</b><span>Marks the booking paid manually.</span><small>No Stripe processing fee.</small></button>
    <button type="button" className={paymentMode==='unpaid'?'active':''} onClick={()=>setPaymentMode('unpaid')}><b>Book now · payment later</b><span>Reserve the session and send confirmation only.</span><small>You can take payment later from the artist profile.</small></button>
   </div><label className="check policyCheck"><input type="checkbox" required checked={policyConfirmed} onChange={e=>setPolicyConfirmed(e.target.checked)}/><span><b>Customer booking confirmed</b><br/>I have agreed the date/time and Silkcrayon booking policies with the customer.</span></label></div></section>
-  <section className="checkoutDock"><div><small>SESSION</small><b>{date?formatUkDate(date):'Choose date'} {start&&`· ${start}–${end}`}</b><span>{validHours?`${numericHours}h`:'Choose hours'} · £{Number(amount||0).toFixed(2)}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button><button type="button" className="draftClearButton" onClick={()=>{clearDraft();setCustomerId('');setDate('');setStart('');setHours('1');setAmount('60');setEngineerUserId('');setPaymentMode('pay_by_bank');setNotes('');setPolicyConfirmed(false);setMsg('Draft cleared.')}}>Clear draft</button>{msg&&<p>{msg}</p>}</section>
+  <section className="checkoutDock"><div><small>SESSION</small><b>{date?formatUkDate(date):'Choose date'} {start&&`· ${start}–${end}`}</b><span>{validHours?`${numericHours}h`:'Choose hours'} · £{Number(amount||0).toFixed(2)}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button><button type="button" className="draftClearButton" onClick={()=>{clearDraft();setCustomerId('');setDate('');setStart('');setHours('1');setAmount(String(hourlyPrice));setEngineerUserId('');setPaymentMode('pay_by_bank');setNotes('');setPolicyConfirmed(false);setMsg('Draft cleared.')}}>Clear draft</button>{msg&&<p>{msg}</p>}</section>
  </form>
 }

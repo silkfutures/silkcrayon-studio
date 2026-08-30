@@ -3,13 +3,7 @@ import SiteHeader from "../components/SiteHeader";
 import Reveal from "../components/Reveal";
 import EmailSignup from "../components/EmailSignup";
 import {getLivePromotions,publicPromotion} from "../lib/promotions";
-
-const services=[
-  {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:'From £50 / hour',href:'/booking?service=vocal-recording',featured:true},
-  {n:'02',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track',href:'/enquire?type=mixing',enquire:true},
-  {n:'03',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project',href:'/enquire?type=audiobook-podcast',enquire:true},
-  {n:'04',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:'£400 / day',href:'/booking?service=full-day'}
-];
+import {getStudioSettings} from "../lib/studioSettings";
 
 const differences=[
   {title:'Vocal takes that feel finished',copy:'We coach takes, comp performances and build doubles, harmonies and layers with care — not just press record.',img:'/images/booth.webp'},
@@ -20,7 +14,16 @@ const differences=[
 
 export const dynamic="force-dynamic";
 export default async function Home(){
-  const promo=publicPromotion((await getLivePromotions()).find(p=>p.show_on_homepage));
+  const [livePromotions,pricing]=await Promise.all([getLivePromotions(),getStudioSettings()]);
+  const promo=publicPromotion(livePromotions.find(p=>p.show_on_homepage));
+  const hourly=`£${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}`;
+  const fullDay=`£${(pricing.fullDayPricePence/100).toFixed(pricing.fullDayPricePence%100?2:0)}`;
+  const services=[
+    {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
+    {n:'02',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track',href:'/enquire?type=mixing',enquire:true},
+    {n:'03',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project',href:'/enquire?type=audiobook-podcast',enquire:true},
+    {n:'04',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:`${fullDay} / day`,href:'/booking?service=full-day'}
+  ];
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
   const business={"@context":"https://schema.org","@type":"LocalBusiness","@id":`${site}/#studio`,name:"Silkcrayon Studios",url:site,image:`${site}/images/wide.webp`,description:"Premium vocal recording, mixing and release-ready music production in Cardiff Bay.",priceRange:"££",address:{"@type":"PostalAddress",streetAddress:process.env.STUDIO_STREET_ADDRESS||"113-116 Portland House",addressLocality:process.env.STUDIO_LOCALITY||"Cardiff",postalCode:process.env.STUDIO_POSTCODE||undefined,addressCountry:"GB"},sameAs:["https://instagram.com/silkcrayon",process.env.GOOGLE_BUSINESS_URL].filter(Boolean)};
   return <main className="marketingSite"><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(business)}}/>
@@ -33,7 +36,7 @@ export default async function Home(){
         <h1>A Studio For Artists<br/>Who Want To <span>Go Further.</span></h1>
         <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
         <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#experience">See why artists stay →</a></div>
-        <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span><b>£50</b> per hour</span></div>
+        <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span><b>{hourly}</b> per hour</span></div>
       </div>
       <a className="scrollCue" href="#experience"><span>Scroll</span><i/></a>
     </section>
@@ -84,7 +87,7 @@ export default async function Home(){
     <section className="section ownershipSection"><div className="container ownershipGrid"><Reveal><div><p className="eyebrow">Studio time, your way</p><h2>Buy the hours.<br/>Choose the date later.</h2><p>Prepay studio time for yourself, gift it to an artist, or give a young creator somewhere meaningful to make.</p></div></Reveal><Reveal delay={90}><div className="ownershipActions"><Link href="/buy-hours"><b>Studio hour packs</b><span>3–10 hours · save as you commit →</span></Link><Link href="/gift-studio-time"><b>Gift studio time</b><span>Choose 1–8 hours →</span></Link><Link href="/young-creators"><b>For young creators</b><span>Why creative space matters →</span></Link></div></Reveal></div></section>
     <section className="section newsletterSection"><div className="container"><EmailSignup/></div></section>
     <section className="section finalCta"><div className="container">
-      <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">From £50/hour · Secure online booking · Cardiff Bay</p></Reveal>
+      <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">{hourly}/hour · Secure online booking · Cardiff Bay</p></Reveal>
     </div></section>
 
     <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The Space</a><Link href="/booking">Book</Link></div><div><Link href="/account/login">My Studio</Link><Link href="/getting-here">Getting here</Link><Link href="/faq">FAQ</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/cancellation-policy">Cancellation & refunds</Link><Link href="/no-harmful-music-policy">No Harmful Music</Link><a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer">Instagram ↗</a><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>

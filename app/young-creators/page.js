@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "../../components/SiteHeader";
 import Reveal from "../../components/Reveal";
+import {getStudioSettings} from "../../lib/studioSettings";
 
 export const metadata={
   title:"Studio Time for Young Creators | Silkcrayon Cardiff",
@@ -23,7 +24,7 @@ const pathway=[
   ["RISE","Lead & contribute","Silkfutures' strongest progression is young people becoming mentors, facilitators and examples for others."]
 ];
 
-export default function YoungCreators(){
+export default async function YoungCreators(){const pricing=await getStudioSettings();
  return <main className="marketingSite youthPage">
   <SiteHeader/>
 
@@ -85,7 +86,7 @@ export default function YoungCreators(){
 
   <section className="ycFinal">
    <div className="container">
-    <Reveal><p className="eyebrow">A different kind of gift</p><h2>Give their creativity<br/><span>somewhere to go.</span></h2><p>Studio hours from £50. Buy now. They choose the date later.</p><div className="actions"><Link className="button primary large" href="/gift-studio-time">Gift studio time <span>↗</span></Link><Link className="textLink" href="/buy-hours">Buy hours for yourself →</Link></div></Reveal>
+    <Reveal><p className="eyebrow">A different kind of gift</p><h2>Give their creativity<br/><span>somewhere to go.</span></h2><p>Studio hours from £{(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}. Buy now. They choose the date later.</p><div className="actions"><Link className="button primary large" href="/gift-studio-time">Gift studio time <span>↗</span></Link><Link className="textLink" href="/buy-hours">Buy hours for yourself →</Link></div></Reveal>
    </div>
   </section>
  </main>
