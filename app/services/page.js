@@ -10,15 +10,18 @@ export const metadata={
  openGraph:{title:"Recording Studio Services Cardiff | Silkcrayon Studios",description:"Recording, mixing, production and spoken-word studio services in Cardiff.",url:"https://silkcrayon.com/services",type:"website"}
 };
 
-const services=[
- {n:"01",title:"Vocal Recording",copy:"Record through a Neumann U87 with an engineer who understands performance, doubles, harmonies, layers and the details that make a vocal feel finished.",meta:`From £${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)} / hour`,href:"/booking?service=vocal-recording",cta:"Book →"},
- {n:"02",title:"Mixing & Mastering",copy:"Take the record beyond the session with focused clean-up, balance, detail and a release-ready finish.",meta:`Studio Finish · £${(pricing.studioFinishPricePence/100).toFixed(pricing.studioFinishPricePence%100?2:0)}`,href:"/enquire?type=mixing",cta:"Enquire →"},
- {n:"03",title:"Music Production",copy:"Develop the idea, arrangement and sound around the artist. From an early concept through to a complete record.",meta:"Project based",href:"/enquire?type=production",cta:"Enquire →"},
- {n:"04",title:"Audiobooks & Podcasts",copy:"Clear, controlled spoken-word recording in a calm professional environment, with engineering and production support available.",meta:"Project based",href:"/enquire?type=audiobook-podcast",cta:"Enquire →"},
- {n:"05",title:"Bespoke Production",copy:"For creative work that does not fit a standard session. Tell us what you are making and we will shape the right studio approach around it.",meta:"Built around the project",href:"/enquire?type=bespoke-production",cta:"Enquire →"}
-];
 
-export default async function Services(){const pricing=await getStudioSettings();
+export default async function Services(){
+ const pricing=await getStudioSettings();
+ const money=p=>`£${(Number(p||0)/100).toFixed(Number(p||0)%100?2:0)}`;
+ const services=[
+  {n:"01",title:"Vocal Recording",copy:"Record through a Neumann U87 with an engineer who understands performance, doubles, harmonies, layers and the details that make a vocal feel finished.",meta:`From ${money(pricing.studioHourlyPricePence)} / hour`,href:"/booking?service=vocal-recording",cta:"Book →"},
+  {n:"02",title:"Mixing & Mastering",copy:"Take the record beyond the session with focused clean-up, balance, detail and a release-ready finish.",meta:`Studio Finish · ${money(pricing.studioFinishPricePence)}`,href:"/enquire?type=mixing",cta:"Enquire →"},
+  {n:"03",title:"Music Production",copy:"Develop the idea, arrangement and sound around the artist. From an early concept through to a complete record.",meta:"Project based",href:"/enquire?type=production",cta:"Enquire →"},
+  {n:"04",title:"Audiobooks & Podcasts",copy:"Clear, controlled spoken-word recording in a calm professional environment, with engineering and production support available.",meta:"Project based",href:"/enquire?type=audiobook-podcast",cta:"Enquire →"},
+  {n:"05",title:"Bespoke Production",copy:"For creative work that does not fit a standard session. Tell us what you are making and we will shape the right studio approach around it.",meta:"Built around the project",href:"/enquire?type=bespoke-production",cta:"Enquire →"}
+ ];
+
  return <main className="marketingSite servicesPage">
   <SiteHeader/>
   <section className="servicesHero">
