@@ -8,7 +8,13 @@ export async function GET(request){
  const secret=process.env.CRON_SECRET;
  if(!secret)return new NextResponse('CRON_SECRET not configured',{status:503});
  if(request.headers.get('authorization')!==`Bearer ${secret}`)return new NextResponse('Unauthorized',{status:401});
- const db=getAdminDb(),tomorrow=londonDateOffset(1),yesterday=londonDateOffset(-1);
+ const db=getAdminDb(),tomorrow=londonDateOffset(1),yesterday=londonDateOffset(-1),nowIso=new Date().toISOString();
+ const {data:expiredDeliveries=[]}=await db.from('session_deliveries').select('id,storage_path').eq('delivery_type','upload').is('deleted_at',null).not('expires_at','is',null).lte('expires_at',nowIso).limit(200);
+ let deliveriesDeleted=0;
+ for(const d of expiredDeliveries){
+  if(d.storage_path){const {error:removeError}=await db.storage.from('session-deliveries').remove([d.storage_path]);if(removeError)continue;}
+  const {error:updateError}=await db.from('session_deliveries').update({deleted_at:nowIso}).eq('id',d.id);if(!updateError)deliveriesDeleted++;
+ }
  const preferredDefault=String(process.env.DEFAULT_ENGINEER_USER_ID||'').trim();
  let {data:defaultEngineer}=preferredDefault?await db.from('staff_profiles').select('user_id,full_name,engineer_name,phone,photo_url,email,role,active').eq('user_id',preferredDefault).eq('active',true).maybeSingle():{data:null};
  if(!defaultEngineer){const {data:owner}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,phone,photo_url,email,role,active').eq('role','owner').eq('active',true).limit(1).maybeSingle();defaultEngineer=owner||null;}
@@ -40,5 +46,5 @@ export async function GET(request){
   const c=b.customers;if(!c?.email)continue;
   const msg=bookAgainEmail(b,c),r=await sendLoggedNotification({booking:b,customer:c,type:'book_again',...msg});if(r.ok)sent++;
  }
- return NextResponse.json({ok:true,tomorrow,yesterday,checked:upcoming.length+past.length,sent});
+ return NextResponse.json({ok:true,tomorrow,yesterday,checked:upcoming.length+past.length,sent,expiredDeliveriesChecked:expiredDeliveries.length,deliveriesDeleted});
 }
