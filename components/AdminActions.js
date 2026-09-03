@@ -26,6 +26,15 @@ export function ChangeRequestActions({id}){
  return <div className="requestActions"><button className="miniButton solid" disabled={busy} onClick={()=>decide('approve')}>Confirm change</button><button className="miniButton" disabled={busy} onClick={()=>decide('decline')}>Decline</button>{msg&&<small>{msg}</small>}</div>
 }
 
+
+export function BookingPaymentAction({booking,compact=false}){
+ const router=useRouter();const [busy,setBusy]=useState(false),[open,setOpen]=useState(false),[method,setMethod]=useState('bank_transfer'),[msg,setMsg]=useState('');
+ const paid=['paid','part_refunded'].includes(booking.payment_status);
+ if(paid)return <span className="paidText">Paid</span>;
+ async function markPaid(){setBusy(true);setMsg('Saving…');const r=await fetch(`/api/admin/bookings/${booking.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({manualPaymentStatus:'paid',manualPaymentMethod:method})});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?'Paid ✓':(j.error||'Could not update'));if(r.ok)router.refresh();}
+ return <div className={`bookingPaymentAction ${compact?'compact':''}`}><button className="miniButton solid" disabled={busy} onClick={()=>setOpen(v=>!v)}>{open?'Close':'Mark as paid'}</button>{open&&<div className="inlinePaidPanel"><label>Payment method<select value={method} onChange={e=>setMethod(e.target.value)}><option value="bank_transfer">Bank transfer</option><option value="cash">Cash</option><option value="other">Other</option></select></label><button className="miniButton solid" disabled={busy} onClick={markPaid}>{busy?'Saving…':`Confirm · £${(Number(booking.amount_pence||0)/100).toFixed(2)}`}</button></div>}{msg&&<small>{msg}</small>}</div>;
+}
+
 export function PaymentReconcileButton(){
  const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState('');
  async function run(){setBusy(true);setMsg('Checking Stripe…');const r=await fetch('/api/admin/reconcile-payments',{method:'POST'});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?`Checked ${j.checked} · fixed ${j.paid} paid booking${j.paid===1?'':'s'} ✓`:(j.error||'Sync failed'));if(r.ok)router.refresh();}
