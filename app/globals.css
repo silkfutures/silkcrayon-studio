@@ -590,3 +590,17 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 /* V20.7.6 — accounting corrections + owner revenue dashboard */
 .revenueDashboard{overflow:hidden}.revenueHeroGrid{display:grid;grid-template-columns:2fr repeat(3,1fr);gap:12px;margin-top:18px}.revenueHero,.revenueStat{border:1px solid var(--line,#2e2935);border-radius:16px;padding:18px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:6px}.revenueHero b{font-size:clamp(32px,5vw,52px);letter-spacing:-.04em}.revenueStat b{font-size:24px}.revenueHero small,.revenueStat small,.revenueBreakdown span{color:var(--muted,#aaa1ae)}.revenueBreakdown{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}.revenueBreakdown>div{display:flex;justify-content:space-between;gap:12px;padding:12px 14px;border-top:1px solid var(--line,#2e2935)}.accountingCorrection{min-width:150px}.correctionTrigger{border:0;background:none;padding:0;cursor:pointer;font:inherit}.accountingCorrectionBox{margin-top:8px;padding:12px;border:1px solid var(--line,#2e2935);border-radius:12px;min-width:230px;background:#111015;display:grid;gap:8px}.accountingCorrectionBox label{display:grid;gap:5px}.accountingCorrectionBox input{width:100%}.accountingCorrectionBox small{line-height:1.35}.dangerOutline{border-color:#7c4242!important}.accountingCorrection>small{display:block;margin-top:5px}
 @media(max-width:820px){.revenueHeroGrid{grid-template-columns:1fr 1fr}.revenueHero{grid-column:1/-1}.revenueBreakdown{grid-template-columns:1fr}.accountingCorrectionBox{min-width:200px}}
+
+/* V20.7.6.1 — booking payment schema hotfix + mobile accounting ledger */
+@media(max-width:760px){
+ .adminPage .tableWrap{overflow:visible}
+ .adminPage .tableWrap table{min-width:0;width:100%}
+ .adminPage .tableWrap table thead{display:none}
+ .adminPage .tableWrap table tbody,.adminPage .tableWrap table tr,.adminPage .tableWrap table td{display:block;width:100%;box-sizing:border-box}
+ .adminPage .tableWrap table tr{border:1px solid var(--line,#2e2935);border-radius:14px;margin:0 0 12px;padding:14px;background:rgba(255,255,255,.015)}
+ .adminPage .tableWrap table td{border:0!important;padding:5px 0!important;white-space:normal;overflow-wrap:anywhere}
+ .adminPage .tableWrap table td:first-child{color:var(--muted,#aaa1ae);font-size:12px}
+ .adminPage .tableWrap table td:last-child{padding-top:10px!important}
+ .accountingCorrection,.accountingCorrectionBox{width:100%;min-width:0}
+ .correctionTrigger{min-height:42px;text-align:left}
+}

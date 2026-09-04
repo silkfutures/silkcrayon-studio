@@ -20,8 +20,8 @@ export default async function Admin(){
   db.from('page_views').select('visitor_id,created_at').gte('created_at',month+'T00:00:00Z').lt('created_at',nextMonth+'T00:00:00Z'),
   db.from('staff_profiles').select('user_id,full_name,engineer_name,role,active').in('role',['engineer','owner']).eq('active',true).order('full_name'),
   db.from('blockouts').select('*').gte('booking_date',today).order('booking_date').order('start_time'),
-  db.from('bookings').select('amount_pence,refunded_amount_pence,payment_status,payment_method,paid_at,duration_minutes').in('payment_status',['paid','part_refunded','refunded']).neq('payment_method','credits').gte('paid_at',month+'T00:00:00Z').lt('paid_at',nextMonth+'T00:00:00Z'),
-  db.from('bookings').select('amount_pence,refunded_amount_pence,payment_status,payment_method,paid_at,duration_minutes').in('payment_status',['paid','part_refunded','refunded']).neq('payment_method','credits').gte('paid_at',prevMonth+'T00:00:00Z').lt('paid_at',month+'T00:00:00Z'),
+  db.from('bookings').select('amount_pence,refunded_amount_pence,payment_status,payment_method,created_at,duration_minutes').in('payment_status',['paid','part_refunded','refunded']).neq('payment_method','credits').gte('created_at',month+'T00:00:00Z').lt('created_at',nextMonth+'T00:00:00Z'),
+  db.from('bookings').select('amount_pence,refunded_amount_pence,payment_status,payment_method,created_at,duration_minutes').in('payment_status',['paid','part_refunded','refunded']).neq('payment_method','credits').gte('created_at',prevMonth+'T00:00:00Z').lt('created_at',month+'T00:00:00Z'),
   db.from('studio_payments').select('amount_pence,refunded_amount_pence,status,paid_at,created_at,session_hours,payment_category,kind').in('status',['paid','part_refunded','refunded']).gte('paid_at',month+'T00:00:00Z').lt('paid_at',nextMonth+'T00:00:00Z'),
   db.from('studio_payments').select('amount_pence,refunded_amount_pence,status,paid_at,created_at,session_hours,payment_category,kind').in('status',['paid','part_refunded','refunded']).gte('paid_at',prevMonth+'T00:00:00Z').lt('paid_at',month+'T00:00:00Z')
  ]);

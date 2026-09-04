@@ -37,14 +37,14 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
      const method=String(body.manualPaymentMethod||'');
      if(!['bank_transfer','cash','other'].includes(method))return NextResponse.json({error:'Choose bank transfer, cash or other.'},{status:400});
      const now=new Date().toISOString();
-     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'paid',payment_method:method,paid_at:now,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'paid',payment_method:method,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
      await recordBookingEvent({db,booking:updated,eventType:'payment_marked_paid',reasonCode:method,note:`Manually marked paid · £${(Number(updated.amount_pence||0)/100).toFixed(2)}`,ctx,snapshot:current});
      return NextResponse.json({ok:true,booking:updated});
    }
    if(body.manualPaymentStatus==='unpaid'){
      if(current.payment_status!=='paid')return NextResponse.json({error:'This booking is not currently marked paid.'},{status:409});
      const oldMethod=current.payment_method;
-     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'unpaid',payment_method:null,paid_at:null,updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'unpaid',payment_method:null,updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
      const correctionReason=String(body.correctionReason||'Owner correction').trim().slice(0,240);
      await recordBookingEvent({db,booking:updated,eventType:'payment_marked_unpaid',reasonCode:'owner_correction',note:`Manual payment reversed · previous method ${oldMethod||'unknown'} · ${correctionReason}`,ctx,snapshot:current});
      return NextResponse.json({ok:true,booking:updated});
