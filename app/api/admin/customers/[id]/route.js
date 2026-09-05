@@ -60,6 +60,18 @@ export async function DELETE(req,{params}){
      payment_status:'refunded',refunded_amount_pence:verified,updated_at:new Date().toISOString()
     }).eq('id',b.id);
     if(ue)throw ue;
+    continue;
+   }
+
+   // A paid £1-or-less test booking with no Stripe payment intent is only a local/manual
+   // test record. The owner has already explicitly chosen permanent test-data deletion,
+   // so void the local payment marker before the protected delete RPC runs. Real Stripe
+   // money remains protected and must still be refunded first.
+   if(!b.stripe_payment_intent_id){
+    const {error:ue}=await db.from('bookings').update({
+     payment_status:'unpaid',payment_method:'manual_voided',updated_at:new Date().toISOString()
+    }).eq('id',b.id);
+    if(ue)throw ue;
    }
   }
 
