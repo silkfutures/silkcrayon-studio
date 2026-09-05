@@ -38,6 +38,12 @@ export async function POST(req){
    if(be)throw be;
    if(ctx.profile.role==='engineer'&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This booking is not assigned to you.'},{status:403});
    customerId=booking.customer_id||null;
+  }else if(b.customerId){
+   if(ctx.profile.role!=='owner')return NextResponse.json({error:'Only the owner can link a manual session to an artist.'},{status:403});
+   const {data:customer,error:ce}=await db.from('customers').select('id,artist_name,full_name').eq('id',b.customerId).maybeSingle();
+   if(ce)throw ce;if(!customer)return NextResponse.json({error:'Artist not found.'},{status:404});
+   customerId=customer.id;
+   if(!b.artistName)b.artistName=customer.artist_name||customer.full_name;
   }
 
   let extraPayment=null;
@@ -50,9 +56,25 @@ export async function POST(req){
    extraPayment={extraHours,amount,method};
   }
 
-  const {data:report,error}=await db.from('session_reports').insert({booking_id:b.bookingId||null,customer_id:customerId,engineer,artist_name:b.artistName,session_date:b.sessionDate,start_time:b.startTime||null,actual_hours:Number(b.actualHours),payment_method:b.paymentMethod||null,engineer_fee_pence:0,studio_fee_pence:Math.round(Number(b.studioFee||0)*100),work_completed:b.workCompleted||null,files_status:b.filesStatus||null,follow_up:b.projectStatus||null,project_status:b.projectStatus||null,notes:b.notes||null,submitted_by_user_id:ctx.user.id,submitted_by_name:ctx.profile.full_name}).select('id').single();
+  const manualSessionPaid=!b.bookingId&&b.sessionPaymentPaid==='yes';
+  let manualSessionPayment=null;
+  if(manualSessionPaid){
+   if(ctx.profile.role!=='owner')return NextResponse.json({error:'Only the owner can record an external payment.'},{status:403});
+   if(!customerId)return NextResponse.json({error:'Choose the artist for this paid session.'},{status:400});
+   const amount=Math.round(Number(b.sessionPaymentAmount||0)*100),method=String(b.sessionPaymentMethod||'');
+   if(!Number.isFinite(amount)||amount<30)return NextResponse.json({error:'Enter the amount received for this session.'},{status:400});
+   if(!['bank_transfer','cash','external_card','other'].includes(method))return NextResponse.json({error:'Choose how the session was paid.'},{status:400});
+   manualSessionPayment={amount,method};
+  }
+
+  const {data:report,error}=await db.from('session_reports').insert({booking_id:b.bookingId||null,customer_id:customerId,engineer,artist_name:b.artistName,session_date:b.sessionDate,start_time:b.startTime||null,actual_hours:Number(b.actualHours),payment_method:manualSessionPayment?.method||b.paymentMethod||null,engineer_fee_pence:0,studio_fee_pence:manualSessionPayment?.amount||Math.round(Number(b.studioFee||0)*100),work_completed:b.workCompleted||null,files_status:b.filesStatus||null,follow_up:b.projectStatus||null,project_status:b.projectStatus||null,notes:b.notes||null,submitted_by_user_id:ctx.user.id,submitted_by_name:ctx.profile.full_name}).select('id').single();
   if(error)throw error;
-  let extraPaymentRecorded=false;
+  let extraPaymentRecorded=false,manualSessionPaymentRecorded=false;
+  if(manualSessionPayment){
+   const now=new Date().toISOString();
+   const {error:manualPayError}=await db.from('studio_payments').insert({customer_id:customerId,booking_id:null,session_report_id:report.id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,kind:'session',description:`Studio session · ${Number(b.actualHours)}h`,amount_pence:manualSessionPayment.amount,list_amount_pence:manualSessionPayment.amount,hours_credit:0,session_hours:Number(b.actualHours),status:'paid',paid_at:now,payment_method:manualSessionPayment.method,payment_category:'session',discount_code:'none',discount_percent:0,discount_amount_pence:0});
+   if(manualPayError)throw manualPayError;manualSessionPaymentRecorded=true;
+  }
   if(extraPayment){
    const now=new Date().toISOString();
    const {error:payError}=await db.from('studio_payments').insert({customer_id:customerId,booking_id:b.bookingId,session_report_id:report.id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,kind:'session',description:`Extra studio time · ${extraPayment.extraHours}h`,amount_pence:extraPayment.amount,list_amount_pence:extraPayment.amount,hours_credit:0,session_hours:extraPayment.extraHours,status:'paid',paid_at:now,payment_method:extraPayment.method,payment_category:'extra_time',discount_code:'none',discount_percent:0,discount_amount_pence:0});
@@ -71,6 +93,6 @@ export async function POST(req){
     await sendLoggedNotification({booking:done,customer:done.customers,type:'session_followup',...msg});
    }
   }
-  return NextResponse.json({ok:true,extraPaymentRecorded});
+  return NextResponse.json({ok:true,extraPaymentRecorded,manualSessionPaymentRecorded});
  }catch(e){return NextResponse.json({error:e.message},{status:500})}
 }
