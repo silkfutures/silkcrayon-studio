@@ -27,7 +27,7 @@ export async function GET(request){
   const c=b.customers;if(!c)continue;
   let working=b,staff=null;
   if(b.engineer_user_id){const {data}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,phone,photo_url,email').eq('user_id',b.engineer_user_id).maybeSingle();staff=data||null;}
-  else if(defaultEngineer){
+  else if(b.service_slug!=='dry-hire'&&defaultEngineer){
    const assignedName=defaultEngineer.engineer_name||defaultEngineer.full_name;
    const {data:updated}=await db.from('bookings').update({engineer_user_id:defaultEngineer.user_id,assigned_engineer:assignedName,updated_at:new Date().toISOString()}).eq('id',b.id).is('engineer_user_id',null).select('*,customers(*)').maybeSingle();
    if(updated){working=updated;staff=defaultEngineer;}
@@ -38,7 +38,8 @@ export async function GET(request){
    const name=staff?.engineer_name||staff?.full_name||'';
    const contact=staff?.phone||'';
    const engineer=name?(contact?` Engineer ${name} — text ${contact} when you reach the lane.`:` Engineer: ${name}.`):'';
-   const sms=await sendLoggedSms({booking:working,customer:c,type:'session_reminder_sms',body:`Silkcrayon reminder: tomorrow at ${String(working.start_time).slice(0,5)}.${engineer} Getting here: https://silkcrayon.com/getting-here`});
+   const dry=working.service_slug==='dry-hire'?' Dry hire: no Silkcrayon engineer is included. Bring everything you need to run the session.':'';
+   const sms=await sendLoggedSms({booking:working,customer:c,type:'session_reminder_sms',body:`Silkcrayon reminder: tomorrow at ${String(working.start_time).slice(0,5)}.${dry||engineer} Getting here: https://silkcrayon.com/getting-here`});
    if(sms.ok)sent++;
   }
  }

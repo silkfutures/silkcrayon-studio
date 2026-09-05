@@ -23,6 +23,7 @@ export async function POST(request) {
     const requestedStart=londonDateTimeToUtc(body.date,body.start);
     if(!requestedStart||requestedStart.getTime()<=Date.now()+5*60*1000)return NextResponse.json({error:'Please choose a future session time.'},{status:400});
     if (!body.policyAccepted || !body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the booking terms and policies before booking." }, { status: 400 });
+    if(service.slug==="dry-hire"&&!body.dryHireAccepted)return NextResponse.json({error:"You must agree to the Dry Hire Terms before booking."},{status:400});
 
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
@@ -35,7 +36,7 @@ export async function POST(request) {
 
     const email = body.email.trim().toLowerCase();
     let preferredEngineer=null;
-    if(body.preferredEngineerUserId){
+    if(service.slug!=="dry-hire"&&body.preferredEngineerUserId){
       const {data:eng}=await db.from("staff_profiles").select("user_id,full_name,engineer_name,active,role").eq("user_id",body.preferredEngineerUserId).maybeSingle();
       if(eng?.active&&["owner","engineer"].includes(eng.role))preferredEngineer=eng;
     }
@@ -100,7 +101,9 @@ export async function POST(request) {
       promotion_id: promotion?.id || null,
       promotion_code: promotion?.code || null,
       list_amount_pence: listPricePence,
-      discount_amount_pence: Math.max(0,listPricePence-amountPence)
+      discount_amount_pence: Math.max(0,listPricePence-amountPence),
+      dry_hire_terms_accepted: service.slug==="dry-hire" ? true : false,
+      dry_hire_terms_version: service.slug==="dry-hire" ? "2026-09-05" : null
     }).eq("id", reservedId);
     const booking = { id: reservedId };
 

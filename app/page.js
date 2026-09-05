@@ -20,9 +20,10 @@ export default async function Home(){
   const fullDay=`£${(pricing.fullDayPricePence/100).toFixed(pricing.fullDayPricePence%100?2:0)}`;
   const services=[
     {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
-    {n:'02',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track',href:'/enquire?type=mixing',enquire:true},
-    {n:'03',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project',href:'/enquire?type=audiobook-podcast',enquire:true},
-    {n:'04',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:`${fullDay} / day`,href:'/booking?service=full-day'}
+    {n:'02',title:'Studio Dry Hire',copy:'Already know what you are doing? Bring your own engineer or run the session yourself. Use the Silkcrayon room, booth, monitoring and studio setup without a Silkcrayon engineer.',meta:'£40 / hour · 2h minimum',href:'/dry-hire-cardiff'},
+    {n:'03',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track',href:'/enquire?type=mixing',enquire:true},
+    {n:'04',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project',href:'/enquire?type=audiobook-podcast',enquire:true},
+    {n:'05',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:`${fullDay} / day`,href:'/booking?service=full-day'}
   ];
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
   const business={"@context":"https://schema.org","@type":"LocalBusiness","@id":`${site}/#studio`,name:"Silkcrayon Studios",url:site,image:`${site}/images/wide.webp`,description:"Premium vocal recording, mixing and release-ready music production in Cardiff Bay.",priceRange:"££",address:{"@type":"PostalAddress",streetAddress:process.env.STUDIO_STREET_ADDRESS||"113-116 Portland House",addressLocality:process.env.STUDIO_LOCALITY||"Cardiff",postalCode:process.env.STUDIO_POSTCODE||undefined,addressCountry:"GB"},sameAs:["https://instagram.com/silkcrayon",process.env.GOOGLE_BUSINESS_URL].filter(Boolean)};

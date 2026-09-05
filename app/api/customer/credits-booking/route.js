@@ -11,7 +11,7 @@ export async function POST(req){
   const b=await req.json(),service=SERVICES[b.service],duration=Number(b.duration);
   if(!service||!service.durations.includes(duration))return NextResponse.json({error:'Invalid session.'},{status:400});
   if(!/^\d{4}-\d{2}-\d{2}$/.test(b.date||'')||!/^\d{2}:\d{2}$/.test(b.start||''))return NextResponse.json({error:'Invalid date or time.'},{status:400});
-  if(service.slug==='system-test')return NextResponse.json({error:'Test bookings cannot use studio hours.'},{status:400});
+  if(['system-test','dry-hire'].includes(service.slug))return NextResponse.json({error:service.slug==='dry-hire'?'Dry hire is paid separately at its own rate.':'Test bookings cannot use studio hours.'},{status:400});
   const db=getAdminDb(),now=new Date().toISOString();
   const [{data:existing=[]},{data:blockouts=[]},{data:ledger=[]}]=await Promise.all([
     db.from('bookings').select('start_time,end_time,status,hold_expires_at').eq('booking_date',b.date).in('status',['pending','confirmed']),

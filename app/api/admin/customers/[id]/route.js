@@ -3,6 +3,22 @@ import {getStaffContext} from '../../../../../lib/auth';
 import {getAdminDb} from '../../../../../lib/supabase';
 import {getStripe} from '../../../../../lib/stripe';
 
+export async function PATCH(req,{params}){
+ try{
+  const ctx=await getStaffContext();
+  if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
+  const {id}=await params,body=await req.json(),db=getAdminDb();
+  const fullName=String(body.fullName||'').trim(),email=String(body.email||'').trim().toLowerCase();
+  if(!fullName||!email)return NextResponse.json({error:'Name and email are required.'},{status:400});
+  if(fullName.length>120||email.length>254||String(body.phone||'').length>50||String(body.instagram||'').length>200)return NextResponse.json({error:'Some artist details are too long.'},{status:400});
+  const patch={full_name:fullName,email,artist_name:String(body.artistName||'').trim()||null,phone:String(body.phone||'').trim()||null,instagram:String(body.instagram||'').trim()||null,preferred_genre:String(body.preferredGenre||'').trim()||null,area:String(body.area||'').trim()||null,goals:String(body.goals||'').trim()||null,sms_service_consent:Boolean(String(body.phone||'').trim()),updated_at:new Date().toISOString()};
+  const {data,error}=await db.from('customers').update(patch).eq('id',id).select().single();
+  if(error)throw error;
+  await db.from('crm_contacts').update({full_name:data.full_name,email:data.email,phone:data.phone,updated_at:new Date().toISOString()}).eq('customer_id',id);
+  return NextResponse.json({ok:true,customer:data});
+ }catch(e){console.error('Update customer failed',e);return NextResponse.json({error:e.message||'Could not update artist.'},{status:500});}
+}
+
 export async function DELETE(req,{params}){
  try{
   const ctx=await getStaffContext();
