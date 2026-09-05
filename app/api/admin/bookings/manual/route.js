@@ -7,6 +7,8 @@ import {sendLoggedSms} from '../../../../../lib/sms';
 import {newToken,tokenHash} from '../../../../../lib/customerAuth';
 import {londonDateTimeToUtc} from '../../../../../lib/time';
 import {formatUkDate} from '../../../../../lib/dates';
+import {ensureDryHireIdRequest} from '../../../../../lib/dryHireId';
+import {recordBookingEvent} from '../../../../../lib/bookingEvents';
 
 function money(v){return Math.round(Number(v||0)*100)}
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -19,15 +21,18 @@ export async function POST(req){try{
  const ctx=await getStaffContext();if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
  const b=await req.json(),db=getAdminDb();
  if(!b.customerId||!/^\d{4}-\d{2}-\d{2}$/.test(b.date||'')||!/^\d{2}:\d{2}$/.test(b.start||'')||!/^\d{2}:\d{2}$/.test(b.end||''))return NextResponse.json({error:'Artist, date and time are required.'},{status:400});
+ const serviceSlug=b.serviceSlug==='dry-hire'?'dry-hire':'vocal-recording',dryHire=serviceSlug==='dry-hire';
  const hours=Number(b.hours||0),duration=Math.round(hours*60),amount=money(b.amount);
- if(!Number.isFinite(hours)||hours<.5||hours>8||duration<30)return NextResponse.json({error:'Choose between 0.5 and 8 hours.'},{status:400});
+ if(!Number.isFinite(hours)||hours<(dryHire?2:.5)||hours>8||duration<(dryHire?120:30))return NextResponse.json({error:dryHire?'Dry Hire has a 2-hour minimum.':'Choose between 0.5 and 8 hours.'},{status:400});
+ if(dryHire&&!b.dryHireConfirmed)return NextResponse.json({error:'Confirm the lead hirer is 18+ and has agreed the Dry Hire Terms.'},{status:400});
  if(!Number.isFinite(amount)||amount<30)return NextResponse.json({error:'Session value must be at least £0.30.'},{status:400});
  const when=londonDateTimeToUtc(b.date,b.start);if(!when||when.getTime()<=Date.now())return NextResponse.json({error:'Choose a future session.'},{status:400});
  const {data:customer,error:ce}=await db.from('customers').select('*').eq('id',b.customerId).single();if(ce||!customer)return NextResponse.json({error:'Artist not found.'},{status:404});
+ if(dryHire&&!customer.phone)return NextResponse.json({error:'Add a mobile number to the artist before creating a Dry Hire booking.'},{status:400});
  let engineer=null;
- if(b.engineerUserId){const {data:e}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,email,phone,photo_url,active,role').eq('user_id',b.engineerUserId).maybeSingle();if(e?.active)engineer=e}
+ if(!dryHire&&b.engineerUserId){const {data:e}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,email,phone,photo_url,active,role').eq('user_id',b.engineerUserId).maybeSingle();if(e?.active)engineer=e}
  const {data:id,error:re}=await db.rpc('reserve_booking',{
-  p_customer_id:customer.id,p_service_slug:'vocal-recording',p_service_name:'Vocal Recording',
+  p_customer_id:customer.id,p_service_slug:serviceSlug,p_service_name:dryHire?'Studio Dry Hire':'Vocal Recording',
   p_booking_date:b.date,p_start_time:b.start,p_end_time:b.end,p_duration_minutes:duration,
   p_genre:null,p_notes:String(b.notes||'').slice(0,2000)||null,p_amount_pence:amount,p_hold_expires_at:null,
   p_harmful_music_policy_accepted:true
@@ -37,6 +42,7 @@ export async function POST(req){try{
  const isManualPaid=paymentMode==='manual_paid';
  const {error:ue}=await db.from('bookings').update({
   status:'confirmed',payment_status:isManualPaid?'paid':'unpaid',payment_method:isManualPaid?'manual':'stripe',hold_expires_at:null,
+  dry_hire_terms_accepted:dryHire,dry_hire_terms_version:dryHire?'2026-09-05':null,dry_hire_lead_hirer_18_confirmed:dryHire,
   assigned_engineer:engineer?(engineer.engineer_name||engineer.full_name):null,engineer_user_id:engineer?.user_id||null,
   terms_version:policyVersion,cancellation_policy_version:policyVersion,harmful_music_policy_version:policyVersion,privacy_policy_version:policyVersion,
   policy_accepted_at:new Date().toISOString(),harmful_music_policy_accepted:true,sms_reminder_consent:Boolean(customer.phone),
@@ -46,10 +52,19 @@ export async function POST(req){try{
 
  let portalUrl=null;try{const token=newToken(),expires=new Date(Date.now()+7*24*60*60*1000).toISOString();const {error:te}=await db.from('customer_access_tokens').insert({customer_id:customer.id,token_hash:tokenHash(token),expires_at:expires});if(!te)portalUrl=`${canonicalBase(new URL(req.url).origin)}/account/access?token=${encodeURIComponent(token)}`;}catch{}
  const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).in('status',['confirmed','completed']);
- const paymentLabel=isManualPaid?`£${(amount/100).toFixed(2)} · Paid by bank transfer`:`£${(amount/100).toFixed(2)} · Payment due`;
+ const paymentLabel=isManualPaid?`£${(amount/100).toFixed(2)} · Paid manually`:`£${(amount/100).toFixed(2)} · Payment due`;
  const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
  await sendLoggedNotification({booking,customer,type:'admin_booking_confirmation',...msg});
- if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
+ if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. If ID verification is still needed, a secure ID-check link will follow.`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
+ let idRequestWarning=null,idRequestSent=false;
+ if(dryHire){
+  try{const idResult=await ensureDryHireIdRequest({booking,customer,ctx,source:'manual_booking'});idRequestSent=Boolean(idResult?.emailSent||idResult?.smsSent||idResult?.verified||idResult?.status==='requested'||idResult?.status==='submitted');}
+  catch(idError){
+   idRequestWarning='Booking created, but the automatic ID request could not be sent. Open the booking and press Request ID.';
+   console.error('Dry Hire ID request failed after manual booking',idError?.message||idError);
+   try{await recordBookingEvent({db,booking,eventType:'dry_hire_id_request_failed',reasonCode:'manual_booking',note:String(idError?.message||idError).slice(0,500),ctx,snapshot:{customer_id:customer.id}})}catch{}
+  }
+ }
  if(engineer?.email){const em=engineerAssignedEmail(booking,customer,engineer.engineer_name||engineer.full_name);await sendStaffLoggedNotification({booking,type:'engineer_assignment',to:engineer.email,...em})}
 
  let paymentUrl=null;
@@ -76,5 +91,5 @@ export async function POST(req){try{
   await sendLoggedNotification({booking,customer,type:'manual_booking_payment_link',subject:'Complete your Silkcrayon session payment',html:payHtml});
   if(customer.phone)await sendLoggedSms({booking,customer,type:'manual_booking_payment_link_sms',body:`Silkcrayon payment: £${(amount/100).toFixed(2)} for your ${formatUkDate(booking.booking_date)} session. Pay securely here: ${paymentUrl}`});
  }
- return NextResponse.json({ok:true,bookingId:id,paymentUrl});
+ return NextResponse.json({ok:true,bookingId:id,paymentUrl,idRequestSent,idRequestWarning});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}

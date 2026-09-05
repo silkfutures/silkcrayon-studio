@@ -24,6 +24,10 @@ export async function POST(request) {
     if(!requestedStart||requestedStart.getTime()<=Date.now()+5*60*1000)return NextResponse.json({error:'Please choose a future session time.'},{status:400});
     if (!body.policyAccepted || !body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the booking terms and policies before booking." }, { status: 400 });
     if(service.slug==="dry-hire"&&!body.dryHireAccepted)return NextResponse.json({error:"You must agree to the Dry Hire Terms before booking."},{status:400});
+    if(service.slug==="dry-hire"&&!body.dryHireAgeAccepted)return NextResponse.json({error:"The lead hirer must confirm they are 18 or over."},{status:400});
+    if(service.slug==="dry-hire"&&!String(body.phone||"").trim())return NextResponse.json({error:"A mobile number is required for Dry Hire."},{status:400});
+    if(service.slug==="dry-hire"&&!String(body.postcode||"").trim())return NextResponse.json({error:"A home postcode is required for Dry Hire."},{status:400});
+    if(String(body.postcode||"").length>20)return NextResponse.json({error:"Postcode is too long."},{status:400});
 
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
@@ -46,10 +50,10 @@ export async function POST(request) {
     const rewardAvailableBefore=Boolean(found?.email_signup_discount_available||crmBefore?.email_signup_discount_available);
     const newlyJoiningEmailList=!!body.marketingConsent&&!Boolean(found?.marketing_consent||crmBefore?.marketing_consent);
     if (found) {
-      const { data, error } = await db.from("customers").update({ full_name: body.fullName.trim(), phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, instagram: body.instagram?.trim() || found.instagram || null, marketing_consent: found.marketing_consent || !!body.marketingConsent, sms_service_consent: Boolean(body.phone?.trim()), email_signup_discount_available: found.email_signup_discount_available || newlyJoiningEmailList, sms_marketing_consent: found.sms_marketing_consent || !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || found.preferred_engineer_user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : found.preferred_engineer, updated_at: new Date().toISOString() }).eq("id", found.id).select().single();
+      const { data, error } = await db.from("customers").update({ full_name: body.fullName.trim(), phone: body.phone?.trim() || null, postcode: body.postcode?.trim() || found.postcode || null, artist_name: body.artistName?.trim() || null, instagram: body.instagram?.trim() || found.instagram || null, marketing_consent: found.marketing_consent || !!body.marketingConsent, sms_service_consent: Boolean(body.phone?.trim()), email_signup_discount_available: found.email_signup_discount_available || newlyJoiningEmailList, sms_marketing_consent: found.sms_marketing_consent || !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || found.preferred_engineer_user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : found.preferred_engineer, updated_at: new Date().toISOString() }).eq("id", found.id).select().single();
       if (error) throw error; customer = data;
     } else {
-      const { data, error } = await db.from("customers").insert({ full_name: body.fullName.trim(), email, phone: body.phone?.trim() || null, artist_name: body.artistName?.trim() || null, instagram: body.instagram?.trim() || null, marketing_consent: !!body.marketingConsent, sms_service_consent: Boolean(body.phone?.trim()), email_signup_discount_available: newlyJoiningEmailList, sms_marketing_consent: !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null }).select().single();
+      const { data, error } = await db.from("customers").insert({ full_name: body.fullName.trim(), email, phone: body.phone?.trim() || null, postcode: body.postcode?.trim() || null, artist_name: body.artistName?.trim() || null, instagram: body.instagram?.trim() || null, marketing_consent: !!body.marketingConsent, sms_service_consent: Boolean(body.phone?.trim()), email_signup_discount_available: newlyJoiningEmailList, sms_marketing_consent: !!body.smsMarketingConsent, preferred_engineer_user_id: preferredEngineer?.user_id || null, preferred_engineer: preferredEngineer ? (preferredEngineer.engineer_name||preferredEngineer.full_name) : null }).select().single();
       if (error) throw error; customer = data;
     }
 
@@ -103,7 +107,8 @@ export async function POST(request) {
       list_amount_pence: listPricePence,
       discount_amount_pence: Math.max(0,listPricePence-amountPence),
       dry_hire_terms_accepted: service.slug==="dry-hire" ? true : false,
-      dry_hire_terms_version: service.slug==="dry-hire" ? "2026-09-05" : null
+      dry_hire_terms_version: service.slug==="dry-hire" ? "2026-09-05" : null,
+      dry_hire_lead_hirer_18_confirmed: service.slug==="dry-hire" ? true : false
     }).eq("id", reservedId);
     const booking = { id: reservedId };
 

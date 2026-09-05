@@ -3,8 +3,11 @@ import {getStaffContext} from '../../../../../../lib/auth';
 import {getAdminDb} from '../../../../../../lib/supabase';
 import {recordBookingEvent} from '../../../../../../lib/bookingEvents';
 import {noShowEmail,bookingCancelledEmail,sendLoggedNotification,ownerEmails,sendEmail} from '../../../../../../lib/notifications';
+import {closeDryHireIdCheck} from '../../../../../../lib/dryHireId';
 
 function today(){return new Date().toISOString().slice(0,10)}
+
+
 export async function POST(req,{params}){
  try{
   const ctx=await getStaffContext();if(!ctx)return NextResponse.json({error:'Staff access required.'},{status:403});
@@ -20,6 +23,7 @@ export async function POST(req,{params}){
     const now=new Date().toISOString();
     const {data:updated,error:ue}=await db.from('bookings').update({status:'no_show',no_show_at:now,no_show_note:note,no_show_by_user_id:ctx.user.id,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
     await recordBookingEvent({db,booking:updated,eventType:'no_show',reasonCode:'no_show',note,ctx});
+    {const idClose=await closeDryHireIdCheck(db,updated);if(!idClose.ok)console.error('Dry Hire ID cleanup after no-show needs retry',idClose.error)}
     if(updated.customers?.email){const msg=noShowEmail(updated,updated.customers);await sendLoggedNotification({booking:updated,customer:updated.customers,type:'no_show_followup',...msg})}
     if(!owner){const owners=await ownerEmails();for(const email of owners)await sendEmail({to:email,subject:`No-show — ${updated.customers?.artist_name||updated.customers?.full_name}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:30px"><h1>Session marked no-show.</h1><p>${updated.customers?.artist_name||updated.customers?.full_name} · ${updated.booking_date} ${String(updated.start_time).slice(0,5)}</p><p>Marked by ${ctx.profile.full_name}.</p>${note?`<p>${note}</p>`:''}</div>`})}
     return NextResponse.json({ok:true,booking:updated});
@@ -34,6 +38,7 @@ export async function POST(req,{params}){
     const note=String(b.note||'').trim().slice(0,500)||null,now=new Date().toISOString();
     const {data:updated,error:ue}=await db.from('bookings').update({status:'cancelled',cancellation_reason_code:reason,cancellation_reason_note:note,cancelled_at:now,cancelled_by_user_id:ctx.user.id,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
     await recordBookingEvent({db,booking:updated,eventType:'cancelled',reasonCode:reason,note,ctx});
+    {const idClose=await closeDryHireIdCheck(db,updated);if(!idClose.ok)console.error('Dry Hire ID cleanup after cancellation needs retry',idClose.error)}
     if(updated.customers?.email){const msg=bookingCancelledEmail(updated,updated.customers,{reason,note,refunded:updated.payment_status==='refunded'});await sendLoggedNotification({booking:updated,customer:updated.customers,type:'booking_cancelled',...msg})}
     return NextResponse.json({ok:true,booking:updated});
   }
