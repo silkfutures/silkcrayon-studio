@@ -4,6 +4,7 @@ import { getStaffContext } from '../../../../lib/auth';
 import { sessionFollowupEmail, sendLoggedNotification } from '../../../../lib/notifications';
 import { recordBookingEvent } from '../../../../lib/bookingEvents';
 import { getStudioSettings } from '../../../../lib/studioSettings';
+import { recalcProjectRecordingHours } from '../../../../lib/projectSessions';
 
 export async function POST(req){
  try{
@@ -32,12 +33,12 @@ export async function POST(req){
 
   if(!engineer||!b.artistName||!b.sessionDate||!b.actualHours)return NextResponse.json({error:'Engineer, artist, date and hours are required.'},{status:400});
 
-  let customerId=null;
+  let customerId=null,projectId=null;
   if(b.bookingId){
-   const {data:booking,error:be}=await db.from('bookings').select('customer_id,engineer_user_id').eq('id',b.bookingId).single();
+   const {data:booking,error:be}=await db.from('bookings').select('customer_id,engineer_user_id,project_id').eq('id',b.bookingId).single();
    if(be)throw be;
    if(ctx.profile.role==='engineer'&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This booking is not assigned to you.'},{status:403});
-   customerId=booking.customer_id||null;
+   customerId=booking.customer_id||null;projectId=booking.project_id||null;
   }else if(b.customerId){
    if(ctx.profile.role!=='owner')return NextResponse.json({error:'Only the owner can link a manual session to an artist.'},{status:403});
    const {data:customer,error:ce}=await db.from('customers').select('id,artist_name,full_name').eq('id',b.customerId).maybeSingle();
@@ -88,6 +89,7 @@ export async function POST(req){
    await db.from('bookings').update(bookingPatch).eq('id',b.bookingId);
    const {data:done}=await db.from('bookings').select('*,customers(*)').eq('id',b.bookingId).maybeSingle();
    if(done){await recordBookingEvent({db,booking:done,eventType:'completed',note:b.workCompleted||null,ctx});}
+   if(projectId){await recalcProjectRecordingHours(db,projectId);const {data:project}=await db.from('studio_projects').select('status').eq('id',projectId).maybeSingle();if(project&&['accepted','deposit_due','scheduled'].includes(project.status))await db.from('studio_projects').update({status:'recording',updated_at:new Date().toISOString()}).eq('id',projectId);}
    if(done?.customers?.email){
     const pricing=await getStudioSettings();const msg=sessionFollowupEmail(done,done.customers,pricing);
     await sendLoggedNotification({booking:done,customer:done.customers,type:'session_followup',...msg});

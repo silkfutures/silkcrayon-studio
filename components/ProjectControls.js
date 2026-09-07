@@ -1,6 +1,16 @@
 'use client';
-import {useMemo,useState} from 'react';import {useRouter} from 'next/navigation';
+import {useState} from 'react';import {useRouter} from 'next/navigation';
 const statuses=['quoted','accepted','deposit_due','scheduled','recording','post_production','delivered','lost'];
-export default function ProjectControls({project}){const router=useRouter();const [status,setStatus]=useState(project.status),[used,setUsed]=useState(String(project.recording_hours_used||0)),[recording,setRecording]=useState(String((project.recording_amount_pence||project.quote_amount_pence||0)/100)),[post,setPost]=useState(String((project.post_amount_pence||0)/100)),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);const total=useMemo(()=>Math.max(0,Number(recording||0))+Math.max(0,Number(post||0)),[recording,post]);
- async function save(e){e.preventDefault();setBusy(true);setMsg('Saving…');const r=await fetch(`/api/admin/projects/${project.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status,recordingHoursUsed:Number(used||0),recordingPounds:Number(recording||0),postPounds:Number(post||0)})});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?'Saved ✓':j.error||'Could not save.');if(r.ok)router.refresh()}
- return <form className="projectControls" onSubmit={save}><div className="pricingSplitNotice compact"><b>Recording ≠ post-production.</b><span>Recording covers the booked studio/engineer time and raw files. Editing, mixing, mastering and episode finishing are quoted separately.</span></div><label>Status<select value={status} onChange={e=>setStatus(e.target.value)}>{statuses.map(s=><option key={s} value={s}>{s.replaceAll('_',' ')}</option>)}</select></label><label>Hours used<input type="number" min="0" step="0.5" value={used} onChange={e=>setUsed(e.target.value)}/></label><label>Recording fee (£)<input type="number" min="0" step="1" value={recording} onChange={e=>setRecording(e.target.value)}/></label><label>Editing / mix / master (£)<input type="number" min="0" step="1" value={post} onChange={e=>setPost(e.target.value)}/></label><div className="quoteTotalPreview"><small>Total quoted</small><b>£{total.toLocaleString('en-GB')}</b></div><button disabled={busy}>{busy?'Saving…':'Save project'}</button>{msg&&<small>{msg}</small>}</form>}
+export default function ProjectControls({project}){
+ const router=useRouter();
+ const [status,setStatus]=useState(project.status),[recording,setRecording]=useState(String((project.recording_amount_pence||0)/100)),[post,setPost]=useState(String((project.post_amount_pence||0)/100)),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
+ const total=Number(recording||0)+Number(post||0);
+ async function save(e){e.preventDefault();setBusy(true);setMsg('Saving…');const r=await fetch(`/api/admin/projects/${project.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status,recordingPounds:Number(recording||0),postPounds:Number(post||0)})});const j=await r.json().catch(()=>({}));setBusy(false);setMsg(r.ok?'Saved ✓':j.error||'Could not save.');if(r.ok)router.refresh()}
+ return <form className="projectControls" onSubmit={save}>
+  <label>Status<select value={status} onChange={e=>setStatus(e.target.value)}>{statuses.map(s=><option key={s} value={s}>{s.replaceAll('_',' ')}</option>)}</select></label>
+  <label>Recording fee (£)<input type="number" min="0" step="1" value={recording} onChange={e=>setRecording(e.target.value)}/><small>Studio time + recording engineer + raw recorded files.</small></label>
+  <label>Post-production (£)<input type="number" min="0" step="1" value={post} onChange={e=>setPost(e.target.value)}/><small>Editing, mixing, mastering, episode assembly, exports or video edit.</small></label>
+  <div className="quoteSplitPreview"><span>Recording <b>£{Number(recording||0).toLocaleString('en-GB')}</b></span><span>Post-production <b>£{Number(post||0).toLocaleString('en-GB')}</b></span><span>Total quote <b>£{total.toLocaleString('en-GB')}</b></span></div>
+  <button disabled={busy}>{busy?'Saving…':'Save project'}</button>{msg&&<small>{msg}</small>}
+ </form>;
+}
