@@ -6,6 +6,7 @@ const services = {
   "vocal-recording": { name: "Vocal Recording", durations: [60,120,180,240,300,360,420] },
   "dry-hire": { name: "Studio Dry Hire", durations: [120,180,240,300,360,420,480] },
   "full-day": { name: "Full Day Studio", durations: [480] },
+  "artist-development": { name: "Artist Development Session", durations: [60] },
   "system-test": { name: "30p Test Booking", durations: [60] },
 };
 
@@ -146,6 +147,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   const livePrice=(slug,d)=>{
     if(slug==="system-test") return "£0.30";
     if(slug==="full-day") return money(pricing.fullDayPricePence||40000);
+    if(slug==="artist-development") return "£75";
     if(slug==="dry-hire") return money(Math.round((Number(d)||0)/60*4000));
     return money(Math.round((Number(d)||0)/60*(pricing.studioHourlyPricePence||5000)));
   };
