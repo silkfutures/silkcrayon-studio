@@ -14,6 +14,7 @@ export default async function More(){
   ['/admin/activity','Activity log','Cancellations, no-shows & deletions','↻'],
   ['/admin/analytics','Analytics','Revenue, visitors & retention','↗'],
   ['/admin/automation','Automations','Email delivery & reminders','✦'],
+  ['/admin/projects','Projects & quotes','Multi-session jobs from quote to delivery','◆'],
   ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
   ['/admin/marketing','Marketing','Email campaigns & audience','✦'],
   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],

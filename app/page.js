@@ -22,7 +22,7 @@ export default async function Home(){
     {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
     {n:'02',title:'Studio Dry Hire',copy:'Already know what you are doing? Bring your own engineer or run the session yourself. Use the Silkcrayon room, booth, monitoring and studio setup without a Silkcrayon engineer.',meta:'£40 / hour · 2h minimum',href:'/dry-hire-cardiff'},
     {n:'03',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'POA per track',href:'/enquire?type=mixing',enquire:true},
-    {n:'04',title:'Audiobooks & Podcasts',copy:'Crystal-clear recording, editing and production for spoken-word projects in a calm, focused space.',meta:'POA per project',href:'/enquire?type=audiobook-podcast',enquire:true},
+    {n:'04',title:'Podcast Recording',copy:'Crystal-clear spoken-word recording with an engineer. Editing, mixing/mastering and episode finishing are separate post-production services.',meta:'Recording quoted separately · Post-production extra',href:'/enquire?type=podcast-recording',enquire:true},
     {n:'05',title:'Full Day',copy:'Eight hours in the vault for focused recording, writing, development and production without watching the clock.',meta:`${fullDay} / day`,href:'/booking?service=full-day'}
   ];
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
