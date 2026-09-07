@@ -28,7 +28,9 @@ export async function GET(req){
     const {error:updateError}=await db.from('customer_access_tokens').update({used_at:now}).eq('id',access.id);
     if(updateError) console.error('Customer access token update failed',updateError);
 
-    const res=NextResponse.redirect(new URL('/account',req.url));
+    const next=String(url.searchParams.get('next')||'/account');
+    const safeNext=next.startsWith('/account/')&&!next.startsWith('//')?next:'/account';
+    const res=NextResponse.redirect(new URL(safeNext,req.url));
     res.cookies.set('sc_customer_session',session.token,{
       httpOnly:true,
       secure:process.env.NODE_ENV==='production',
