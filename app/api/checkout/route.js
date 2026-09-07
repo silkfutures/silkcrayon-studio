@@ -19,7 +19,8 @@ export async function POST(request) {
     if(service.slug==='system-test'&&process.env.ENABLE_SYSTEM_TEST_BOOKING!=='true')return NextResponse.json({error:'Test booking is disabled.'},{status:404});
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date || "") || !/^\d{2}:\d{2}$/.test(body.start || "")) throw new Error("Invalid date or time");
     if (!body.fullName?.trim() || !body.email?.trim()) throw new Error("Name and email are required");
-    if(String(body.fullName).length>120||String(body.email).length>254||String(body.notes||'').length>2000||String(body.instagram||'').length>200)return NextResponse.json({error:'Some booking details are too long.'},{status:400});
+    if(service.slug==='artist-development'&&(!String(body.developmentGoal||'').trim()||!String(body.developmentBlocker||'').trim()||!String(body.developmentOutcome||'').trim()))return NextResponse.json({error:'Tell us your goal, what is stopping you and what would make the session useful.'},{status:400});
+    if(String(body.fullName).length>120||String(body.email).length>254||String(body.notes||'').length>2000||String(body.instagram||'').length>200||String(body.developmentGoal||'').length>2000||String(body.developmentBlocker||'').length>2000||String(body.developmentOutcome||'').length>2000)return NextResponse.json({error:'Some booking details are too long.'},{status:400});
     const requestedStart=londonDateTimeToUtc(body.date,body.start);
     if(!requestedStart||requestedStart.getTime()<=Date.now()+5*60*1000)return NextResponse.json({error:'Please choose a future session time.'},{status:400});
     if (!body.policyAccepted || !body.harmfulMusicPolicy) return NextResponse.json({ error: "You must agree to the booking terms and policies before booking." }, { status: 400 });
@@ -29,6 +30,7 @@ export async function POST(request) {
     if(service.slug==="dry-hire"&&!String(body.postcode||"").trim())return NextResponse.json({error:"A home postcode is required for Dry Hire."},{status:400});
     if(String(body.postcode||"").length>20)return NextResponse.json({error:"Postcode is too long."},{status:400});
 
+    const developmentContext=service.slug==='artist-development'?[`ARTIST DEVELOPMENT SESSION`,body.developmentFormat?`Format: ${body.developmentFormat.replaceAll('_',' ')}`:'',body.developmentGoal?`Goal: ${body.developmentGoal}`:'',body.developmentBlocker?`Current blocker: ${body.developmentBlocker}`:'',body.developmentBacklog?`Unreleased catalogue: ${body.developmentBacklog}`:'',body.developmentMusicLink?`Music link: ${body.developmentMusicLink}`:'',body.developmentOutcome?`Useful outcome: ${body.developmentOutcome}`:''].filter(Boolean).join('\n\n'):String(body.notes||'').trim();
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
     const { data: existing } = await db.from("bookings").select("start_time,end_time,status,hold_expires_at").eq("booking_date", body.date).in("status", ["pending","confirmed"]);
@@ -79,7 +81,7 @@ export async function POST(request) {
       p_end_time: body.end,
       p_duration_minutes: duration,
       p_genre: body.genre?.trim() || null,
-      p_notes: body.notes?.trim() || null,
+      p_notes: developmentContext || null,
       p_amount_pence: amountPence,
       p_hold_expires_at: holdExpires,
       p_harmful_music_policy_accepted: true,
