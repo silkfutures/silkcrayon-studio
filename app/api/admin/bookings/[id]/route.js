@@ -162,7 +162,8 @@ export async function DELETE(request,{params}){
   const body=await request.json().catch(()=>({}));
   const {data:b,error}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(error)throw error;
   if(Number(b.amount_pence||0)>100)return NextResponse.json({error:'Hard delete is restricted to test bookings of £1 or less. Cancel/refund real bookings instead.'},{status:409});
-  if(['paid','part_refunded'].includes(b.payment_status))return NextResponse.json({error:'Refund this test payment before deleting the booking record.'},{status:409});
+  const remainingRefundPence=Math.max(0,Number(b.amount_pence||0)-Number(b.refunded_amount_pence||0));
+  if(['paid','part_refunded'].includes(b.payment_status)&&remainingRefundPence>0)return NextResponse.json({error:`Refund the remaining £${(remainingRefundPence/100).toFixed(2)} test payment before deleting the booking record.`},{status:409});
   await recordBookingEvent({db,booking:b,eventType:'test_booking_deleted',reasonCode:String(body.reason||'test_data').slice(0,80),note:'Hard-deleted test record',ctx,snapshot:b});
   const {error:de}=await db.from('bookings').delete().eq('id',id);if(de)throw de;
   return NextResponse.json({ok:true});
