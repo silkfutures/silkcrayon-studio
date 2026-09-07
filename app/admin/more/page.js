@@ -16,6 +16,7 @@ export default async function More(){
   ['/admin/automation','Automations','Email delivery & reminders','✦'],
   ['/admin/leads','Enquiries','New leads & quote requests','✉'],
   ['/admin/projects','Projects & quotes','Multi-session jobs from quote to delivery','◆'],
+  ['/admin/mixes','Mixes','Payment-gated mix, master & revision pipeline','〽'],
   ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
   ['/admin/marketing','Marketing','Email campaigns & audience','✦'],
   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
