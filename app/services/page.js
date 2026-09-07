@@ -16,7 +16,7 @@ export default async function Services(){
  const money=p=>`£${(Number(p||0)/100).toFixed(Number(p||0)%100?2:0)}`;
  const services=[
   {n:"01",title:"Vocal Recording",copy:"Record through a Neumann U87 with an engineer who understands performance, doubles, harmonies, layers and the details that make a vocal feel finished.",meta:`From ${money(pricing.studioHourlyPricePence)} / hour`,href:"/booking?service=vocal-recording",cta:"Book →"},
-  {n:"02",title:"Mixing & Mastering",copy:"Take the record beyond the session with focused clean-up, balance, detail and a release-ready finish.",meta:`Studio Finish · ${money(pricing.studioFinishPricePence)}`,href:"/enquire?type=mixing",cta:"Enquire →"},
+  {n:"02",title:"Mixing & Mastering",copy:"Take the record beyond the session with focused clean-up, balance, detail and a release-ready finish.",meta:"Tailored quote · upload your track",href:"/mix-request",cta:"Upload for a quote →"},
   {n:"03",title:"Music Production",copy:"Develop the idea, arrangement and sound around the artist. From an early concept through to a complete record.",meta:"Project based",href:"/enquire?type=production",cta:"Enquire →"},
   {n:"04",title:"Podcast Recording",copy:"Clear spoken-word recording with an engineer. The recording fee covers studio time and capture; editing, mixing/mastering and episode finishing are quoted separately.",meta:"Recording + engineer · Post-production separate",href:"/enquire?type=podcast-recording",cta:"Enquire →"},
   {n:"05",title:"Audiobooks & Voiceover",copy:"Long-form narration, voiceover and spoken-word capture with a controlled recording chain and engineering support.",meta:"Project based",href:"/enquire?type=audiobook-voiceover",cta:"Enquire →"},
