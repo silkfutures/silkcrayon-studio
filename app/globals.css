@@ -634,3 +634,7 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 
 /* V20.12.2 — podcast project quoting + session allowance */
 .quoteSplitPreview{display:grid;gap:8px;padding:14px;border:1px solid var(--line);background:var(--panel2);margin:4px 0}.quoteSplitPreview span{display:flex;justify-content:space-between;gap:20px;color:var(--muted)}.quoteSplitPreview span:last-child{padding-top:8px;border-top:1px solid var(--line);color:#fff}.quoteSplitPreview b{color:#fff}.quoteScopeNotice{border-color:#5b4576}.quoteScopeNotice h2{margin-bottom:8px}.quoteScopeNotice p:last-child{max-width:850px;color:var(--muted);line-height:1.65}.projectSessions .adminSectionHead{align-items:flex-end}.projectBookingLock,.projectIncludedBanner{display:grid;gap:6px;border:1px solid #5b4576;background:#100b16;padding:16px;margin:10px 0 18px}.projectBookingLock span,.projectIncludedBanner span,.projectBookingLock small{color:var(--muted)}.projectIncludedBanner b{color:var(--accent)}
+.projectDangerZone{display:grid;gap:8px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.projectDangerZone small{color:var(--muted)}
+.dangerLink{justify-self:start;background:transparent;border:0;padding:0;color:#f1aaa4;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit}
+.dangerLink:disabled{opacity:.55;cursor:not-allowed}
