@@ -1,0 +1,5 @@
+'use client';
+import {usePathname,useRouter} from 'next/navigation';
+const HIDDEN=new Set(['/admin','/admin/login','/admin/setup']);
+const TOP_LEVEL=new Set(['/admin/accounting','/admin/activity','/admin/analytics','/admin/artists','/admin/automation','/admin/calendar','/admin/contacts','/admin/customers','/admin/leads','/admin/marketing','/admin/mixes','/admin/payments','/admin/projects','/admin/promotions','/admin/sessions','/admin/settings','/admin/staff']);
+export default function AdminBackButton(){const pathname=usePathname(),router=useRouter();if(!pathname||HIDDEN.has(pathname)||pathname.startsWith('/admin/login'))return null;function fallback(){if(TOP_LEVEL.has(pathname))return '/admin/more';const parts=pathname.split('/').filter(Boolean);return parts.length>2?'/'+parts.slice(0,-1).join('/'):'/admin'}function goBack(){let sameApp=false;try{sameApp=Boolean(document.referrer)&&new URL(document.referrer).origin===window.location.origin}catch{}if(sameApp&&window.history.length>1)router.back();else router.push(fallback())}return <button type="button" className="osGlobalBack" onClick={goBack} aria-label="Go back"><span>←</span> Back</button>}
