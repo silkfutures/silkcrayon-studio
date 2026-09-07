@@ -36,7 +36,9 @@ export async function POST(request) {
       if(mixJobId&&session.payment_status==='paid'){
         const {data:mix}=await db.from('mix_jobs').select('*,customers(*)').eq('id',mixJobId).maybeSingle();
         if(mix&&Number(mix.paid_amount_pence||0)<Number(mix.quoted_amount_pence||0)){
-          await db.from('mix_jobs').update({paid_amount_pence:mix.quoted_amount_pence,paid_at:new Date().toISOString(),stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,status:'ready_to_start',updated_at:new Date().toISOString()}).eq('id',mixJobId);
+          const paidAt=new Date().toISOString(),reference=typeof session.payment_intent==='string'?session.payment_intent:session.id;
+          await db.from('mix_jobs').update({paid_amount_pence:mix.quoted_amount_pence,paid_at:paidAt,stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,payment_method:'stripe',payment_reference:reference,status:'ready_to_start',updated_at:paidAt}).eq('id',mixJobId);
+          await db.from('mix_activity').insert({mix_job_id:mixJobId,event_type:'payment_received',channel:'stripe',status:'paid',detail:`Full payment confirmed: £${(Number(mix.quoted_amount_pence)/100).toFixed(2)}. Job activated.`,provider_reference:reference});
           if(mix.customers?.email)await sendEmail({to:mix.customers.email,subject:`Payment received — ${mix.track_title}`,html:`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><h1>Your mix is in the queue.</h1><p>Payment is confirmed for <b>${mix.track_title}</b>.</p><p><a style="color:#C394FF" href="${canonicalBase()}/account/mixes/${mix.id}">Open your mix →</a></p></div>`});
         }
       }
