@@ -2,6 +2,7 @@ import Link from "next/link";
 import SiteHeader from "../components/SiteHeader";
 import Reveal from "../components/Reveal";
 import EmailSignup from "../components/EmailSignup";
+import GoogleReviewProof from "../components/GoogleReviewProof";
 import {getLivePromotions,publicPromotion} from "../lib/promotions";
 import {getStudioSettings} from "../lib/studioSettings";
 
@@ -54,6 +55,8 @@ export default async function Home(){
       <Reveal><div className="sectionHeading"><div><p className="eyebrow">The Silkcrayon difference</p><h2>Built around the artist.</h2></div><p>Four things we obsess over because they are what make artists come back.</p></div></Reveal>
       <div className="experienceGrid">{differences.map((d,i)=><Reveal key={d.title} delay={i*80}><article className="experienceCard"><div className="experienceImage"><img src={d.img} alt={`${d.title} at Silkcrayon Studios Cardiff`}/><span>0{i+1}</span></div><h3>{d.title}</h3><p>{d.copy}</p></article></Reveal>)}</div>
     </div></section>
+
+    <GoogleReviewProof/>
 
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
