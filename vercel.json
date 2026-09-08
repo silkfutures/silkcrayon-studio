@@ -4,6 +4,10 @@
     {
       "path": "/api/cron/studio-automations",
       "schedule": "15 9 * * *"
+    },
+    {
+      "path": "/api/cron/calendar-sync",
+      "schedule": "*/15 * * * *"
     }
   ],
   "headers": [
@@ -21,7 +25,7 @@
       "headers": [
         {
           "key": "X-Silkcrayon-Version",
-          "value": "20.4.9"
+          "value": "20.12.10"
         },
         {
           "key": "X-Content-Type-Options",

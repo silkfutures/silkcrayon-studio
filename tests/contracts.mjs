@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';import {londonDateTimeToUtc,londonToday} from '../lib/time.js';import {SERVICES} from '../lib/services.js';
+import {blocksFromCalendarText,normaliseAppleFeedUrl} from '../lib/appleCalendarSync.js';
 assert.deepEqual(SERVICES['vocal-recording'].durations,[60,120,180,240,300,360,420]);
 assert.equal(SERVICES['vocal-recording'].durations.includes(480),false);
 assert.deepEqual(SERVICES['dry-hire'].durations,[120,180,240,300,360,420,480]);
@@ -7,4 +8,10 @@ assert.equal(SERVICES['dry-hire'].durations[0],120);
 const summer=londonDateTimeToUtc('2026-08-15','10:00');assert.equal(summer.toISOString(),'2026-08-15T09:00:00.000Z');
 const winter=londonDateTimeToUtc('2026-12-15','10:00');assert.equal(winter.toISOString(),'2026-12-15T10:00:00.000Z');
 assert.match(londonToday(),/^\d{4}-\d{2}-\d{2}$/);
+assert.equal(normaliseAppleFeedUrl('webcal://p01-caldav.icloud.com/published/2/example'),'https://p01-caldav.icloud.com/published/2/example');
+assert.throws(()=>normaliseAppleFeedUrl('https://example.com/calendar.ics'),/Apple Calendar/);
+const calendarSource={name:'Personal',block_all_day:true,buffer_before_minutes:30,buffer_after_minutes:15};
+const calendarText=`BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:weekly-test\r\nDTSTART;TZID=Europe/London:20260908T100000\r\nDTEND;TZID=Europe/London:20260908T110000\r\nRRULE:FREQ=WEEKLY;COUNT=2\r\nSUMMARY:Private meeting title\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`;
+const imported=await blocksFromCalendarText(calendarSource,calendarText,{from:new Date('2026-09-01T00:00:00Z'),to:new Date('2026-09-30T23:59:59Z')});
+assert.equal(imported.length,2);assert.deepEqual(imported.map(x=>[x.booking_date,x.start_time,x.end_time]),[['2026-09-08','09:30:00','11:15:00'],['2026-09-15','09:30:00','11:15:00']]);assert.ok(imported.every(x=>x.reason==='Personal — Busy'));assert.ok(imported.every(x=>!JSON.stringify(x).includes('Private meeting title')));
 console.log('Contract tests passed');

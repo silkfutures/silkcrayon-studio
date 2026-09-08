@@ -5,6 +5,7 @@ import {EngineerHeader,EngineerBottomNav} from '../../../components/EngineerShel
 import AdminNav from '../../../components/AdminNav';
 import {formatUkDate,formatUkMonth} from '../../../lib/dates';
 import {calendarFeedUrl,webcalUrl} from '../../../lib/calendarFeed';
+import AppleCalendarConnections from '../../../components/AppleCalendarConnections';
 export const dynamic='force-dynamic';
 
 function validDate(v){return /^\d{4}-\d{2}-\d{2}$/.test(String(v||''))}
@@ -34,9 +35,10 @@ export default async function CalendarPage({searchParams}){
  const {start,end,days}=rangeFor(view,anchor),eng=ctx.profile.role==='engineer',feedUrl=ctx.profile.role==='owner'?calendarFeedUrl():null,appleUrl=webcalUrl(feedUrl);
  let q=db.from('bookings').select('id,booking_date,start_time,end_time,service_name,status,payment_status,engineer_user_id,assigned_engineer,customers(id,full_name,artist_name)').gte('booking_date',start).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time');
  if(eng)q=q.eq('engineer_user_id',ctx.user.id);
- const [{data:bookings=[]},{data:blockouts=[]}]=await Promise.all([
+ const [{data:bookings=[]},{data:blockouts=[]},{data:calendarSources=[]}]=await Promise.all([
   q,
-  eng?Promise.resolve({data:[]}):db.from('blockouts').select('id,booking_date,start_time,end_time,reason').gte('booking_date',start).lte('booking_date',end).order('booking_date').order('start_time')
+  eng?Promise.resolve({data:[]}):db.from('blockouts').select('id,booking_date,start_time,end_time,reason,external_calendar_id').gte('booking_date',start).lte('booking_date',end).order('booking_date').order('start_time'),
+  eng?Promise.resolve({data:[]}):db.from('external_calendars').select('id,name,active,block_all_day,buffer_before_minutes,buffer_after_minutes,last_synced_at,last_error,created_at').order('created_at')
  ]);
  const byDate={};for(const b of bookings)(byDate[b.booking_date]??=[]).push({...b,kind:'booking'});
  for(const b of blockouts)(byDate[b.booking_date]??=[]).push({...b,kind:'blockout'});
@@ -64,7 +66,7 @@ export default async function CalendarPage({searchParams}){
     return <div className={`calendarCell ${date===today?'today':''}`} key={date}><div className="calendarDate"><b>{Number(date.slice(-2))}</b><small>{formatUkDate(date,{short:true})}</small></div><div className="calendarItems">{items.map(event)}</div></div>
    })}</div>
   </section>}
-  {!eng&&<details className="adminSection calendarSyncCompact"><summary><span><b>Apple Calendar sync</b><small>Optional · keep Studio OS in Apple Calendar</small></span><span>›</span></summary><div className="calendarSyncCompactBody">{feedUrl?<><p className="muted">Subscribe once and Studio OS changes will flow into Apple Calendar when Apple refreshes the private feed.</p><div className="calendarSyncActions"><a className="button primary" href={appleUrl}>Subscribe in Apple Calendar</a><details><summary>Manual subscription URL</summary><code>{feedUrl}</code><p className="muted">Keep this URL private — anyone with it can read the studio schedule.</p></details></div></>:<div className="portalNotice"><b>Calendar feed unavailable.</b><span>Add CALENDAR_FEED_TOKEN in Vercel, or make sure the Supabase server secret is configured, then redeploy.</span></div>}</div></details>}
+  {!eng&&<details className="adminSection calendarSyncCompact" open><summary><span><b>Apple Calendar sync</b><small>Two-way availability · connect as many calendars as you need</small></span><span>›</span></summary><div className="calendarSyncCompactBody"><AppleCalendarConnections sources={calendarSources}/><div className="appleOutbound"><h3>Put studio bookings in Apple Calendar</h3>{feedUrl?<><p className="muted">Subscribe once and Studio OS bookings will appear in Apple Calendar when Apple refreshes the private feed.</p><div className="calendarSyncActions"><a className="button outline" href={appleUrl}>Subscribe in Apple Calendar</a><details><summary>Manual subscription URL</summary><code>{feedUrl}</code><p className="muted">Keep this URL private — anyone with it can read the studio schedule.</p></details></div></>:<div className="portalNotice"><b>Studio calendar feed unavailable.</b><span>Add CALENDAR_FEED_TOKEN in Vercel, or make sure the Supabase server secret is configured, then redeploy.</span></div>}</div></div></details>}
   {eng&&<EngineerBottomNav profile={ctx.profile}/>} 
  </main>
 }
