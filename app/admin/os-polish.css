@@ -1,0 +1,31 @@
+/* Scoped to the admin route. Preserve the public site's visual identity. */
+.osGlobalBack{position:relative;top:auto;left:auto;margin:calc(env(safe-area-inset-top,0px) + 12px) 16px 0;min-height:44px;z-index:10}
+:is(.adminPage,.engineerApp,.engApp,.calendarApp){min-width:0;padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}
+:is(.adminPage,.engineerApp,.engApp) :is(input,select,textarea){max-width:100%;min-width:0;font-size:16px}
+:is(.adminPage,.engineerApp,.engApp) :is(button,.miniButton){min-height:40px}
+:is(.adminPage,.engineerApp,.engApp) :is(a,button,input,select,textarea,summary):focus-visible{outline:2px solid #c394ff;outline-offset:3px}
+:is(.adminPage,.engineerApp,.engApp) button:disabled{opacity:.55;cursor:wait}
+:is(.adminPage,.engineerApp,.engApp) :is(.field,.legacyCreditForm label,.appleConnectForm label){font-size:14px;line-height:1.5}
+.legacyCreditMessage,.appleConnectMessage,.appleSyncError{font-size:14px;line-height:1.6;overflow-wrap:anywhere}
+.legacyBalance span,.engDetails b,.appleSourceTitle b{overflow-wrap:anywhere;min-width:0}
+.legacyCreditSection .engSectionHead,.appleConnectionsHead,.appleSource{flex-wrap:wrap}
+.appleSource small,.legacyCreditWarning span,.appleSetupHelp li{font-size:14px;line-height:1.6}
+.appleSourceTitle span{font-size:12px;letter-spacing:.04em}
+.tableWrap{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+.automationJourney{flex-wrap:wrap;gap:12px}
+.osNav{flex-wrap:wrap;gap:8px}
+.osNav a{min-height:40px;display:inline-flex;align-items:center}
+@media(max-width:760px){
+ .osGlobalBack{top:auto;left:auto;padding:10px 14px}
+ :is(.adminPage,.engineerApp,.engApp) :is(.adminHeader,.mobileTop,.engSectionHead,.adminSectionHead){flex-wrap:wrap;gap:14px}
+ :is(.adminPage,.engineerApp,.engApp) :is(.miniButton,button){min-height:44px}
+ .calendarActions{display:flex;flex-wrap:wrap}.calendarActions>*{flex:1 1 130px}
+ .calendarMonthNav{gap:12px}.calendarMonthNav h2{font-size:26px;line-height:1.2}
+ .calendarEvent span,.calendarEvent b{white-space:normal;overflow-wrap:anywhere}
+ .studioCalendar.monthView .calendarCell{min-height:108px!important}
+ .studioCalendar.monthView .calendarEvent span,.studioCalendar.monthView .calendarEvent b{font-size:11px!important;line-height:1.3}
+ .appleConnectionButtons,.appleSourceActions{display:flex;flex-wrap:wrap}
+ .appleSourceActions>*{flex:1 1 100px}.appleConnectionButtons>*{flex:1 1 140px}
+ .legacyBalance{gap:6px}.legacyCreditForm .button{white-space:normal}
+ .profileMetrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+}
