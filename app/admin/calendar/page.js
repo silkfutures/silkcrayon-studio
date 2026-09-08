@@ -38,7 +38,7 @@ export default async function CalendarPage({searchParams}){
  const [{data:bookings=[]},{data:blockouts=[]},{data:calendarSources=[]}]=await Promise.all([
   q,
   eng?Promise.resolve({data:[]}):db.from('blockouts').select('id,booking_date,start_time,end_time,reason,external_calendar_id').gte('booking_date',start).lte('booking_date',end).order('booking_date').order('start_time'),
-  eng?Promise.resolve({data:[]}):db.from('external_calendars').select('id,name,active,block_all_day,buffer_before_minutes,buffer_after_minutes,last_synced_at,last_error,created_at').order('created_at')
+  eng?Promise.resolve({data:[]}):db.from('external_calendars').select('id,name,active,block_all_day,buffer_before_minutes,buffer_after_minutes,ignored_service_slugs,last_synced_at,last_error,created_at').order('created_at')
  ]);
  const byDate={};for(const b of bookings)(byDate[b.booking_date]??=[]).push({...b,kind:'booking'});
  for(const b of blockouts)(byDate[b.booking_date]??=[]).push({...b,kind:'blockout'});

@@ -11,6 +11,7 @@
 .legacyCreditSection .engSectionHead,.appleConnectionsHead,.appleSource{flex-wrap:wrap}
 .appleSource small,.legacyCreditWarning span,.appleSetupHelp li{font-size:14px;line-height:1.6}
 .appleSourceTitle span{font-size:12px;letter-spacing:.04em}
+.appleSourceMain{flex:1 1 480px;min-width:0}.appleServiceRules{border:1px solid #3d3150;padding:14px;margin:16px 0 0;display:flex;flex-wrap:wrap;gap:10px 18px}.appleServiceRules legend,.appleServiceRules>span{font-weight:800}.appleServiceRules p{flex-basis:100%;margin:0;color:#aaa1af;font-size:13px}.appleServiceRules .appleCheck{display:flex;align-items:center;gap:8px;margin:0}.appleServiceRules input{width:20px;height:20px;accent-color:#c394ff}
 .tableWrap{max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
 .automationJourney{flex-wrap:wrap;gap:12px}
 .osNav{flex-wrap:wrap;gap:8px}

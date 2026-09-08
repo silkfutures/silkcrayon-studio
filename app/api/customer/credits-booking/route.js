@@ -15,13 +15,13 @@ export async function POST(req){
   const db=getAdminDb(),now=new Date().toISOString();
   const [{data:existing=[]},{data:blockouts=[]},{data:ledger=[]}]=await Promise.all([
     db.from('bookings').select('start_time,end_time,status,hold_expires_at').eq('booking_date',b.date).in('status',['pending','confirmed']),
-    db.from('blockouts').select('start_time,end_time').eq('booking_date',b.date),
+    db.from('blockouts').select('start_time,end_time,ignored_service_slugs').eq('booking_date',b.date),
     db.from('credit_ledger').select('hours_delta').eq('customer_id',ctx.customer.id)
   ]);
   const balance=ledger.reduce((n,x)=>n+Number(x.hours_delta||0),0),needed=duration/60;
   if(balance<needed)return NextResponse.json({error:`You have ${balance}h available but this session needs ${needed}h.`},{status:409});
   const live=existing.filter(x=>x.status==='confirmed'||!x.hold_expires_at||x.hold_expires_at>now);
-  const chosen=generateSlots(b.date,duration,live,blockouts).find(x=>x.start===b.start&&x.end===b.end);
+  const chosen=generateSlots(b.date,duration,live,blockouts,service.slug).find(x=>x.start===b.start&&x.end===b.end);
   if(!chosen)return NextResponse.json({error:'That slot has just become unavailable.'},{status:409});
   const {data:id,error}=await db.rpc('reserve_credit_booking',{p_customer_id:ctx.customer.id,p_service_slug:service.slug,p_service_name:service.name,p_booking_date:b.date,p_start_time:b.start,p_end_time:b.end,p_duration_minutes:duration,p_genre:b.genre?.trim()||null,p_notes:b.notes?.trim()||null,p_amount_pence:priceFor(service,duration),p_harmful_music_policy_accepted:true});
   if(error){if(error.message?.includes('slot_unavailable'))return NextResponse.json({error:'That slot has just become unavailable.'},{status:409});if(error.message?.includes('insufficient_credits'))return NextResponse.json({error:'Your studio-hour balance changed. Please refresh and try again.'},{status:409});throw error}

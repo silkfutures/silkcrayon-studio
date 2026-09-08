@@ -14,9 +14,9 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
    if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(start))return NextResponse.json({error:'Choose a valid new date and time.'},{status:400});
    const {data:current,error:ce}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(ce)throw ce;
    if(!['pending','confirmed'].includes(current.status))return NextResponse.json({error:'Only upcoming active sessions can be rescheduled.'},{status:409});
-   const [{data:existing=[]},{data:blockouts=[]}]=await Promise.all([db.from('bookings').select('id,start_time,end_time,status,hold_expires_at').eq('booking_date',date).in('status',['pending','confirmed']),db.from('blockouts').select('start_time,end_time').eq('booking_date',date)]);
+   const [{data:existing=[]},{data:blockouts=[]}]=await Promise.all([db.from('bookings').select('id,start_time,end_time,status,hold_expires_at').eq('booking_date',date).in('status',['pending','confirmed']),db.from('blockouts').select('start_time,end_time,ignored_service_slugs').eq('booking_date',date)]);
    const {generateSlots}=await import('../../../../../lib/availability'),now=new Date().toISOString(),live=existing.filter(x=>x.id!==id&&(x.status==='confirmed'||!x.hold_expires_at||x.hold_expires_at>now));
-   const slot=generateSlots(date,current.duration_minutes,live,blockouts).find(x=>x.start===start);if(!slot)return NextResponse.json({error:'That slot is no longer available.'},{status:409});
+   const slot=generateSlots(date,current.duration_minutes,live,blockouts,current.service_slug).find(x=>x.start===start);if(!slot)return NextResponse.json({error:'That slot is no longer available.'},{status:409});
    if(current.booking_date===date&&String(current.start_time).slice(0,5)===slot.start)return NextResponse.json({error:'Choose a different date or time.'},{status:409});
    const oldDate=current.booking_date,oldStart=String(current.start_time).slice(0,5),oldEnd=String(current.end_time).slice(0,5),changedAt=new Date().toISOString();
    const {data:updated,error:ue}=await db.from('bookings').update({booking_date:date,start_time:slot.start,end_time:slot.end,updated_at:changedAt}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
@@ -134,9 +134,9 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
    const base=process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon-studio.vercel.app',artist=current.customers?.artist_name||current.customers?.full_name||'Artist';
    if(body.changeRequestDecision==='approve'){
      const {generateSlots}=await import('../../../../../lib/availability');
-     const [{data:existing=[]},{data:blockouts=[]}]=await Promise.all([db.from('bookings').select('id,start_time,end_time,status,hold_expires_at').eq('booking_date',current.change_requested_date).in('status',['pending','confirmed']),db.from('blockouts').select('start_time,end_time').eq('booking_date',current.change_requested_date)]);
+     const [{data:existing=[]},{data:blockouts=[]}]=await Promise.all([db.from('bookings').select('id,start_time,end_time,status,hold_expires_at').eq('booking_date',current.change_requested_date).in('status',['pending','confirmed']),db.from('blockouts').select('start_time,end_time,ignored_service_slugs').eq('booking_date',current.change_requested_date)]);
      const now=new Date().toISOString(),live=existing.filter(x=>x.id!==id&&(x.status==='confirmed'||!x.hold_expires_at||x.hold_expires_at>now));
-     const slot=generateSlots(current.change_requested_date,current.duration_minutes,live,blockouts).find(x=>x.start===String(current.change_requested_start).slice(0,5));
+     const slot=generateSlots(current.change_requested_date,current.duration_minutes,live,blockouts,current.service_slug).find(x=>x.start===String(current.change_requested_start).slice(0,5));
      if(!slot)return NextResponse.json({error:'Requested slot is no longer available. Decline this request and ask the customer to choose another.'},{status:409});
      const {error:me}=await db.rpc('approve_booking_reschedule_locked',{p_booking_id:id});if(me){if(String(me.message).includes('slot_unavailable'))return NextResponse.json({error:'Requested slot is no longer available.'},{status:409});throw me}
      const {data:approved,error:ae}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(ae)throw ae;

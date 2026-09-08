@@ -19,9 +19,9 @@ export async function GET(request) {
     const { data: bookings, error: bookingError } = await db.from("bookings").select("start_time,end_time,status,hold_expires_at").eq("booking_date", date).in("status", ["pending","confirmed"]);
     if (bookingError) throw bookingError;
     const liveBookings = (bookings || []).filter(b => b.status === "confirmed" || !b.hold_expires_at || b.hold_expires_at > nowIso);
-    const { data: blockouts, error: blockoutError } = await db.from("blockouts").select("start_time,end_time").eq("booking_date", date);
+    const { data: blockouts, error: blockoutError } = await db.from("blockouts").select("start_time,end_time,ignored_service_slugs").eq("booking_date", date);
     if (blockoutError) throw blockoutError;
-    return NextResponse.json({ slots: generateSlots(date, duration, liveBookings, blockouts || []) });
+    return NextResponse.json({ slots: generateSlots(date, duration, liveBookings, blockouts || [], service.slug) });
   } catch (e) {
     return NextResponse.json({ error: e.message || "Availability failed" }, { status: 500 });
   }

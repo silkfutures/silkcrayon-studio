@@ -35,8 +35,8 @@ export async function POST(request) {
     const nowIso = new Date().toISOString();
     const { data: existing } = await db.from("bookings").select("start_time,end_time,status,hold_expires_at").eq("booking_date", body.date).in("status", ["pending","confirmed"]);
     const liveBookings = (existing || []).filter(b => b.status === "confirmed" || !b.hold_expires_at || b.hold_expires_at > nowIso);
-    const { data: blockouts } = await db.from("blockouts").select("start_time,end_time").eq("booking_date", body.date);
-    const validSlots = generateSlots(body.date, duration, liveBookings, blockouts || []);
+    const { data: blockouts } = await db.from("blockouts").select("start_time,end_time,ignored_service_slugs").eq("booking_date", body.date);
+    const validSlots = generateSlots(body.date, duration, liveBookings, blockouts || [], service.slug);
     const chosen = validSlots.find(s => s.start === body.start && s.end === body.end);
     if (!chosen) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
 
