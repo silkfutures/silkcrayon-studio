@@ -1,0 +1,28 @@
+.wrap { width: 100%; max-width: 900px; display: grid; gap: 20px; }
+.wrap > button { justify-self: start; }
+.form { display: grid; gap: 16px; min-width: 0; }
+.section { display: grid; grid-template-columns: 36px minmax(0,1fr); gap: 18px; padding: 28px; background: #100d14; border: 1px solid #302837; border-radius: 16px; }
+.number { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: #251a31; color: #d2a5ff; font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.content { min-width: 0; }
+.content h3 { margin: 3px 0 7px; font-size: 22px; line-height: 1.25; letter-spacing: -.025em; color: #f7f2fa; }
+.content .hint { margin: 0 0 22px; max-width: 560px; color: #b4aabc; font-size: 14px; line-height: 1.6; }
+.form :global(.field) { display: flex; flex-direction: column; gap: 8px; margin: 0 0 18px; min-width: 0; }
+.form :global(.field) > span { color: #d5ccdc; font-size: 13px; font-weight: 500; text-transform: none; letter-spacing: 0; }
+.form :global(.field) input,.form :global(.field) select,.form :global(.field) textarea { box-sizing: border-box; width: 100%; min-width: 0; min-height: 48px; background: #09070c; border: 1px solid #44384f; border-radius: 9px; padding: 12px 14px; font: inherit; font-size: 16px; line-height: 1.5; color: #f4eef8; color-scheme: dark; }
+.form :global(.field) textarea { resize: vertical; min-height: 108px; }
+.form :global(.field) input::placeholder,.form :global(.field) textarea::placeholder { color: #95879f; opacity: 1; }
+.form :global(.field) input:focus-visible,.form :global(.field) select:focus-visible,.form :global(.field) textarea:focus-visible,.save:focus-visible { outline: 2px solid #c394ff; outline-offset: 3px; }
+.form :global(.engTwoCols) { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 0 18px; }
+.form :global(.manualPastPayment),.form :global(.extraTimeDetected) { margin: 6px 0 0; padding: 20px; border: 1px solid #44314e; border-radius: 12px; background: #19111f; }
+.form :global(.manualPastPayment) small,.form :global(.extraTimeDetected) small { display: block; color: #cba1e9; font-size: 10px; letter-spacing: .12em; margin-bottom: 8px; }
+.form :global(.manualPastPayment) b,.form :global(.extraTimeDetected) b { display: block; font-size: 16px; }
+.form :global(.manualPastPayment) p,.form :global(.extraTimeDetected) p { font-size: 13px; line-height: 1.6; color: #b9abc3; }
+.form :global(.checkRow) { display: flex; align-items: center; gap: 12px; padding: 12px 0; min-height: 44px; font-size: 14px; }
+.form :global(.checkRow) input { width: 20px; height: 20px; flex: 0 0 20px; accent-color: #c394ff; }
+.footer { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 12px 0 20px; }
+.footer p { max-width: 370px; margin: 0; color: #b4aabc; font-size: 13px; line-height: 1.6; }
+.save { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 52px; padding: 15px 22px; border: 1px solid #c394ff; border-radius: 10px; background: #c394ff; color: #170b22; font: inherit; font-size: 14px; font-weight: 750; cursor: pointer; white-space: nowrap; }
+.save:hover { background: #d2adff; }
+.save:disabled { opacity: .65; cursor: wait; }
+.message { border: 1px solid #574069; background: #19111f; border-radius: 10px; padding: 16px; color: #e1c5fa; font-size: 14px; }
+@media(max-width:620px) { .section { grid-template-columns: minmax(0,1fr); gap: 14px; padding: 20px 16px; border-radius: 12px; } .content h3 { font-size: 21px; } .content .hint { margin-bottom: 20px; } .form :global(.engTwoCols) { grid-template-columns: minmax(0,1fr); } .footer { align-items: stretch; flex-direction: column; gap: 16px; } .save { width: 100%; } .form :global(.manualPastPayment),.form :global(.extraTimeDetected) { padding: 16px; } }
