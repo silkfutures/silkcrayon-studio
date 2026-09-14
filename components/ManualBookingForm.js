@@ -99,9 +99,9 @@ export default function ManualBookingForm({customers=[],engineers=[],hourlyPrice
   setBusy(false);
   if(!r.ok)return setMsg(j.error||'Could not create booking.');
   if(!projectMode)clearDraft();
-  const success=j.idRequestWarning?`Booked ✓ ${j.idRequestWarning}`:serviceSlug==='dry-hire'?(j.idRequestSent?(j.paymentUrl?'Booked + payment link + ID request sent ✓':'Booked + ID request sent ✓'):(j.paymentUrl?'Booked + payment link sent ✓ · ID already verified':'Booked ✓ · ID already verified')):(j.paymentUrl?'Booked + payment link sent ✓':'Booked + confirmation sent ✓');
+  const success=j.paymentLinkWarning?j.paymentLinkWarning:j.idRequestWarning?`Booked ✓ ${j.idRequestWarning}`:serviceSlug==='dry-hire'?(j.idRequestSent?(j.paymentUrl?'Booked + payment link + ID request sent ✓':'Booked + ID request sent ✓'):(j.paymentUrl?'Booked + payment link sent ✓ · ID already verified':'Booked ✓ · ID already verified')):(j.paymentUrl?'Booked + payment link sent ✓':'Booked + confirmation sent ✓');
   setMsg(success);
-  setTimeout(()=>router.push(projectMode?`/admin/projects/${initialProject.id}`:serviceSlug==='dry-hire'?`/admin/engineer/session/${j.bookingId}`:`/admin/customers/${customerId}`),j.idRequestWarning?2200:1100);
+  setTimeout(()=>router.push(projectMode?`/admin/projects/${initialProject.id}`:serviceSlug==='dry-hire'?`/admin/engineer/session/${j.bookingId}`:`/admin/customers/${customerId}`),j.paymentLinkWarning||j.idRequestWarning?5000:1100);
  }
  return <form className="manualBookingFlow" onSubmit={submit}>
   <section className="commercialStep"><div className="stepBadge">01</div><div><p className="eyebrow">{projectMode?'Project client':'Artist'}</p><h2>{projectMode?'Linked to this project.':'Who is coming in?'}</h2>{projectMode?<div className="projectBookingLock"><b>{initialProject.title}</b><span>{initialProject.contact_name} · {initialProject.email}</span><small>{Number(initialProject.recording_hours_included||0)-Number(initialProject.recording_hours_used||0)}h recording allowance currently remaining</small></div>:<ArtistSearchSelect customers={customers} value={customerId} onChange={setCustomerId}/>} {customer&&<p className="selectionNote"><b>{customer.artist_name||customer.full_name}</b> · {customer.email}{customer.phone?` · ${customer.phone}`:''}</p>}</div></section>

@@ -70,8 +70,8 @@ export async function POST(req){try{
  }
  if(engineer?.email){const em=engineerAssignedEmail(booking,customer,engineer.engineer_name||engineer.full_name);await sendStaffLoggedNotification({booking,type:'engineer_assignment',to:engineer.email,...em})}
 
- let paymentUrl=null;
- if(!project&&['pay_by_bank','card_or_bank'].includes(paymentMode)){
+ let paymentUrl=null,paymentLinkWarning=null;
+ if(!project&&['pay_by_bank','card_or_bank'].includes(paymentMode)){try{
   const {data:payment,error:pe}=await db.from('studio_payments').insert({
    customer_id:customer.id,booking_id:id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,
    kind:'session',description:`${booking.service_name} · ${formatUkDate(booking.booking_date)} ${String(booking.start_time).slice(0,5)}`,
@@ -82,7 +82,6 @@ export async function POST(req){try{
   const session=await stripe.checkout.sessions.create({
    mode:'payment',payment_method_types:methods,invoice_creation:{enabled:true},customer_email:customer.email,
    client_reference_id:payment.id,metadata:{studio_payment_id:payment.id,booking_id:id,customer_id:customer.id,payment_kind:'session'},
-   payment_method_options:paymentMode==='pay_by_bank'?{pay_by_bank:{statement_descriptor:'SILKCRAYON'}}:undefined,
    line_items:[{quantity:1,price_data:{currency:'gbp',unit_amount:amount,product_data:{name:`Silkcrayon — ${booking.service_name}`,description:`${formatUkDate(booking.booking_date)} · ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)} · Cardiff Bay`}}}],
    success_url:`${base}/booking/success?session_id={CHECKOUT_SESSION_ID}`,cancel_url:`${base}/account`
   });
@@ -93,7 +92,8 @@ export async function POST(req){try{
   const payHtml=`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Complete your session payment.</h1><p style="color:#c8c1cc">Hi ${esc(customer.artist_name||customer.full_name)}, your session is in the calendar. Use the secure ${methodLabel} link below to pay <b>£${(amount/100).toFixed(2)}</b>.</p><p><a href="${paymentUrl}" style="display:inline-block;background:#C394FF;color:#09050d;padding:14px 20px;text-decoration:none;font-weight:800">PAY FOR SESSION →</a></p><p style="color:#8f8894;font-size:12px">Booking: ${formatUkDate(booking.booking_date)} · ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}</p></div></div>`;
   await sendLoggedNotification({booking,customer,type:'manual_booking_payment_link',subject:'Complete your Silkcrayon session payment',html:payHtml});
   if(customer.phone)await sendLoggedSms({booking,customer,type:'manual_booking_payment_link_sms',body:`Silkcrayon payment: £${(amount/100).toFixed(2)} for your ${formatUkDate(booking.booking_date)} session. Pay securely here: ${paymentUrl}`});
+ }catch(paymentError){paymentLinkWarning=paymentUrl?'Booking created, but payment-link delivery could not be confirmed. Open the existing booking to check before sending again.':'Booking created, but the payment link could not be created. Open the existing booking to arrange payment; do not create it again.';console.error('Booking payment link failed',paymentError?.message);}
  }
  if(project){await db.from('studio_projects').update({status:['quoted','accepted','deposit_due'].includes(project.status)?'scheduled':project.status,updated_at:new Date().toISOString()}).eq('id',project.id);}
- return NextResponse.json({ok:true,bookingId:id,paymentUrl,idRequestSent,idRequestWarning,projectId:project?.id||null});
+ return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,idRequestSent,idRequestWarning,projectId:project?.id||null});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}
