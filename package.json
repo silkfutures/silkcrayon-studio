@@ -9,7 +9,7 @@
     "check:imports": "node scripts/check-imports.mjs",
     "prebuild": "npm run check:imports && npm test",
     "test:contracts": "node tests/contracts.mjs",
-    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs"
+    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs && node tests/google-ads.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

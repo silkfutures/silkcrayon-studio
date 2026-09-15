@@ -94,7 +94,7 @@ export async function POST(req){
     recipient_email:recipientEmail,gift_message:message,offer_code:kind==="relaunch"?relaunch.code:""
    },
    line_items:[{quantity:1,price_data:{currency:"gbp",unit_amount:amount,product_data:{name:productName,description:productDescription}}}],
-   success_url:kind==="relaunch"?`${base}/relaunch-offer?paid=1`:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?paid=1&hours=${hours}`,
+   success_url:kind==="relaunch"?`${base}/relaunch-offer?paid=1&session_id={CHECKOUT_SESSION_ID}`:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?paid=1&hours=${hours}&session_id={CHECKOUT_SESSION_ID}`,
    cancel_url:kind==="relaunch"?`${base}/relaunch-offer?cancelled=1`:`${base}/${kind==="gift"?"gift-studio-time":"buy-hours"}?cancelled=1`
   });
 

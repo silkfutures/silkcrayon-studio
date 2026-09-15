@@ -30,7 +30,7 @@ export async function POST(request) {
       }catch{return {stripe_invoice_id:typeof session.invoice==='string'?session.invoice:session.invoice?.id||null};}
     }
 
-    if (event.type === "checkout.session.completed") {
+    if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object;
       const mixJobId = session.metadata?.mix_job_id;
       if(mixJobId&&session.payment_status==='paid'){

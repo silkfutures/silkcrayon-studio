@@ -22,7 +22,7 @@ export async function POST(req,{params}){
     name:`Silkcrayon — ${tracks.map(t=>t.title).join(', ')||j.track_title}`,
     description:`${j.turnaround_text||'Tailored mix service'} · ${j.included_revisions} revision round${j.included_revisions===1?'':'s'}`
    }}}],
-   success_url:`${base}/account/mixes/${j.id}?paid=1`,cancel_url:`${base}/account/mixes/${j.id}`
+   success_url:`${base}/account/mixes/${j.id}?paid=1&session_id={CHECKOUT_SESSION_ID}`,cancel_url:`${base}/account/mixes/${j.id}`
   });
   await db.from('mix_jobs').update({status:'awaiting_payment',quote_accepted_at:new Date().toISOString(),stripe_checkout_session_id:session.id,updated_at:new Date().toISOString()}).eq('id',j.id);
   await db.from('mix_activity').insert({mix_job_id:j.id,event_type:'checkout_opened',channel:'stripe',status:'pending',detail:`Client opened payment for £${(outstanding/100).toFixed(2)}.`,provider_reference:session.id});

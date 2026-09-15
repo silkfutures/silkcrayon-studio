@@ -1,5 +1,31 @@
 "use client";
-import {useEffect,useState} from "react";
-const CONSENT_COOKIE="sc_google_ads_consent";
-function hasAdsConsent(){return document.cookie.split("; ").some(x=>x===`${CONSENT_COOKIE}=granted`)}
-export default function GoogleAdsPurchaseConversion({sessionId,conversionLabel,adsId}){const [consentVersion,setConsentVersion]=useState(0);useEffect(()=>{const onChange=()=>setConsentVersion(x=>x+1);window.addEventListener("sc-google-consent-updated",onChange);return()=>window.removeEventListener("sc-google-consent-updated",onChange)},[]);useEffect(()=>{if(!sessionId||!conversionLabel||!adsId||!hasAdsConsent())return;const sentKey=`sc_google_ads_purchase:${sessionId}`;if(sessionStorage.getItem(sentKey)||localStorage.getItem(sentKey))return;let cancelled=false;(async()=>{for(let attempt=0;attempt<4&&!cancelled;attempt++){const response=await fetch(`/api/google-ads/purchase?session_id=${encodeURIComponent(sessionId)}`,{cache:"no-store"});if(response.ok){const conversion=await response.json();if(!conversion?.transaction_id||!Number.isFinite(Number(conversion.value)))return;window.gtag?.("event","conversion",{send_to:`${adsId}/${conversionLabel}`,value:Number(conversion.value),currency:"GBP",transaction_id:conversion.transaction_id});sessionStorage.setItem(sentKey,"1");localStorage.setItem(sentKey,"1");return}if(attempt<3)await new Promise(resolve=>setTimeout(resolve,1500));}})().catch(()=>{});return()=>{cancelled=true}},[sessionId,conversionLabel,adsId,consentVersion]);return null}
+import {useEffect, useState} from "react";
+import {useSearchParams} from "next/navigation";
+import {reportPurchase} from "../lib/reportGoogleAdsPurchase";
+function hasAdsConsent() { return document.cookie.split(";").some(x => x.trim() === "sc_google_ads_consent=granted"); }
+export default function GoogleAdsPurchaseConversion() {
+  const sessionId = useSearchParams().get("session_id");
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const changed = () => setVersion(v => v + 1);
+    window.addEventListener("sc-google-consent-updated", changed);
+    return () => window.removeEventListener("sc-google-consent-updated", changed);
+  }, []);
+  useEffect(() => {
+    if (!sessionId || !hasAdsConsent()) return;
+    let cancelled = false, timer;
+    const controller = new AbortController();
+    async function attempt(number = 0) {
+      if (cancelled || !hasAdsConsent()) return;
+      try {
+        const response = await fetch(`/api/google-ads/purchase?session_id=${encodeURIComponent(sessionId)}`, {cache: "no-store", signal: controller.signal});
+        if (response.ok && await reportPurchase(await response.json(), {hasConsent: hasAdsConsent, isCancelled: () => cancelled})) return;
+        if (response.status === 400) return;
+      } catch { /* Retry transient failures while Stripe's webhook completes. */ }
+      if (!cancelled && number < 30) timer = setTimeout(() => attempt(number + 1), 2000);
+    }
+    attempt();
+    return () => { cancelled = true; clearTimeout(timer); controller.abort(); };
+  }, [sessionId, version]);
+  return null;
+}

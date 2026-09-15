@@ -30,7 +30,10 @@ export async function GET(req){
 
     const next=String(url.searchParams.get('next')||'/account');
     const safeNext=next.startsWith('/account/')&&!next.startsWith('//')?next:'/account';
-    const res=NextResponse.redirect(new URL(safeNext,req.url));
+    const destination=new URL(safeNext,req.url);
+    const checkoutId=url.searchParams.get("session_id");
+    if(checkoutId)destination.searchParams.set("session_id",checkoutId);
+    const res=NextResponse.redirect(destination);
     res.cookies.set('sc_customer_session',session.token,{
       httpOnly:true,
       secure:process.env.NODE_ENV==='production',
