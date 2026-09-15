@@ -1,18 +1,14 @@
+"use client";
 import Link from 'next/link';
-import { LogoutButton } from './AuthForms';
+import {usePathname} from 'next/navigation';
+import {LogoutButton} from './AuthForms';
 import StaffBottomNav from './StaffBottomNav';
-
+import {primaryNavigation,navigationActive} from '../lib/osNavigation';
 export default function AdminNav({profile}){
- const owner=profile?.role==='owner';
- if(!owner)return <><nav className="engineerTopLinks"><Link href="/admin/engineer">Engineer home</Link><Link href="/">Website ↗</Link><LogoutButton/></nav><StaffBottomNav role="engineer"/></>;
- return <>
-  <nav className="osNav">
-    <Link href="/admin">Overview</Link><Link href="/admin/bookings/new">New booking</Link><Link href="/admin/engineer">Engineer view</Link><Link href="/admin/artists">Artists</Link>
-    <Link href="/admin/payments">Payments</Link><Link href="/admin/accounting">Accounting</Link><Link href="/admin/analytics">Analytics</Link>
-    <Link href="/admin/automation">Automations</Link><Link href="/admin/activity">Activity</Link><Link href="/admin/sessions">Sessions</Link>
-    <Link href="/admin/leads">Enquiries</Link><Link href="/admin/projects">Projects</Link><Link href="/admin/mixes">Mixes</Link><Link href="/admin/contacts">Contacts</Link><Link href="/admin/marketing">Marketing</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/staff">Staff</Link><Link href="/admin/settings">Settings</Link><Link href="/">Website ↗</Link>
-    <span className="navIdentity">{profile?.full_name}<small>{profile?.role}</small></span><LogoutButton/>
-  </nav>
-  <StaffBottomNav role="owner"/>
- </>;
+ const path=usePathname(),role=profile?.role||'engineer',items=primaryNavigation(role);
+ return <><nav className="osNav" aria-label="Studio OS navigation">
+ {items.map(item=>{const active=navigationActive(path,item.href,items);return <Link key={item.href} href={item.href} aria-current={active?'page':undefined}>{item.label}</Link>})}
+ {role==='owner'&&<Link href="/admin/bookings/new" className="osNewBooking">+ New booking</Link>}
+ <Link href="/">Website ↗</Link><span className="navIdentity">{profile?.full_name}<small>{role}</small></span><LogoutButton/>
+ </nav><StaffBottomNav role={role}/></>;
 }

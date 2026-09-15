@@ -1,3 +1,4 @@
+.osNav a[aria-current="page"]{color:#c394ff;border-bottom:2px solid #c394ff}.osNav .osNewBooking{font-weight:800}
 /* Scoped to the admin route. Preserve the public site's visual identity. */
 .osGlobalBack{position:relative;top:auto;left:auto;margin:calc(env(safe-area-inset-top,0px) + 12px) 16px 0;min-height:44px;z-index:10}
 :is(.adminPage,.engineerApp,.engApp,.calendarApp){min-width:0;padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))}

@@ -3,7 +3,7 @@ export default function manifest() {
     name: 'Silkcrayon Studio OS',
     short_name: 'Silkcrayon OS',
     description: 'Silkcrayon studio bookings, artists, payments and session reports.',
-    start_url: '/admin/engineer',
+    start_url: '/admin/home',
     display: 'standalone',
     background_color: '#050505',
     theme_color: '#050505',

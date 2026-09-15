@@ -1,14 +1,15 @@
 {
   "name": "silkcrayon-studio-os",
-  "version": "20.12.14",
+  "version": "20.12.15",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "check:imports": "node scripts/check-imports.mjs",
-    "prebuild": "npm run check:imports && npm run test:contracts",
-    "test:contracts": "node tests/contracts.mjs"
+    "prebuild": "npm run check:imports && npm test",
+    "test:contracts": "node tests/contracts.mjs",
+    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

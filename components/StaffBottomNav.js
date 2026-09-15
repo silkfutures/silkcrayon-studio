@@ -1,5 +1,8 @@
 "use client";
 import Link from 'next/link';
 import {usePathname} from 'next/navigation';
-function Item({href,label,icon,path,match}){const active=match?match(path):path===href||path.startsWith(href+'/');return <Link href={href} className={active?'active':''}><span>{icon}</span><small>{label}</small></Link>}
-export default function StaffBottomNav(){const path=usePathname();return <nav className="staffBottomNav" aria-label="Studio OS mobile navigation"><Item href="/admin/engineer" label="Home" icon="⌂" path={path} match={p=>p==='/admin/engineer'}/><Item href="/admin/artists" label="Artists" icon="◎" path={path}/><Item href="/admin/payments" label="Pay" icon="£" path={path}/><Item href="/admin/sessions" label="Sessions" icon="✓" path={path}/><Item href="/admin/more" label="More" icon="•••" path={path}/></nav>}
+import {primaryNavigation,navigationActive} from '../lib/osNavigation';
+export default function StaffBottomNav({role='engineer'}){
+ const path=usePathname(),items=primaryNavigation(role);
+ return <nav className="staffBottomNav" aria-label="Studio OS mobile navigation">{items.map(item=>{const active=navigationActive(path,item.href,items);return <Link key={item.href} href={item.href} className={active?'active':''} aria-current={active?'page':undefined}><span aria-hidden="true">{item.icon}</span><small>{item.label}</small></Link>})}</nav>;
+}

@@ -16,6 +16,8 @@ export default async function Services(){
  const money=p=>`£${(Number(p||0)/100).toFixed(Number(p||0)%100?2:0)}`;
  const services=[
   {n:"01",title:"Vocal Recording",copy:"Record through a Neumann U87 with an engineer who understands performance, doubles, harmonies, layers and the details that make a vocal feel finished.",meta:`From ${money(pricing.studioHourlyPricePence)} / hour`,href:"/booking?service=vocal-recording",cta:"Book →"},
+  {title:"Studio Dry Hire",copy:"Use the studio with your own engineer. No Silkcrayon engineer is included.",meta:"£40 / hour · 2h minimum",href:"/dry-hire-cardiff",cta:"View dry hire →"},
+  {title:"Full Day Studio",copy:"Eight hours for focused recording, writing and production.",meta:`${money(pricing.fullDayPricePence)} / day`,href:"/booking?service=full-day",cta:"Book a full day →"},
   {n:"02",title:"Mixing & Mastering",copy:"Take the record beyond the session with focused clean-up, balance, detail and a release-ready finish.",meta:"Tailored quote · upload your track",href:"/mix-request",cta:"Upload for a quote →"},
   {n:"03",title:"Artist Development",copy:"Turn a backlog, release problem or difficult decision into a practical plan with Nathan or Toni.",meta:"One-off session · £75",href:"/artist-development",cta:"Explore artist support →"},
   {n:"03",title:"Music Production",copy:"Develop the idea, arrangement and sound around the artist. From an early concept through to a complete record.",meta:"Project based",href:"/enquire?type=production",cta:"Enquire →"},
@@ -35,9 +37,10 @@ export default async function Services(){
 
   <section className="section servicesV12 servicesDirectory"><div className="container">
    <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Choose the part<br/>you need now.</h2></div><p>You do not need to know the whole journey before you start. Pick the closest fit and we’ll help with the rest.</p></div></Reveal>
-   <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*55}><article className={`serviceRow ${i===0?"featured":""}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong><Link href={s.href}>{s.cta}</Link></div></article></Reveal>)}</div>
+   <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*55}><article className={`serviceRow ${i===0?"featured":""}`}><span className="serviceNumber">{String(i+1).padStart(2,'0')}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong><Link href={s.href}>{s.cta}</Link></div></article></Reveal>)}</div>
   </div></section>
 
+  <section className="section"><div className="container"><Link className="textLink" href="/young-creators">Studio sessions for young creators →</Link></div></section>
   <section className="section servicesStory"><div className="container servicesStoryGrid">
    <Reveal><div className="servicesStoryImage"><img src="/images/booth.webp" alt="Private vocal booth at Silkcrayon Studios Cardiff"/></div></Reveal>
    <Reveal delay={100}><div className="copyBlock"><p className="eyebrow">Not sure what you need?</p><h2>Tell us what you’re making.</h2><p>We would rather point you towards the right session than sell you the wrong one. Send the project over or request a call and we’ll help you choose.</p><div className="actions"><Link className="button primary" href="/enquire">Make an enquiry <span>↗</span></Link><Link className="textLink" href="/request-a-call">Request a call →</Link></div></div></Reveal>

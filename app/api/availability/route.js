@@ -7,7 +7,7 @@ import {rateLimit} from "../../../lib/rateLimit";
 export const dynamic = "force-dynamic";
 export async function GET(request) {
   try {
-    if(!await rateLimit(request,{scope:'availability',limit:120,windowSeconds:60}))return NextResponse.json({error:'Too many availability requests.'},{status:429});
+    if(!await rateLimit(request,{scope:'availability',limit:120,windowSeconds:60,throwOnUnavailable:true}))return NextResponse.json({error:'Too many availability requests.'},{status:429});
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");
     const serviceSlug = searchParams.get("service");
@@ -23,6 +23,6 @@ export async function GET(request) {
     if (blockoutError) throw blockoutError;
     return NextResponse.json({ slots: generateSlots(date, duration, liveBookings, blockouts || [], service.slug) });
   } catch (e) {
-    return NextResponse.json({ error: e.message || "Availability failed" }, { status: 500 });
+    return NextResponse.json({ error: e.code==='RATE_LIMIT_UNAVAILABLE'?e.message:"The booking diary is temporarily unavailable. Please retry shortly." }, { status: 503 });
   }
 }

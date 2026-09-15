@@ -5,7 +5,8 @@ import {recordBookingEvent} from '../../../../../../lib/bookingEvents';
 import {noShowEmail,bookingCancelledEmail,sendLoggedNotification,ownerEmails,sendEmail} from '../../../../../../lib/notifications';
 import {closeDryHireIdCheck} from '../../../../../../lib/dryHireId';
 
-function today(){return new Date().toISOString().slice(0,10)}
+import {londonToday} from '../../../../../../lib/time';
+function today(){return londonToday()}
 
 
 export async function POST(req,{params}){
