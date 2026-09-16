@@ -94,6 +94,13 @@ export default function ManualBookingForm({customers=[],engineers=[],hourlyPrice
   setHours(String(h));
   setAmount(projectMode?'0':String(Math.round(h*rate*100)/100));
  }
+ function changeRemainingBalance(v){
+  const remaining=Number(v);
+  if(!Number.isFinite(remaining))return;
+  const bounded=Math.max(0,Math.min(numericAmount,remaining));
+  const received=Math.max(0,numericAmount-bounded);
+  setPartialPaidAmount(String(Math.round(received*100)/100));
+ }
  async function submit(e){
   e.preventDefault();
   if(!customerId)return setMsg('Choose an artist.');
@@ -139,10 +146,10 @@ export default function ManualBookingForm({customers=[],engineers=[],hourlyPrice
    <button type="button" className={paymentMode==='manual_paid'?'active':''} onClick={()=>setPaymentMode('manual_paid')}><b>Already paid by direct bank transfer</b><span>Marks the booking paid manually.</span><small>No Stripe processing fee.</small></button>
    <button type="button" className={paymentMode==='unpaid'?'active':''} onClick={()=>setPaymentMode('unpaid')}><b>Book now · payment later</b><span>Reserve the session and send confirmation only.</span><small>You can take payment later from the artist profile.</small></button>
   </div>{paymentMode==='partial_paid'&&<div className="projectIncludedBanner" style={{marginTop:18}}><b>Part payment received</b><span>Studio OS will remember the deposit, show the remaining balance, and send the customer a reminder on the date you choose.</span><div className="formGrid" style={{marginTop:16}}>
-   <label className="field"><span>Already received (£)</span><input type="number" min=".01" step=".01" value={partialPaidAmount} onChange={e=>setPartialPaidAmount(e.target.value)} placeholder="35"/></label>
+   <label className="field"><span>Already received (£)</span><input type="number" min=".01" step=".01" value={partialPaidAmount} onChange={e=>setPartialPaidAmount(e.target.value)} onFocus={e=>e.currentTarget.select()} placeholder="35"/><small>Edit this or the remaining balance — the other amount updates automatically.</small></label>
    <label className="field"><span>Received via</span><select value={partialPaidMethod} onChange={e=>setPartialPaidMethod(e.target.value)}><option value="bank_transfer">Monzo / bank transfer</option><option value="cash">Cash</option><option value="external_card">Card elsewhere</option><option value="other">Other</option></select></label>
    <label className="field"><span>Balance reminder date</span><input type="date" value={balanceReminderDate} onChange={e=>setBalanceReminderDate(e.target.value)}/></label>
-   <label className="field"><span>Remaining balance</span><input value={`£${partialRemaining.toFixed(2)}`} readOnly/></label>
+   <label className="field"><span>Remaining balance (£)</span><input type="number" min="0" max={numericAmount} step=".01" value={partialRemaining.toFixed(2)} onChange={e=>changeRemainingBalance(e.target.value)} onFocus={e=>e.currentTarget.select()}/><small>Type the amount still due. Studio OS recalculates what has already been paid.</small></label>
    <label className="field full"><span>Monzo balance payment link · optional</span><input type="url" inputMode="url" value={balancePaymentUrl} onChange={e=>setBalancePaymentUrl(e.target.value)} placeholder="https://..."/><small>Recommended: create a Monzo Business payment link for exactly £{partialRemaining.toFixed(2)} and paste it here. Studio OS will send this link automatically on the reminder date.</small></label>
   </div></div>}</>}{serviceSlug==='dry-hire'&&<label className="check policyCheck"><input type="checkbox" required checked={dryHireConfirmed} onChange={e=>setDryHireConfirmed(e.target.checked)}/><span><b>Dry Hire lead hirer confirmed</b><br/>The customer is 18+, accepts the Dry Hire Terms, and understands photo-ID verification is required before access.</span></label>}<label className="check policyCheck"><input type="checkbox" required checked={policyConfirmed} onChange={e=>setPolicyConfirmed(e.target.checked)}/><span><b>Customer booking confirmed</b><br/>I have agreed the date/time and Silkcrayon booking policies with the customer.</span></label></div></section>
   <section className="checkoutDock"><div><small>SESSION</small><b>{date?formatUkDate(date):'Choose date'} {start&&`· ${start}–${end}`}</b><span>{validHours?`${numericHours}h`:'Choose hours'} · {projectMode?'Included in project quote':paymentMode==='partial_paid'&&numericPartial>0?`£${numericPartial.toFixed(2)} paid · £${partialRemaining.toFixed(2)} due`:`£${Number(amount||0).toFixed(2)}`}</span></div><button className="engPrimaryAction buttonLike" disabled={busy}>{busy?'Booking…':'Create + notify artist'} <span>→</span></button>{!projectMode&&<button type="button" className="draftClearButton" onClick={()=>{clearDraft();setCustomerId('');setServiceSlug('vocal-recording');setDate('');setStart('');setHours('1');setAmount(String(hourlyPrice));setEngineerUserId('');setPaymentMode('pay_by_bank');setPartialPaidAmount('');setPartialPaidMethod('bank_transfer');setBalanceReminderDate('');setBalancePaymentUrl('');setNotes('');setPolicyConfirmed(false);setDryHireConfirmed(false);setMsg('Draft cleared.')}}>Clear draft</button>}{msg&&<p>{msg}</p>}</section>
