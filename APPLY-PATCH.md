@@ -1,25 +1,19 @@
-# Silkcrayon v20.12.20 — Mobile customer picker hotfix
+# Silkcrayon v20.12.22 — build audit fix
 
-This is a **patch-only** release.
+Apply over your current app (after v20.12.19+).
 
-## What it fixes
+Replace only:
 
-On the **Create a mix** form, tapping a customer on iPhone/iOS could visually select/highlight the row but leave the customer results menu open, blocking the rest of the form.
+- `tests/audit-patch.mjs`
 
-The picker now:
+Why this is needed:
 
-- collapses immediately when a customer is tapped;
-- keeps an immediate local selected value while the parent form updates;
-- compares customer IDs safely as strings;
-- dismisses the iOS keyboard after selection; and
-- removes the `onMouseDown(...preventDefault())` behaviour that can suppress the synthetic click on mobile Safari.
+- v20.12.19 intentionally changed the owner **Today** destination from `/admin` to `/admin/engineer` so owners and engineers share the session-focused Today view.
+- The regression test still expected the old owner route `/admin`, so Vercel stopped during `npm test` before the Next.js build.
+- This patch updates that stale assertion to expect `/admin/engineer` for both roles.
 
-## Apply
+No application code, database, or Supabase migration changes are included.
 
-Replace this file in your existing app:
+Verification performed:
 
-`components/ArtistSearchSelect.js`
-
-with the file from this patch.
-
-No Supabase/database migration is required.
+- `node tests/audit-patch.mjs` passes with the current navigation behavior.

@@ -25,7 +25,7 @@ assert.deepEqual(receiptRows(),[]);
 for(const role of ['owner','engineer']){
  const items=primaryNavigation(role);
  assert.equal(items.length,5);
- assert.equal(items[0].href,role==='owner'?'/admin':'/admin/engineer');
+ assert.equal(items[0].href,'/admin/engineer','Today opens the shared session view for owners and engineers');
  for(const path of [items[0].href,'/admin/calendar','/admin/artists/123','/admin/accounting','/admin/settings','/admin/projects/123']){
   assert.equal(items.filter(item=>navigationActive(path,item.href,items)).length,1,`${role} ${path} has exactly one active destination`);
  }
