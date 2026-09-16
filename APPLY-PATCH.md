@@ -1,22 +1,25 @@
-# v20.12.24 — Mix customer picker hard-collapse hotfix
+# Silkcrayon V20.12.25 — mix payment status on creation
 
-Apply this **after v20.12.23**.
+Apply this patch over the current app.
 
-Replace:
+Replace these files:
 
-- `components/ArtistSearchSelect.js`
+- `components/MixJobForm.js`
+- `app/api/admin/mixes/route.js`
+- `lib/mixPayment.js`
 
-No Supabase migration is required.
+No Supabase migration is required. It uses the existing `mix_jobs` payment fields.
 
-## What changed
+## What changes
 
-The previous fix still allowed a stale mobile focus/open event to keep the customer results visible after selection.
+When creating a mix you can now choose:
 
-This version makes a committed customer selection authoritative:
+1. **Payment due / not paid yet** — existing behaviour. Full quote stays outstanding.
+2. **Paid already** — records the full quote as received immediately and creates the mix in `ready_to_start`.
+3. **Deposit / part paid** — enter the amount already received. The mix remains `awaiting_payment` with only the balance outstanding.
 
-- if a customer is selected, the results list cannot render, even if `open` is accidentally still true;
-- touch/pointer selection commits on `pointerup` rather than relying only on Safari's synthetic `click`;
-- normal click/keyboard activation remains as a fallback;
-- tapping **Change** clears the selection and deliberately reopens the search list.
+For paid/deposit jobs you can also record the payment method and an optional reference.
 
-This affects all uses of the shared customer picker, including **Create a Mix**.
+The existing mix payment-request flow already charges only the outstanding amount, so a £50 mix with £35 received will request £15 later.
+
+No customer email/SMS is sent merely by creating the mix.
