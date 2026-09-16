@@ -5,7 +5,7 @@ import {getStripe} from '../../../../../lib/stripe';
 import {confirmationEmail,engineerAssignedEmail,sendLoggedNotification,sendStaffLoggedNotification} from '../../../../../lib/notifications';
 import {sendLoggedSms} from '../../../../../lib/sms';
 import {newToken,tokenHash} from '../../../../../lib/customerAuth';
-import {londonDateTimeToUtc} from '../../../../../lib/time';
+import {londonDateTimeToUtc,londonDateOffset} from '../../../../../lib/time';
 import {formatUkDate} from '../../../../../lib/dates';
 import {ensureDryHireIdRequest} from '../../../../../lib/dryHireId';
 import {recordBookingEvent} from '../../../../../lib/bookingEvents';
@@ -26,9 +26,20 @@ export async function POST(req){try{
  if(projectId){const {data:p,error:pe}=await db.from('studio_projects').select('id,title,customer_id,status,project_type,recording_hours_included,recording_hours_used').eq('id',projectId).maybeSingle();if(pe)throw pe;if(!p)return NextResponse.json({error:'Project not found.'},{status:404});if(['lost','delivered'].includes(p.status))return NextResponse.json({error:'This project is closed.'},{status:409});if(p.customer_id&&p.customer_id!==b.customerId)return NextResponse.json({error:'This booking must use the customer linked to the project.'},{status:400});project=p;}
  const serviceSlug=project?'podcast-recording':b.serviceSlug==='dry-hire'?'dry-hire':'vocal-recording',dryHire=serviceSlug==='dry-hire';
  const hours=Number(b.hours||0),duration=Math.round(hours*60),amount=money(b.amount);
+ const paymentMode=project?'project_included':String(b.paymentMode||'unpaid');
+ const isPartialPaid=!project&&paymentMode==='partial_paid';
+ let partialPaidPence=0,partialPaidMethod=null,balanceReminderDate=null,balancePaymentUrl=null;
  if(!Number.isFinite(hours)||hours<(dryHire?2:.5)||hours>8||duration<(dryHire?120:30))return NextResponse.json({error:dryHire?'Dry Hire has a 2-hour minimum.':'Choose between 0.5 and 8 hours.'},{status:400});
  if(dryHire&&!b.dryHireConfirmed)return NextResponse.json({error:'Confirm the lead hirer is 18+ and has agreed the Dry Hire Terms.'},{status:400});
  if(!project&&(!Number.isFinite(amount)||amount<30))return NextResponse.json({error:'Session value must be at least £0.30.'},{status:400});
+ if(isPartialPaid){
+  partialPaidPence=money(b.partialPaidAmount);partialPaidMethod=String(b.partialPaidMethod||'');balanceReminderDate=String(b.balanceReminderDate||'').trim();balancePaymentUrl=String(b.balancePaymentUrl||'').trim()||null;
+  if(!Number.isFinite(partialPaidPence)||partialPaidPence<1||partialPaidPence>=amount)return NextResponse.json({error:'The deposit / part payment must be more than £0 and less than the full session value.'},{status:400});
+  if(!['bank_transfer','cash','external_card','other'].includes(partialPaidMethod))return NextResponse.json({error:'Choose how the deposit was received.'},{status:400});
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(balanceReminderDate))return NextResponse.json({error:'Choose a balance reminder date.'},{status:400});
+  if(balanceReminderDate<londonDateOffset(0))return NextResponse.json({error:'The balance reminder date cannot be in the past.'},{status:400});
+  if(balancePaymentUrl){try{const u=new URL(balancePaymentUrl);if(!['http:','https:'].includes(u.protocol))throw new Error('bad protocol')}catch{return NextResponse.json({error:'Paste a valid Monzo/payment link for the remaining balance.'},{status:400})}}
+ }
  const when=londonDateTimeToUtc(b.date,b.start);if(!when||when.getTime()<=Date.now())return NextResponse.json({error:'Choose a future session.'},{status:400});
  const {data:customer,error:ce}=await db.from('customers').select('*').eq('id',b.customerId).single();if(ce||!customer)return NextResponse.json({error:'Artist not found.'},{status:404});
  if(dryHire&&!customer.phone)return NextResponse.json({error:'Add a mobile number to the artist before creating a Dry Hire booking.'},{status:400});
@@ -41,10 +52,11 @@ export async function POST(req){try{
   p_harmful_music_policy_accepted:true
  });
  if(re){if(String(re.message).includes('slot_unavailable'))return NextResponse.json({error:'That time overlaps another booking or blockout.'},{status:409});throw re}
- const policyVersion='2026-08-14',paymentMode=project?'project_included':String(b.paymentMode||'unpaid');
+ const policyVersion='2026-08-14';
  const isManualPaid=project||paymentMode==='manual_paid';
  const {error:ue}=await db.from('bookings').update({
-  status:'confirmed',payment_status:isManualPaid?'paid':'unpaid',payment_method:isManualPaid?'manual':'stripe',hold_expires_at:null,project_id:project?.id||null,
+  status:'confirmed',payment_status:isManualPaid?'paid':'unpaid',payment_method:isPartialPaid?partialPaidMethod:(isManualPaid?'manual':'stripe'),hold_expires_at:null,project_id:project?.id||null,
+  amount_paid_pence:isManualPaid?amount:(isPartialPaid?partialPaidPence:0),balance_payment_url:isPartialPaid?balancePaymentUrl:null,balance_payment_provider:isPartialPaid?(balancePaymentUrl?(/monzo/i.test(balancePaymentUrl)?'monzo':'external_link'):'bank_transfer'):null,balance_reminder_date:isPartialPaid?balanceReminderDate:null,balance_reminder_sent_at:null,
   dry_hire_terms_accepted:dryHire,dry_hire_terms_version:dryHire?'2026-09-05':null,dry_hire_lead_hirer_18_confirmed:dryHire,
   assigned_engineer:engineer?(engineer.engineer_name||engineer.full_name):null,engineer_user_id:engineer?.user_id||null,
   terms_version:policyVersion,cancellation_policy_version:policyVersion,harmful_music_policy_version:policyVersion,privacy_policy_version:policyVersion,
@@ -52,10 +64,22 @@ export async function POST(req){try{
   internal_notes:`Admin-created booking by ${ctx.profile.full_name}${project?` · Included in project: ${project.title}`:''}${b.notes?` · ${String(b.notes).slice(0,500)}`:''}`,updated_at:new Date().toISOString()
  }).eq('id',id);if(ue)throw ue;
  const {data:booking}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();
+ let depositWarning=null;
+ if(isPartialPaid){
+  const now=new Date().toISOString();
+  const {error:depositError}=await db.from('studio_payments').insert({
+   customer_id:customer.id,booking_id:id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,kind:'session',
+   description:`Deposit · ${booking.service_name} · ${formatUkDate(booking.booking_date)} ${String(booking.start_time).slice(0,5)}`,
+   amount_pence:partialPaidPence,list_amount_pence:partialPaidPence,hours_credit:0,session_hours:0,status:'paid',paid_at:now,
+   payment_method:partialPaidMethod,payment_category:'deposit',discount_code:'none',discount_percent:0,discount_amount_pence:0
+  });
+  if(depositError){depositWarning='Booking created and the deposit is shown on the booking, but the payment ledger entry could not be saved. Do not create the booking again; open it and check the payment record.';console.error('Deposit ledger insert failed after manual booking',depositError.message||depositError);}
+ }
 
  let portalUrl=null;try{const token=newToken(),expires=new Date(Date.now()+7*24*60*60*1000).toISOString();const {error:te}=await db.from('customer_access_tokens').insert({customer_id:customer.id,token_hash:tokenHash(token),expires_at:expires});if(!te)portalUrl=`${canonicalBase(new URL(req.url).origin)}/account/access?token=${encodeURIComponent(token)}`;}catch{}
  const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).in('status',['confirmed','completed']);
- const paymentLabel=project?'Included in your project recording quote':isManualPaid?`£${(amount/100).toFixed(2)} · Paid manually`:`£${(amount/100).toFixed(2)} · Payment due`;
+ const remainingPence=Math.max(0,amount-partialPaidPence);
+ const paymentLabel=project?'Included in your project recording quote':isManualPaid?`£${(amount/100).toFixed(2)} · Paid manually`:isPartialPaid?`£${(partialPaidPence/100).toFixed(2)} paid · £${(remainingPence/100).toFixed(2)} remaining · reminder ${formatUkDate(balanceReminderDate)}`:`£${(amount/100).toFixed(2)} · Payment due`;
  const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
  await sendLoggedNotification({booking,customer,type:'admin_booking_confirmation',...msg});
  if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:project?`Silkcrayon: your podcast recording session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. If ID verification is still needed, a secure ID-check link will follow.`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
@@ -95,5 +119,5 @@ export async function POST(req){try{
  }catch(paymentError){paymentLinkWarning=paymentUrl?'Booking created, but payment-link delivery could not be confirmed. Open the existing booking to check before sending again.':'Booking created, but the payment link could not be created. Open the existing booking to arrange payment; do not create it again.';console.error('Booking payment link failed',paymentError?.message);}
  }
  if(project){await db.from('studio_projects').update({status:['quoted','accepted','deposit_due'].includes(project.status)?'scheduled':project.status,updated_at:new Date().toISOString()}).eq('id',project.id);}
- return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,idRequestSent,idRequestWarning,projectId:project?.id||null});
+ return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,projectId:project?.id||null});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}

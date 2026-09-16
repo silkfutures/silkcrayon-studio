@@ -67,7 +67,7 @@ export async function POST(request) {
           if(updateError) throw updateError;
           if(isPaid&&payment.booking_id){
             const {error:bookingPayError}=await db.from('bookings').update({
-              status:'confirmed',payment_status:'paid',payment_method:'stripe',
+              status:'confirmed',payment_status:'paid',payment_method:'stripe',amount_paid_pence:payment.amount_pence,
               stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,
               stripe_checkout_session_id:session.id,hold_expires_at:null,updated_at:new Date().toISOString(),...inv
             }).eq('id',payment.booking_id);
@@ -92,7 +92,7 @@ export async function POST(request) {
       } else {
         const id = session.metadata?.booking_id || session.client_reference_id;
         if (id) {
-          const inv=await invoiceFields(session); await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString(), ...inv }).eq("id", id);
+          const inv=await invoiceFields(session); await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", amount_paid_pence: session.payment_status === "paid" ? Number(session.amount_total||0) : 0, stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString(), ...inv }).eq("id", id);
           if (session.payment_status === "paid") {
             if(session.metadata?.email_signup_discount_applied==='true'){
               const {data:bookCustomer}=await db.from("bookings").select("customer_id,customers(email)").eq("id",id).maybeSingle();

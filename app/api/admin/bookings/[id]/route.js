@@ -37,15 +37,19 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
      if(['paid','part_refunded'].includes(current.payment_status))return NextResponse.json({error:'This booking is already paid.'},{status:409});
      const method=String(body.manualPaymentMethod||'');
      if(!['bank_transfer','cash','other'].includes(method))return NextResponse.json({error:'Choose bank transfer, cash or other.'},{status:400});
-     const now=new Date().toISOString();
-     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'paid',payment_method:method,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
-     await recordBookingEvent({db,booking:updated,eventType:'payment_marked_paid',reasonCode:method,note:`Manually marked paid · £${(Number(updated.amount_pence||0)/100).toFixed(2)}`,ctx,snapshot:current});
+     const now=new Date().toISOString(),alreadyPaid=Math.max(0,Number(current.amount_paid_pence||0)),total=Math.max(0,Number(current.amount_pence||0)),remaining=Math.max(0,total-alreadyPaid);
+     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'paid',payment_method:method,amount_paid_pence:total,balance_reminder_sent_at:now,updated_at:now}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+     if(alreadyPaid>0&&remaining>0){
+       const {error:balanceError}=await db.from('studio_payments').insert({customer_id:current.customer_id,booking_id:id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,kind:'session',description:`Remaining balance · ${current.service_name} · ${formatUkDate(current.booking_date)} ${String(current.start_time).slice(0,5)}`,amount_pence:remaining,list_amount_pence:remaining,hours_credit:0,session_hours:0,status:'paid',paid_at:now,payment_method:method,payment_category:'balance',discount_code:'none',discount_percent:0,discount_amount_pence:0});
+       if(balanceError)throw balanceError;
+     }
+     await recordBookingEvent({db,booking:updated,eventType:'payment_marked_paid',reasonCode:method,note:alreadyPaid>0?`Remaining balance recorded · £${(remaining/100).toFixed(2)} · total £${(total/100).toFixed(2)} paid`:`Manually marked paid · £${(total/100).toFixed(2)}`,ctx,snapshot:current});
      return NextResponse.json({ok:true,booking:updated});
    }
    if(body.manualPaymentStatus==='unpaid'){
      if(current.payment_status!=='paid')return NextResponse.json({error:'This booking is not currently marked paid.'},{status:409});
      const oldMethod=current.payment_method;
-     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'unpaid',payment_method:'manual_voided',updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
+     const {data:updated,error:ue}=await db.from('bookings').update({payment_status:'unpaid',payment_method:'manual_voided',amount_paid_pence:0,updated_at:new Date().toISOString()}).eq('id',id).select('*,customers(*)').single();if(ue)throw ue;
      const correctionReason=String(body.correctionReason||'Owner correction').trim().slice(0,240);
      await recordBookingEvent({db,booking:updated,eventType:'payment_marked_unpaid',reasonCode:'owner_correction',note:`Manual payment reversed · previous method ${oldMethod||'unknown'} · ${correctionReason}`,ctx,snapshot:current});
      return NextResponse.json({ok:true,booking:updated});
