@@ -10,7 +10,7 @@ export default async function NewBooking({searchParams}){
  const ctx=await requireOwner(),db=getAdminDb(),settings=await getStudioSettings(),sp=await searchParams;
  const projectId=String(sp?.project||'').trim();
  const [customerResult,engineerResult,projectResult]=await Promise.all([
-  db.from('customers').select('id,full_name,artist_name,email,phone').order('artist_name').limit(1000),
+  db.from('customers').select('id,full_name,artist_name,email,phone,dry_hire_id_verified_at').order('artist_name').limit(1000),
   db.from('staff_profiles').select('user_id,full_name,engineer_name,role,active,email').in('role',['owner','engineer']).eq('active',true).order('full_name'),
   projectId?db.from('studio_projects').select('id,title,customer_id,contact_name,email,recording_hours_included,recording_hours_used,status,project_type').eq('id',projectId).maybeSingle():Promise.resolve({data:null})
  ]);

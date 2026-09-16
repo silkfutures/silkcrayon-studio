@@ -36,7 +36,7 @@ export async function GET(request){
  const [{data:upcoming=[]},{data:past=[]},{data:balanceDue=[]}]=await Promise.all([
   db.from('bookings').select('*,customers(*)').eq('booking_date',tomorrow).eq('status','confirmed'),
   db.from('bookings').select('*,customers(*)').eq('booking_date',yesterday).in('status',['confirmed','completed']),
-  db.from('bookings').select('*,customers(*)').in('status',['pending','confirmed','completed']).eq('payment_status','unpaid').gt('amount_paid_pence',0).not('balance_reminder_date','is',null).is('balance_reminder_sent_at',null).lte('balance_reminder_date',today).limit(100)
+  db.from('bookings').select('*,customers(*)').in('status',['pending','confirmed','completed']).eq('payment_status','unpaid').not('balance_reminder_date','is',null).is('balance_reminder_sent_at',null).lte('balance_reminder_date',today).limit(100)
  ]);
  let sent=0,balanceRemindersSent=0;
  for(const b of balanceDue){
@@ -61,7 +61,7 @@ export async function GET(request){
  for(const b of upcoming){
   const c=b.customers;if(!c)continue;
   let working=b,staff=null;
-  if(b.service_slug==='dry-hire'&&!c.dry_hire_id_verified_at){try{await ensureDryHireIdRequest({booking:b,customer:c,resend:true,source:'day_before_reminder'});}catch(e){console.error('Dry Hire ID reminder failed',e?.message||e)}}
+  if(b.service_slug==='dry-hire'&&b.dry_hire_id_required!==false&&!c.dry_hire_id_verified_at){try{await ensureDryHireIdRequest({booking:b,customer:c,resend:true,source:'day_before_reminder'});}catch(e){console.error('Dry Hire ID reminder failed',e?.message||e)}}
   if(b.engineer_user_id){const {data}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,phone,photo_url,email').eq('user_id',b.engineer_user_id).maybeSingle();staff=data||null;}
   else if(b.service_slug!=='dry-hire'&&defaultEngineer){
    const assignedName=defaultEngineer.engineer_name||defaultEngineer.full_name;
@@ -74,7 +74,7 @@ export async function GET(request){
    const name=staff?.engineer_name||staff?.full_name||'';
    const contact=staff?.phone||'';
    const engineer=name?(contact?` Engineer ${name} — text ${contact} when you reach the lane.`:` Engineer: ${name}.`):'';
-   const dry=working.service_slug==='dry-hire'?` Dry hire: no Silkcrayon engineer is included. Bring everything you need to run the session.${c.dry_hire_id_verified_at?' ID verified.':' ID verification is required before access; we have resent the secure ID-check link.'}`:'';
+   const dry=working.service_slug==='dry-hire'?` Dry hire: no Silkcrayon engineer is included. Bring everything you need to run the session.${working.dry_hire_id_required===false?' No ID check is required for this booking.':c.dry_hire_id_verified_at?' ID verified.':' ID verification is required before access; we have resent the secure ID-check link.'}`:'';
    const sms=await sendLoggedSms({booking:working,customer:c,type:'session_reminder_sms',body:`Silkcrayon reminder: tomorrow at ${String(working.start_time).slice(0,5)}.${dry||engineer} Getting here: https://silkcrayon.com/getting-here`});
    if(sms.ok)sent++;
   }

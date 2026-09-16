@@ -28,13 +28,14 @@ export async function POST(req){try{
  const hours=Number(b.hours||0),duration=Math.round(hours*60),amount=money(b.amount);
  const paymentMode=project?'project_included':String(b.paymentMode||'unpaid');
  const isPartialPaid=!project&&paymentMode==='partial_paid';
+ const dryHireIdRequired=dryHire?b.dryHireIdRequired!==false:true;
  let partialPaidPence=0,partialPaidMethod=null,balanceReminderDate=null,balancePaymentUrl=null;
  if(!Number.isFinite(hours)||hours<(dryHire?2:.5)||hours>8||duration<(dryHire?120:30))return NextResponse.json({error:dryHire?'Dry Hire has a 2-hour minimum.':'Choose between 0.5 and 8 hours.'},{status:400});
  if(dryHire&&!b.dryHireConfirmed)return NextResponse.json({error:'Confirm the lead hirer is 18+ and has agreed the Dry Hire Terms.'},{status:400});
  if(!project&&(!Number.isFinite(amount)||amount<30))return NextResponse.json({error:'Session value must be at least £0.30.'},{status:400});
  if(isPartialPaid){
   partialPaidPence=money(b.partialPaidAmount);partialPaidMethod=String(b.partialPaidMethod||'');balanceReminderDate=String(b.balanceReminderDate||'').trim();balancePaymentUrl=String(b.balancePaymentUrl||'').trim()||null;
-  if(!Number.isFinite(partialPaidPence)||partialPaidPence<1||partialPaidPence>=amount)return NextResponse.json({error:'The deposit / part payment must be more than £0 and less than the full session value.'},{status:400});
+  if(!Number.isFinite(partialPaidPence)||partialPaidPence<0||partialPaidPence>=amount)return NextResponse.json({error:'The amount already received must be £0 or more and less than the full session value.'},{status:400});
   if(!['bank_transfer','cash','external_card','other'].includes(partialPaidMethod))return NextResponse.json({error:'Choose how the deposit was received.'},{status:400});
   if(!/^\d{4}-\d{2}-\d{2}$/.test(balanceReminderDate))return NextResponse.json({error:'Choose a balance reminder date.'},{status:400});
   if(balanceReminderDate<londonDateOffset(0))return NextResponse.json({error:'The balance reminder date cannot be in the past.'},{status:400});
@@ -57,7 +58,7 @@ export async function POST(req){try{
  const {error:ue}=await db.from('bookings').update({
   status:'confirmed',payment_status:isManualPaid?'paid':'unpaid',payment_method:isPartialPaid?partialPaidMethod:(isManualPaid?'manual':'stripe'),hold_expires_at:null,project_id:project?.id||null,
   amount_paid_pence:isManualPaid?amount:(isPartialPaid?partialPaidPence:0),balance_payment_url:isPartialPaid?balancePaymentUrl:null,balance_payment_provider:isPartialPaid?(balancePaymentUrl?(/monzo/i.test(balancePaymentUrl)?'monzo':'external_link'):'bank_transfer'):null,balance_reminder_date:isPartialPaid?balanceReminderDate:null,balance_reminder_sent_at:null,
-  dry_hire_terms_accepted:dryHire,dry_hire_terms_version:dryHire?'2026-09-05':null,dry_hire_lead_hirer_18_confirmed:dryHire,
+  dry_hire_terms_accepted:dryHire,dry_hire_terms_version:dryHire?'2026-09-05':null,dry_hire_lead_hirer_18_confirmed:dryHire,dry_hire_id_required:dryHire?dryHireIdRequired:true,
   assigned_engineer:engineer?(engineer.engineer_name||engineer.full_name):null,engineer_user_id:engineer?.user_id||null,
   terms_version:policyVersion,cancellation_policy_version:policyVersion,harmful_music_policy_version:policyVersion,privacy_policy_version:policyVersion,
   policy_accepted_at:new Date().toISOString(),harmful_music_policy_accepted:true,sms_reminder_consent:Boolean(customer.phone),
@@ -65,7 +66,7 @@ export async function POST(req){try{
  }).eq('id',id);if(ue)throw ue;
  const {data:booking}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();
  let depositWarning=null;
- if(isPartialPaid){
+ if(isPartialPaid&&partialPaidPence>0){
   const now=new Date().toISOString();
   const {error:depositError}=await db.from('studio_payments').insert({
    customer_id:customer.id,booking_id:id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,kind:'session',
@@ -82,9 +83,9 @@ export async function POST(req){try{
  const paymentLabel=project?'Included in your project recording quote':isManualPaid?`£${(amount/100).toFixed(2)} · Paid manually`:isPartialPaid?`£${(partialPaidPence/100).toFixed(2)} paid · £${(remainingPence/100).toFixed(2)} remaining · reminder ${formatUkDate(balanceReminderDate)}`:`£${(amount/100).toFixed(2)} · Payment due`;
  const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
  await sendLoggedNotification({booking,customer,type:'admin_booking_confirmation',...msg});
- if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:project?`Silkcrayon: your podcast recording session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. If ID verification is still needed, a secure ID-check link will follow.`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
+ if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:project?`Silkcrayon: your podcast recording session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. ${dryHireIdRequired?'If ID verification is still needed, a secure ID-check link will follow.':'No ID check is required for this booking.'}`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
  let idRequestWarning=null,idRequestSent=false;
- if(dryHire){
+ if(dryHire&&dryHireIdRequired){
   try{const idResult=await ensureDryHireIdRequest({booking,customer,ctx,source:'manual_booking'});idRequestSent=Boolean(idResult?.emailSent||idResult?.smsSent||idResult?.verified||idResult?.status==='requested'||idResult?.status==='submitted');}
   catch(idError){
    idRequestWarning='Booking created, but the automatic ID request could not be sent. Open the booking and press Request ID.';
@@ -92,6 +93,7 @@ export async function POST(req){try{
    try{await recordBookingEvent({db,booking,eventType:'dry_hire_id_request_failed',reasonCode:'manual_booking',note:String(idError?.message||idError).slice(0,500),ctx,snapshot:{customer_id:customer.id}})}catch{}
   }
  }
+ if(dryHire&&!dryHireIdRequired){try{await recordBookingEvent({db,booking,eventType:'dry_hire_id_waived',reasonCode:'owner_booking_override',note:'Owner marked ID verification as not required for this Dry Hire booking.',ctx,snapshot:{customer_id:customer.id}})}catch{}}
  if(engineer?.email){const em=engineerAssignedEmail(booking,customer,engineer.engineer_name||engineer.full_name);await sendStaffLoggedNotification({booking,type:'engineer_assignment',to:engineer.email,...em})}
 
  let paymentUrl=null,paymentLinkWarning=null;
@@ -119,5 +121,5 @@ export async function POST(req){try{
  }catch(paymentError){paymentLinkWarning=paymentUrl?'Booking created, but payment-link delivery could not be confirmed. Open the existing booking to check before sending again.':'Booking created, but the payment link could not be created. Open the existing booking to arrange payment; do not create it again.';console.error('Booking payment link failed',paymentError?.message);}
  }
  if(project){await db.from('studio_projects').update({status:['quoted','accepted','deposit_due'].includes(project.status)?'scheduled':project.status,updated_at:new Date().toISOString()}).eq('id',project.id);}
- return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,projectId:project?.id||null});
+ return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,dryHireIdRequired:dryHire?dryHireIdRequired:null,projectId:project?.id||null});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}

@@ -1,25 +1,34 @@
-# Silkcrayon V20.12.25 — mix payment status on creation
+# Silkcrayon Studio OS — v20.12.26
 
-Apply this patch over the current app.
+This patch is designed to be applied on top of the current v20.12.25 chain.
 
-Replace these files:
+## What it changes
 
-- `components/MixJobForm.js`
-- `app/api/admin/mixes/route.js`
-- `lib/mixPayment.js`
+1. **£0 paid + balance later**
+   - `Deposit / pay later` now accepts **£0.00 already received**.
+   - You can attach the Monzo balance link and choose the reminder date even when nothing has been paid yet.
+   - The scheduled balance reminder automation now includes £0-paid bookings.
+   - No £0 payment ledger entry is created.
 
-No Supabase migration is required. It uses the existing `mix_jobs` payment fields.
+2. **Dry Hire — optional ID check per booking**
+   - Dry Hire creation now has **Require ID check for this booking** (on by default).
+   - Turn it off for a known/approved artist when you do not need an ID upload for that booking.
+   - When off, Studio OS does not send the ID request or the day-before ID reminder.
+   - Customer confirmation/reminder and admin session views show that ID is not required for that booking.
+   - Existing globally verified Dry Hire customers continue to bypass a new upload automatically.
 
-## What changes
+## Apply
 
-When creating a mix you can now choose:
+Copy the files in this patch over the matching paths in the app.
 
-1. **Payment due / not paid yet** — existing behaviour. Full quote stays outstanding.
-2. **Paid already** — records the full quote as received immediately and creates the mix in `ready_to_start`.
-3. **Deposit / part paid** — enter the amount already received. The mix remains `awaiting_payment` with only the balance outstanding.
+Then run this Supabase migration **once**:
 
-For paid/deposit jobs you can also record the payment method and an optional reference.
+`supabase/v20-12-26-zero-balance-later-dry-hire-id-override.sql`
 
-The existing mix payment-request flow already charges only the outstanding amount, so a £50 mix with £35 received will request £15 later.
+Then redeploy.
 
-No customer email/SMS is sent merely by creating the mix.
+## Important
+
+The Dry Hire ID override is **per booking**. It does not falsely mark the customer as permanently ID verified.
+
+The balance reminder is still **date-based**. This patch allows £0 received and a scheduled reminder; it does not add an exact reminder time-of-day.
