@@ -22,7 +22,6 @@ export default async function More(){
   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
   ['/admin/sessions','Session reports','Complete and review session reports','✓'],
   ['/admin/settings','Settings','Studio pricing and preferences','⚙'],
-  ['/admin/engineer','Session view','Today and the next 14 days','⌂'],
   ['/admin/staff','Staff','People, roles & access','◌']
  ]:[
   ['/admin/calendar','Calendar','Your visual schedule','▦'],

@@ -1,0 +1,20 @@
+--- base/lib/osNavigation.js	2026-09-16 15:51:56.161071795 +0000
++++ Silkcrayon-PATCH-v20.12.19-today-session-view/lib/osNavigation.js	2026-09-16 15:51:56.010718416 +0000
+@@ -1,6 +1,6 @@
+ export function primaryNavigation(role){
+  return [
+-  {href:role==='owner'?'/admin':'/admin/engineer',label:'Today',icon:'⌂'},
++  {href:'/admin/engineer',label:'Today',icon:'⌂'},
+   {href:'/admin/calendar',label:'Calendar',icon:'▦'},
+   {href:'/admin/artists',label:'Artists',icon:'◎'},
+   {href:'/admin/payments',label:'Money',icon:'£'},
+--- base/app/admin/more/page.js	2026-09-16 15:51:56.162082152 +0000
++++ Silkcrayon-PATCH-v20.12.19-today-session-view/app/admin/more/page.js	2026-09-16 15:51:56.010920805 +0000
+@@ -22,7 +22,6 @@
+   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
+   ['/admin/sessions','Session reports','Complete and review session reports','✓'],
+   ['/admin/settings','Settings','Studio pricing and preferences','⚙'],
+-  ['/admin/engineer','Session view','Today and the next 14 days','⌂'],
+   ['/admin/staff','Staff','People, roles & access','◌']
+  ]:[
+   ['/admin/calendar','Calendar','Your visual schedule','▦'],

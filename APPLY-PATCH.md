@@ -1,17 +1,17 @@
-# Silkcrayon v20.12.18 — Editable remaining balance
+# Silkcrayon v20.12.19 — Today = Session View
 
-This is a one-file hotfix for v20.12.17.
+Apply this patch over your current v20.12.18 app.
 
-## Fix
-The **Remaining balance** field in Add Session → Deposit / part paid was read-only. It is now editable.
+Replace these two files:
 
-You can enter either side of the payment:
-- Session value £50 + Already received £35 → Remaining balance becomes £15.
-- Session value £50 + Remaining balance £15 → Already received becomes £35.
+- `lib/osNavigation.js`
+- `app/admin/more/page.js`
 
-## Apply
-Replace this file in your existing app:
+What changes:
 
-`components/ManualBookingForm.js`
+- **Today** now opens `/admin/engineer` for owners as well as engineers.
+- The owner dashboard at `/admin` is still available under **More → Owner overview**.
+- The duplicate **More → Session view** tile has been removed.
+- No database or Supabase migration is required.
 
-No database migration is required for this hotfix.
+After replacing the files, redeploy normally.
