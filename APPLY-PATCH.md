@@ -1,19 +1,35 @@
-# Silkcrayon v20.12.22 — build audit fix
+# Silkcrayon combined patch — v20.12.23
 
-Apply over your current app (after v20.12.19+).
+This is a patch-only bundle. Apply it over your current Silkcrayon app by copying the folders/files into the project root and replacing the matching files.
 
-Replace only:
+## Included fixes
 
+1. **Today / Session View navigation**
+   - Owner Today route uses `/admin/engineer`.
+   - More navigation stays consistent.
+   - Includes the regression-test update so Vercel does not fail expecting `/admin`.
+
+2. **Create a Mix customer menu**
+   - Selecting an artist/customer collapses the search menu immediately.
+   - Dismisses the mobile keyboard and preserves the selected customer.
+
+3. **Automations → File Delivery**
+   - File-delivery history is collapsed by default.
+   - It can be expanded when needed so Recent Messages stays easy to reach.
+
+## Files replaced
+
+- `lib/osNavigation.js`
+- `app/admin/more/page.js`
 - `tests/audit-patch.mjs`
+- `components/ArtistSearchSelect.js`
+- `app/admin/automation/page.js`
+- `app/globals.css`
 
-Why this is needed:
+## Database
 
-- v20.12.19 intentionally changed the owner **Today** destination from `/admin` to `/admin/engineer` so owners and engineers share the session-focused Today view.
-- The regression test still expected the old owner route `/admin`, so Vercel stopped during `npm test` before the Next.js build.
-- This patch updates that stale assertion to expect `/admin/engineer` for both roles.
+No Supabase migration is required for this bundle.
 
-No application code, database, or Supabase migration changes are included.
+## Important
 
-Verification performed:
-
-- `node tests/audit-patch.mjs` passes with the current navigation behavior.
+This bundle combines v20.12.19 (build-safe), v20.12.20, and v20.12.21. It does **not** include the separate deposit/Monzo or editable-balance patches; keep those already-applied files in your project.
