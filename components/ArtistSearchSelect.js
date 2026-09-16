@@ -28,6 +28,11 @@ export default function ArtistSearchSelect({ customers = [], value = '', onChang
     (customer) => String(customer.id) === String(localValue)
   );
 
+  // A committed selection always wins over dropdown state. This prevents a
+  // stale focus/open event on mobile Safari from keeping the results visible
+  // after the customer has already been chosen.
+  const showResults = open && !selected;
+
   const results = useMemo(() => {
     const term = q.trim().toLowerCase();
     return items
@@ -99,7 +104,7 @@ export default function ArtistSearchSelect({ customers = [], value = '', onChang
 
   return (
     <div className="artistSearch">
-      {selected && !open ? (
+      {selected ? (
         <div className="customerPickerSelected">
           <span className="engAvatar mini">
             {(selected.artist_name || selected.full_name || '?')[0].toUpperCase()}
@@ -137,14 +142,17 @@ export default function ArtistSearchSelect({ customers = [], value = '', onChang
             aria-expanded={open}
           />
 
-          {open && (
+          {showResults && (
             <div className="artistResults">
               {results.map((customer) => (
                 <button
                   type="button"
                   key={customer.id}
-                  // Do not prevent mousedown/pointer events here. On iOS Safari
-                  // that can suppress the synthetic click and leave the menu open.
+                  // Commit on pointer-up so touch selection does not depend on
+                  // Safari generating a later synthetic click. Pointer-up is
+                  // cancelled during a scroll gesture, reducing accidental picks.
+                  onPointerUp={() => choose(customer)}
+                  // Keyboard activation and older-browser fallback.
                   onClick={() => choose(customer)}
                 >
                   <span className="engAvatar mini">

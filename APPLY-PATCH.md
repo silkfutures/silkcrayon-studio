@@ -1,35 +1,22 @@
-# Silkcrayon combined patch — v20.12.23
+# v20.12.24 — Mix customer picker hard-collapse hotfix
 
-This is a patch-only bundle. Apply it over your current Silkcrayon app by copying the folders/files into the project root and replacing the matching files.
+Apply this **after v20.12.23**.
 
-## Included fixes
+Replace:
 
-1. **Today / Session View navigation**
-   - Owner Today route uses `/admin/engineer`.
-   - More navigation stays consistent.
-   - Includes the regression-test update so Vercel does not fail expecting `/admin`.
-
-2. **Create a Mix customer menu**
-   - Selecting an artist/customer collapses the search menu immediately.
-   - Dismisses the mobile keyboard and preserves the selected customer.
-
-3. **Automations → File Delivery**
-   - File-delivery history is collapsed by default.
-   - It can be expanded when needed so Recent Messages stays easy to reach.
-
-## Files replaced
-
-- `lib/osNavigation.js`
-- `app/admin/more/page.js`
-- `tests/audit-patch.mjs`
 - `components/ArtistSearchSelect.js`
-- `app/admin/automation/page.js`
-- `app/globals.css`
 
-## Database
+No Supabase migration is required.
 
-No Supabase migration is required for this bundle.
+## What changed
 
-## Important
+The previous fix still allowed a stale mobile focus/open event to keep the customer results visible after selection.
 
-This bundle combines v20.12.19 (build-safe), v20.12.20, and v20.12.21. It does **not** include the separate deposit/Monzo or editable-balance patches; keep those already-applied files in your project.
+This version makes a committed customer selection authoritative:
+
+- if a customer is selected, the results list cannot render, even if `open` is accidentally still true;
+- touch/pointer selection commits on `pointerup` rather than relying only on Safari's synthetic `click`;
+- normal click/keyboard activation remains as a fallback;
+- tapping **Change** clears the selection and deliberately reopens the search list.
+
+This affects all uses of the shared customer picker, including **Create a Mix**.
