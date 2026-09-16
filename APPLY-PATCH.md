@@ -1,17 +1,25 @@
-# Silkcrayon v20.12.19 — Today = Session View
+# Silkcrayon v20.12.20 — Mobile customer picker hotfix
 
-Apply this patch over your current v20.12.18 app.
+This is a **patch-only** release.
 
-Replace these two files:
+## What it fixes
 
-- `lib/osNavigation.js`
-- `app/admin/more/page.js`
+On the **Create a mix** form, tapping a customer on iPhone/iOS could visually select/highlight the row but leave the customer results menu open, blocking the rest of the form.
 
-What changes:
+The picker now:
 
-- **Today** now opens `/admin/engineer` for owners as well as engineers.
-- The owner dashboard at `/admin` is still available under **More → Owner overview**.
-- The duplicate **More → Session view** tile has been removed.
-- No database or Supabase migration is required.
+- collapses immediately when a customer is tapped;
+- keeps an immediate local selected value while the parent form updates;
+- compares customer IDs safely as strings;
+- dismisses the iOS keyboard after selection; and
+- removes the `onMouseDown(...preventDefault())` behaviour that can suppress the synthetic click on mobile Safari.
 
-After replacing the files, redeploy normally.
+## Apply
+
+Replace this file in your existing app:
+
+`components/ArtistSearchSelect.js`
+
+with the file from this patch.
+
+No Supabase/database migration is required.
