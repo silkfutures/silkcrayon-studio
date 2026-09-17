@@ -1,2 +1,34 @@
-'use client';import {useState} from 'react';import {useRouter} from 'next/navigation';
-export default function ClientMixActions({job,revisions}){const router=useRouter(),[msg,setMsg]=useState('');async function act(body){setMsg('Sending…');const r=await fetch(`/api/customer/mixes/${job.id}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)}),j=await r.json().catch(()=>({}));setMsg(r.ok?'Saved ✓':j.error||'Could not save.');if(r.ok)router.refresh()}const canRev=['first_mix_sent','revisions'].includes(job.status)&&revisions.length<job.included_revisions;return <div className="clientMixActions"><h2>Feedback & approval</h2>{canRev&&<form onSubmit={e=>{e.preventDefault();act({action:'revision',notes:new FormData(e.currentTarget).get('notes')});e.currentTarget.reset()}}><label className="field"><span>Revision {revisions.length+1} notes</span><textarea name="notes" rows="5" required placeholder="List changes clearly, with timestamps where helpful."/></label><button className="button outline">Submit revision request →</button></form>}{['first_mix_sent','revisions'].includes(job.status)&&<button className="button primary" onClick={()=>{if(confirm('Approve this as the final mix?'))act({action:'approve'})}}>Approve final mix ✓</button>}{job.status==='approved'&&<p className="portalNotice success">Final mix approved. Silkcrayon will prepare the final delivery.</p>}{msg&&<p>{msg}</p>}</div>}
+'use client';
+
+import {useState} from 'react';
+import {useRouter} from 'next/navigation';
+import styles from './MixReviewActions.module.css';
+
+export default function ClientMixActions({job,revisions}){
+  const router=useRouter();
+  const [msg,setMsg]=useState('');
+  const [busy,setBusy]=useState(false);
+  const canReview=['first_mix_sent','revisions'].includes(job.status);
+  const canRevise=canReview&&revisions.length<job.included_revisions;
+
+  async function act(body){
+    setBusy(true);setMsg('');
+    try{
+      const response=await fetch(`/api/customer/mixes/${job.id}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});
+      const result=await response.json().catch(()=>({}));
+      if(!response.ok)throw new Error(result.error||'Could not save.');
+      setMsg(body.action==='approve'?'Mix approved ✓ The studio has been notified.':'Revision request sent ✓ The studio has been notified.');
+      router.refresh();
+    }catch(error){setMsg(error.message||'Could not save.')}finally{setBusy(false)}
+  }
+
+  if(job.status==='approved'||job.status==='delivered')return <div className={styles.reviewCard}><div className={styles.approved}><b>Mix approved ✓</b><span>Silkcrayon has been notified. You’re all set on this version.</span></div></div>;
+  if(!canReview)return null;
+
+  return <div className={styles.reviewCard}>
+    <div className={styles.reviewIntro}><small>YOUR REVIEW</small><h2>Ready to lock it?</h2><p>If the mix feels right, approve it. If there’s one specific thing to adjust, revision requests are available underneath.</p></div>
+    <button type="button" className={styles.approve} disabled={busy} onClick={()=>{if(window.confirm('Approve this mix as the version you are happy with?'))act({action:'approve'})}}><span>{busy?'Saving…':'Approve mix'}</span><span>✓</span></button>
+    {canRevise?<details className={styles.changeDetails}><summary>Need a specific change?</summary><form className={styles.changeBody} onSubmit={event=>{event.preventDefault();const form=event.currentTarget,notes=new FormData(form).get('notes');act({action:'revision',notes}).then(()=>form.reset())}}><p>Keep it focused and add timestamps where useful. {job.included_revisions-revisions.length} included revision round{job.included_revisions-revisions.length===1?'':'s'} remaining.</p><textarea name="notes" rows="5" required maxLength="3000" placeholder="e.g. 1:12 — bring the lead vocal slightly forward."/><button className={styles.changeButton} disabled={busy}>Send revision request</button></form></details>:<div className={styles.limit}>Your included revision allowance has been used. Contact the studio if something still needs attention.</div>}
+    {msg&&<p className={styles.status}>{msg}</p>}
+  </div>;
+}
