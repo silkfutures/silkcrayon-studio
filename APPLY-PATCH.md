@@ -1,14 +1,24 @@
-# V20.12.33 — Mix automation history backfill
+# Silkcrayon v20.12.34 — SEO authority pass + manual mix approval
 
-Apply this on top of V20.12.32.
+Apply this patch over the current app (after v20.12.33).
 
-## Replace
-- `app/admin/automation/page.js`
-- `app/globals.css`
+## What it changes
 
-## Run once in Supabase SQL Editor
-- `supabase/v20-12-33-mix-automation-backfill.sql`
+### SEO
+- Expands the existing `/mixing-mastering-cardiff` page instead of creating duplicate SEO pages.
+- Strengthens `/recording-studio-cardiff` with useful customer FAQs and stronger internal linking.
+- Adds visible FAQ content + FAQPage JSON-LD to supported SEO pages.
+- Adds Service structured data to the existing Cardiff service landing pages.
+- Adds `/dry-hire-cardiff` to the sitemap.
+- Improves Dry Hire canonical/Open Graph metadata and adds Service structured data.
+- Adds Mixing & Mastering and Dry Hire to the SEO-page footer links while leaving the main navigation uncluttered.
 
-The migration is idempotent and can safely be run again. It backfills older mix setup/payment messages, review-ready deliveries, and owner approval/revision alerts when enough historical data exists.
+### Mix OS
+- Adds **Mark mix as approved ✓** inside a mix job after a version has been sent for review.
+- Intended for approval received by text, email, phone or in person.
+- Requires the mix to be fully paid and in First mix sent / Revisions.
+- Updates the job and track statuses to Approved and records the manual approval in Communication History.
+- Does not send a fake client-approval notification to you or the customer.
 
-Historical rows are intentionally labelled **Historical**, not **Sent**, because the old mix activity table did not retain the email/SMS provider delivery result. Future mix communications continue to be logged live as Sent / Failed / Queued / Skipped.
+## Database
+No Supabase migration required.

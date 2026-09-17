@@ -1,6 +1,6 @@
 import SeoServicePage from "../../components/SeoServicePage";
 export const metadata={title:"Music Production Cardiff | Artist Development | Silkcrayon",description:"Bespoke music production in Cardiff for artists who want to develop songs, arrangements and a distinctive sound. Production, recording and creative direction at Silkcrayon Studios.",alternates:{canonical:"https://silkcrayon.com/music-production-cardiff"},openGraph:{title:"Music Production Cardiff | Silkcrayon Studios",description:"Bespoke music production and artist development in Cardiff Bay — from early idea and arrangement through recording and final direction.",url:"https://silkcrayon.com/music-production-cardiff",type:"website"}};
-export default function Page(){return <SeoServicePage
+export default function Page(){return <SeoServicePage serviceName="Music production" serviceDescription="Bespoke music production and artist development in Cardiff, from early ideas and arrangement through recording and final direction." canonicalPath="/music-production-cardiff"
  eyebrow="Music production · Cardiff"
  title="Build the record"
  accent="around the artist."

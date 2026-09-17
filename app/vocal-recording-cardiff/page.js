@@ -1,7 +1,7 @@
 import SeoServicePage from "../../components/SeoServicePage";
 import {getStudioSettings} from "../../lib/studioSettings";
 export const metadata={title:"Premium Vocal Recording Cardiff | Neumann U87 | Silkcrayon",description:"Premium vocal recording in Cardiff Bay with a Neumann U87 and experienced engineer included. Coaching for takes, doubles, harmonies and layers at Silkcrayon Studios.",alternates:{canonical:"https://silkcrayon.com/vocal-recording-cardiff"},openGraph:{title:"Premium Vocal Recording Cardiff | Silkcrayon Studios",description:"Record vocals through a Neumann U87 with hands-on engineering, take selection, doubles, harmonies and layers in Cardiff Bay.",url:"https://silkcrayon.com/vocal-recording-cardiff",type:"website"}};
-export default async function Page(){const pricing=await getStudioSettings();const hourly=`£${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}`;return <SeoServicePage
+export default async function Page(){const pricing=await getStudioSettings();const hourly=`£${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}`;return <SeoServicePage serviceName="Vocal recording" serviceDescription="Professional vocal recording in Cardiff Bay with engineer included, a Neumann U87 and hands-on support for takes, layers and performance." canonicalPath="/vocal-recording-cardiff"
  eyebrow="Premium vocal recording · Cardiff"
  title="Your voice deserves"
  accent="more than record."
