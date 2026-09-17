@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
-import {getAdminDb} from '../../../../../lib/supabase';
-import {ownerEmails,sendEmail} from '../../../../../lib/notifications';
+import {getAdminDb} from '../../../../lib/supabase';
+import {ownerEmails,sendEmail} from '../../../../lib/notifications';
 
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 const baseUrl=request=>String(process.env.NEXT_PUBLIC_SITE_URL||new URL(request.url).origin).replace(/\/$/,'');

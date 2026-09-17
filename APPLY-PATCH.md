@@ -1,37 +1,21 @@
-# Silkcrayon v20.12.27 — Mix delivery + customer review flow
+# Silkcrayon v20.12.28 — mix review build hotfix
 
-Apply this patch over the current Silkcrayon app, preserving the paths in the ZIP.
+Apply this on top of v20.12.27.
 
-## What changes
+Replace:
 
-- Mix deliveries accept multiple files in one send.
-- Files are uploaded individually to the existing secure storage and presented to the customer behind one private review link.
-- The admin uploader has a cleaner multi-file queue with file count, total size, individual remove controls, and an Add more files action.
-- The customer review page makes **Approve mix** the primary action.
-- Revision requests are deliberately secondary/collapsed under **Need a specific change?** and prompt for focused notes/timestamps.
-- Approval and revision requests notify the Silkcrayon owner email(s).
-- Approval and revision requests are also recorded in mix activity/history.
-- Signed-in customers get the same approval/revision workflow in their portal.
-- Old mix review links are prevented from approving an outdated version once a newer delivery exists.
-- Multi-file secure downloads are supported individually from the customer page.
+`app/api/mix-review/[token]/route.js`
 
-## Database
+This fixes two relative imports that were one directory too high:
 
-No Supabase migration is required. This uses the existing `mix_jobs`, `mix_revisions`, `mix_activity`, and `session_deliveries` tables.
+- `lib/supabase`
+- `lib/notifications`
 
-## Files replaced/added
+No database migration is required.
 
-- `components/MixDeliveryPanel.js`
-- `components/MixDeliveryPanel.module.css`
-- `components/PublicMixReviewActions.js`
-- `components/ClientMixActions.js`
-- `components/MixReviewActions.module.css`
-- `app/api/admin/mixes/[id]/delivery/route.js`
-- `app/api/mix-review/[token]/route.js`
-- `app/api/customer/mixes/[id]/route.js`
-- `app/files/[token]/page.js`
-- `app/files/[token]/download/route.js`
+Verification performed against the latest uploaded app with v20.12.27 overlaid:
 
-## Important
+- `npm run check:imports` → `Relative imports OK`
+- corrected route passes `node --check`
 
-This patch does not include or replace the booking/deposit/Dry Hire files from v20.12.26, so it should not undo those changes.
+The full local test suite could not be completed in the container because its cached `node-ical` package is incomplete; that is unrelated to this hotfix and is not the Vercel error being fixed.
