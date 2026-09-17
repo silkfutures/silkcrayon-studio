@@ -78,7 +78,7 @@ export async function POST(req,{params}){
     let emailSent=false,smsSent=false;
     if(customer?.email){const result=await sendEmail({to:customer.email,...message});emailSent=Boolean(result.ok)}
     if(customer?.phone){
-      const text=`Silkcrayon: your ${job.track_title} mix is ready to review 🎧 Approve it or request a specific change here: ${href}`;
+      const text=`Silkcrayon — “${job.track_title}” is ready. Review & approve your mix: ${href}`;
       const result=await sendSms({to:normalizePhone(customer.phone)||customer.phone,body:text});smsSent=Boolean(result.ok);
     }
 

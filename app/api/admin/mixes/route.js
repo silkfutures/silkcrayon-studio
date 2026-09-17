@@ -48,7 +48,7 @@ export async function POST(req){
     const {data,error}=await db.from('mix_jobs').insert({
       customer_id:b.customerId,
       track_title:tracks[0],
-      service_type:b.serviceType||'mix_only',
+      service_type:b.serviceType||'mix_master',
       quoted_amount_pence:quoted,
       ...payment,
       payment_due_date:payment.status==='ready_to_start'?null:(b.paymentDueDate||null),
@@ -85,7 +85,7 @@ export async function POST(req){
     let warning=null,paymentUrl=null,emailSent=false,smsSent=false;
     if(Boolean(b.notifyCustomer)){
       const jobForEmail={
-        id:data.id,track_title:tracks[0],service_type:b.serviceType||'mix_only',turnaround_text:turnaround,
+        id:data.id,track_title:tracks[0],service_type:b.serviceType||'mix_master',turnaround_text:turnaround,
         included_revisions:revisions,vocal_tuning_editing:Boolean(b.vocalTuningEditing)
       };
       try{
@@ -116,7 +116,7 @@ export async function POST(req){
           if(customer.email){const sent=await sendEmail({to:customer.email,...message});emailSent=Boolean(sent.ok);if(!sent.ok)warning=`Mix created, but the customer email did not send: ${sent.error||'email provider error'}`}
           if(customer.phone&&customer.sms_service_consent){
             const due=b.paymentDueDate?` Due ${new Date(`${b.paymentDueDate}T12:00:00Z`).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Europe/London'})}.`:' ';
-            const sent=await sendSms({to:normalizePhone(customer.phone)||customer.phone,body:`Silkcrayon: your ${tracks.length>1?'mix project':tracks[0]} is set up. £${(outstanding/100).toFixed(2)} is ready for payment.${due} Pay here: ${paymentUrl}`});
+            const sent=await sendSms({to:normalizePhone(customer.phone)||customer.phone,body:`Silkcrayon — ${mixServiceLabels[jobForEmail.service_type]||'Mix & Master'}: ${tracks.length>1?`${tracks.length} tracks`:`“${tracks[0]}”`}. £${(outstanding/100).toFixed(2)} due.${due} Pay: ${paymentUrl}`});
             smsSent=Boolean(sent.ok);
           }
           await db.from('mix_activity').insert({mix_job_id:data.id,event_type:'payment_request_sent',channel:'system',status:emailSent||smsSent?'sent':'failed',detail:`£${(outstanding/100).toFixed(2)} · ${paymentRequestMethod==='monzo'?'Monzo link':'Stripe checkout'} · setup / what-to-expect email${emailSent?' sent':' not sent'} · SMS${smsSent?' sent':' not sent'}`,provider_reference:paymentRequestMethod==='stripe'?paymentUrl:null,created_by_user_id:ctx.user.id});
