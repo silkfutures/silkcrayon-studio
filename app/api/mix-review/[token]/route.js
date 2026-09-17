@@ -1,9 +1,10 @@
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../../lib/notifications';
+import {canonicalSiteUrl} from '../../../../lib/mixCustomerEmail';
 
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
-const baseUrl=request=>String(process.env.NEXT_PUBLIC_SITE_URL||new URL(request.url).origin).replace(/\/$/,'');
+const baseUrl=()=>canonicalSiteUrl();
 
 async function loadReview(db,token){
   const {data:delivery}=await db.from('session_deliveries').select('id,mix_job_id,share_token,created_at,customer_id').eq('share_token',token).maybeSingle();
@@ -23,7 +24,7 @@ async function loadReview(db,token){
 async function notifyOwners({request,job,customer,action,notes=''}){
   const artist=customer?.artist_name||customer?.full_name||'Customer';
   const title=job.track_title||'Mix';
-  const root=baseUrl(request),href=`${root}/admin/mixes/${job.id}`;
+  const root=baseUrl(),href=`${root}/admin/mixes/${job.id}`;
   const approved=action==='approve';
   const subject=approved?`Mix approved ✓ — ${title} · ${artist}`:`Revision requested — ${title} · ${artist}`;
   const detail=approved

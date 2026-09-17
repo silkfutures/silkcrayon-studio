@@ -4,9 +4,10 @@ import {getStaffContext} from '../../../../../../lib/auth';
 import {getAdminDb} from '../../../../../../lib/supabase';
 import {sendEmail} from '../../../../../../lib/notifications';
 import {sendSms,normalizePhone} from '../../../../../../lib/sms';
+import {canonicalSiteUrl} from '../../../../../../lib/mixCustomerEmail';
 
 const BUCKET='session-deliveries';
-const site=()=>String(process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon.com').replace(/\/$/,'');
+const site=()=>canonicalSiteUrl();
 const safeName=value=>String(value||'file').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-120)||'file';
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 

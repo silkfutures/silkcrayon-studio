@@ -1,21 +1,26 @@
-# Silkcrayon v20.12.28 — mix review build hotfix
+# Silkcrayon v20.12.30 — Final Mix Setup + Monzo Payment Links
 
-Apply this on top of v20.12.27.
+Apply this patch over the current Silkcrayon app, replacing matching files.
 
-Replace:
+## What this includes
+- Mix setup / what-to-expect customer email
+- Turnaround + included revision rounds on mix creation
+- Delete test mixes safely from accounting
+- Canonical `silkcrayon.com` customer/review links
+- Existing multi-file delivery + approval/revision workflow compatibility
+- **Monzo payment link as the default payment-request method**
+- Stripe checkout retained as an optional fallback
 
-`app/api/mix-review/[token]/route.js`
+## Monzo flow
+For an unpaid or part-paid mix:
+1. Choose **Monzo payment link** under Payment request.
+2. Create the link in Monzo for the exact outstanding amount.
+3. Paste the HTTPS link into the form.
+4. Create the mix.
+5. The customer gets the polished setup / what-to-expect email with **Pay £X** pointing to your Monzo link.
+6. When the payment lands, mark the mix paid manually in Silkcrayon.
 
-This fixes two relative imports that were one directory too high:
+Stripe remains available if you want automatic payment detection.
 
-- `lib/supabase`
-- `lib/notifications`
-
-No database migration is required.
-
-Verification performed against the latest uploaded app with v20.12.27 overlaid:
-
-- `npm run check:imports` → `Relative imports OK`
-- corrected route passes `node --check`
-
-The full local test suite could not be completed in the container because its cached `node-ical` package is incomplete; that is unrelated to this hotfix and is not the Vercel error being fixed.
+## Database
+No new Supabase migration is required for this patch.
