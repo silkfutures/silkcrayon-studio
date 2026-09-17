@@ -2,6 +2,7 @@
 
 import {useMemo,useRef,useState} from 'react';
 import {createBrowserClient} from '@supabase/ssr';
+import {useRouter} from 'next/navigation';
 import styles from './MixDeliveryPanel.module.css';
 
 function browserClient(){
@@ -17,6 +18,7 @@ function formatBytes(bytes){
 }
 
 export default function MixDeliveryPanel({jobId,revisions=[]}){
+  const router=useRouter();
   const [mode,setMode]=useState('upload');
   const [url,setUrl]=useState('');
   const [files,setFiles]=useState([]);
@@ -83,6 +85,8 @@ export default function MixDeliveryPanel({jobId,revisions=[]}){
       if(!response.ok)throw new Error(result.error||'Could not send the mix.');
       setMsg(`${result.fileCount>1?`${result.fileCount} files`:'Mix'} sent ✓${result.emailSent?' Email sent.':''}${result.smsSent?' Text sent.':''}`);
       setUrl('');setFiles([]);
+      router.push('/admin/mixes');
+      router.refresh();
     }catch(error){
       const detail=error?.message||'Could not send the mix.';
       setMsg(detail==='Failed to fetch'?'Upload connection failed. Please retry. If it keeps happening, try a smaller batch or paste a Drive/Dropbox link.':detail);

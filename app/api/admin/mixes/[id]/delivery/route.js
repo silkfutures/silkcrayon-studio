@@ -11,6 +11,23 @@ const site=()=>canonicalSiteUrl();
 const safeName=value=>String(value||'file').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-120)||'file';
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 
+async function createNotificationLog(db,{customerId,deliveryId=null,type,recipient,subject,channel='email'}){
+  try{
+    const row={booking_id:null,customer_id:customerId||null,notification_type:type,recipient,subject,status:'queued',channel};
+    if(deliveryId)row.session_delivery_id=deliveryId;
+    const {data,error}=await db.from('notification_log').insert(row).select('id').single();
+    if(error)throw error;
+    return data?.id||null;
+  }catch(error){
+    console.error('Mix notification log create failed',type,error?.message||error);
+    return null;
+  }
+}
+async function finishNotificationLog(db,id,result){
+  if(!id)return;
+  try{await db.from('notification_log').update({status:result?.ok?'sent':result?.skipped?'skipped':'failed',provider_id:result?.id||null,error:result?.error||null,sent_at:result?.ok?new Date().toISOString():null}).eq('id',id)}catch(error){console.error('Mix notification log update failed',error?.message||error)}
+}
+
 function mixReviewEmail(job,customer,{href,expiresAt,fileCount=1}={}){
   const artist=escapeHtml(customer?.artist_name||customer?.full_name||'there');
   const title=escapeHtml(job.track_title||'your mix');
@@ -76,10 +93,17 @@ export async function POST(req,{params}){
     const href=`${site()}/files/${delivery.share_token}`,customer=job.customers;
     const message=mixReviewEmail(job,customer,{href,expiresAt,fileCount});
     let emailSent=false,smsSent=false;
-    if(customer?.email){const result=await sendEmail({to:customer.email,...message});emailSent=Boolean(result.ok)}
+    if(customer?.email){
+      const logId=await createNotificationLog(db,{customerId:job.customer_id,deliveryId:delivery.id,type:'mix_review_ready_email',recipient:customer.email,subject:message.subject,channel:'email'});
+      const result=await sendEmail({to:customer.email,...message});emailSent=Boolean(result.ok);
+      await finishNotificationLog(db,logId,result);
+    }
     if(customer?.phone){
       const text=`Silkcrayon — “${job.track_title}” is ready. Review & approve your mix: ${href}`;
-      const result=await sendSms({to:normalizePhone(customer.phone)||customer.phone,body:text});smsSent=Boolean(result.ok);
+      const recipient=normalizePhone(customer.phone)||customer.phone;
+      const logId=await createNotificationLog(db,{customerId:job.customer_id,deliveryId:delivery.id,type:'mix_review_ready_sms',recipient,subject:text.slice(0,80),channel:'sms'});
+      const result=await sendSms({to:recipient,body:text});smsSent=Boolean(result.ok);
+      await finishNotificationLog(db,logId,result);
     }
 
     const nextStatus=revisionId?'revisions':['approved','delivered'].includes(job.status)?job.status:'first_mix_sent';

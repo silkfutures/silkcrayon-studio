@@ -1,10 +1,26 @@
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../../lib/notifications';
-import {canonicalSiteUrl} from '../../../../lib/mixCustomerEmail';
 
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
-const baseUrl=()=>canonicalSiteUrl();
+const baseUrl=request=>String(process.env.NEXT_PUBLIC_SITE_URL||new URL(request.url).origin).replace(/\/$/,'');
+
+async function createNotificationLog(db,{customerId,deliveryId=null,type,recipient,subject,channel='email'}){
+  try{
+    const row={booking_id:null,customer_id:customerId||null,notification_type:type,recipient,subject,status:'queued',channel};
+    if(deliveryId)row.session_delivery_id=deliveryId;
+    const {data,error}=await db.from('notification_log').insert(row).select('id').single();
+    if(error)throw error;
+    return data?.id||null;
+  }catch(error){
+    console.error('Mix notification log create failed',type,error?.message||error);
+    return null;
+  }
+}
+async function finishNotificationLog(db,id,result){
+  if(!id)return;
+  try{await db.from('notification_log').update({status:result?.ok?'sent':result?.skipped?'skipped':'failed',provider_id:result?.id||null,error:result?.error||null,sent_at:result?.ok?new Date().toISOString():null}).eq('id',id)}catch(error){console.error('Mix notification log update failed',error?.message||error)}
+}
 
 async function loadReview(db,token){
   const {data:delivery}=await db.from('session_deliveries').select('id,mix_job_id,share_token,created_at,customer_id').eq('share_token',token).maybeSingle();
@@ -24,14 +40,19 @@ async function loadReview(db,token){
 async function notifyOwners({request,job,customer,action,notes=''}){
   const artist=customer?.artist_name||customer?.full_name||'Customer';
   const title=job.track_title||'Mix';
-  const root=baseUrl(),href=`${root}/admin/mixes/${job.id}`;
+  const root=baseUrl(request),href=`${root}/admin/mixes/${job.id}`;
   const approved=action==='approve';
   const subject=approved?`Mix approved ✓ — ${title} · ${artist}`:`Revision requested — ${title} · ${artist}`;
   const detail=approved
     ? `<p style="font-size:18px"><b>${escapeHtml(artist)}</b> approved <b>${escapeHtml(title)}</b>.</p><p>No further client changes are requested on this version.</p>`
     : `<p><b>${escapeHtml(artist)}</b> requested changes to <b>${escapeHtml(title)}</b>.</p><div style="margin:18px 0;padding:16px;border-left:3px solid #c394ff;background:#110c16;white-space:pre-wrap">${escapeHtml(notes)}</div>`;
   const html=`<div style="font-family:Arial,sans-serif;background:#070608;color:#fff;padding:28px"><div style="max-width:620px;margin:auto;border:1px solid #3a3043;padding:28px"><div style="color:#c394ff;letter-spacing:3px;font-size:11px">SILKCRAYON OS</div><h1>${approved?'Mix approved.':'Revision requested.'}</h1>${detail}<p><a href="${href}" style="display:inline-block;background:#c394ff;color:#0d0911;padding:14px 18px;text-decoration:none;font-weight:900">OPEN MIX JOB →</a></p></div></div>`;
-  for(const email of await ownerEmails())await sendEmail({to:email,subject,html});
+  for(const email of await ownerEmails()){
+    const type=approved?'mix_approved_owner_email':'mix_revision_owner_email';
+    const logId=await createNotificationLog(getAdminDb(),{customerId:customer?.id||null,type,recipient:String(email).toLowerCase(),subject,channel:'email'});
+    const result=await sendEmail({to:email,subject,html});
+    await finishNotificationLog(getAdminDb(),logId,result);
+  }
 }
 
 export async function POST(request,{params}){

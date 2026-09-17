@@ -8,6 +8,23 @@ import {sendEmail} from '../../../../lib/notifications';
 import {sendSms,normalizePhone} from '../../../../lib/sms';
 import {canonicalSiteUrl,mixSetupEmail,mixServiceLabels} from '../../../../lib/mixCustomerEmail';
 
+async function createNotificationLog(db,{customerId,deliveryId=null,type,recipient,subject,channel='email'}){
+  try{
+    const row={booking_id:null,customer_id:customerId||null,notification_type:type,recipient,subject,status:'queued',channel};
+    if(deliveryId)row.session_delivery_id=deliveryId;
+    const {data,error}=await db.from('notification_log').insert(row).select('id').single();
+    if(error)throw error;
+    return data?.id||null;
+  }catch(error){
+    console.error('Mix notification log create failed',type,error?.message||error);
+    return null;
+  }
+}
+async function finishNotificationLog(db,id,result){
+  if(!id)return;
+  try{await db.from('notification_log').update({status:result?.ok?'sent':result?.skipped?'skipped':'failed',provider_id:result?.id||null,error:result?.error||null,sent_at:result?.ok?new Date().toISOString():null}).eq('id',id)}catch(error){console.error('Mix notification log update failed',error?.message||error)}
+}
+
 export async function POST(req){
   try{
     const ctx=await getStaffContext();
@@ -113,16 +130,30 @@ export async function POST(req){
             await db.from('mix_jobs').update({status:'awaiting_payment',quote_sent_at:now,stripe_checkout_session_id:session.id,updated_at:now}).eq('id',data.id);
           }
           const message=mixSetupEmail({job:jobForEmail,customer,tracks,outstandingPence:outstanding,paymentUrl,dueDate:b.paymentDueDate||null});
-          if(customer.email){const sent=await sendEmail({to:customer.email,...message});emailSent=Boolean(sent.ok);if(!sent.ok)warning=`Mix created, but the customer email did not send: ${sent.error||'email provider error'}`}
+          if(customer.email){
+            const logId=await createNotificationLog(db,{customerId:customer.id,type:'mix_setup_payment_email',recipient:customer.email,subject:message.subject,channel:'email'});
+            const sent=await sendEmail({to:customer.email,...message});emailSent=Boolean(sent.ok);
+            await finishNotificationLog(db,logId,sent);
+            if(!sent.ok)warning=`Mix created, but the customer email did not send: ${sent.error||'email provider error'}`;
+          }
           if(customer.phone&&customer.sms_service_consent){
             const due=b.paymentDueDate?` Due ${new Date(`${b.paymentDueDate}T12:00:00Z`).toLocaleDateString('en-GB',{day:'numeric',month:'short',timeZone:'Europe/London'})}.`:' ';
-            const sent=await sendSms({to:normalizePhone(customer.phone)||customer.phone,body:`Silkcrayon — ${mixServiceLabels[jobForEmail.service_type]||'Mix & Master'}: ${tracks.length>1?`${tracks.length} tracks`:`“${tracks[0]}”`}. £${(outstanding/100).toFixed(2)} due.${due} Pay: ${paymentUrl}`});
+            const smsBody=`Silkcrayon — ${mixServiceLabels[jobForEmail.service_type]||'Mix & Master'}: ${tracks.length>1?`${tracks.length} tracks`:`“${tracks[0]}”`}. £${(outstanding/100).toFixed(2)} due.${due} Pay: ${paymentUrl}`;
+            const recipient=normalizePhone(customer.phone)||customer.phone;
+            const logId=await createNotificationLog(db,{customerId:customer.id,type:'mix_setup_payment_sms',recipient,subject:smsBody.slice(0,80),channel:'sms'});
+            const sent=await sendSms({to:recipient,body:smsBody});
             smsSent=Boolean(sent.ok);
+            await finishNotificationLog(db,logId,sent);
           }
           await db.from('mix_activity').insert({mix_job_id:data.id,event_type:'payment_request_sent',channel:'system',status:emailSent||smsSent?'sent':'failed',detail:`£${(outstanding/100).toFixed(2)} · ${paymentRequestMethod==='monzo'?'Monzo link':'Stripe checkout'} · setup / what-to-expect email${emailSent?' sent':' not sent'} · SMS${smsSent?' sent':' not sent'}`,provider_reference:paymentRequestMethod==='stripe'?paymentUrl:null,created_by_user_id:ctx.user.id});
         }else{
           const message=mixSetupEmail({job:jobForEmail,customer,tracks,outstandingPence:0,paymentUrl:null});
-          if(customer.email){const sent=await sendEmail({to:customer.email,...message});emailSent=Boolean(sent.ok);if(!sent.ok)warning=`Mix created as paid, but the confirmation email did not send: ${sent.error||'email provider error'}`}
+          if(customer.email){
+            const logId=await createNotificationLog(db,{customerId:customer.id,type:'mix_setup_paid_email',recipient:customer.email,subject:message.subject,channel:'email'});
+            const sent=await sendEmail({to:customer.email,...message});emailSent=Boolean(sent.ok);
+            await finishNotificationLog(db,logId,sent);
+            if(!sent.ok)warning=`Mix created as paid, but the confirmation email did not send: ${sent.error||'email provider error'}`;
+          }
           await db.from('mix_activity').insert({mix_job_id:data.id,event_type:'mix_setup_confirmation',channel:'email',status:emailSent?'sent':'failed',detail:emailSent?'Paid mix confirmation / what-to-expect email sent.':'Customer confirmation email was not sent.',created_by_user_id:ctx.user.id});
         }
       }catch(notificationError){
