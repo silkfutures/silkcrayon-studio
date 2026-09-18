@@ -9,7 +9,7 @@ const qs=[
 ["What happens if I am late?","Your booking still finishes at the original end time, so arriving late reduces the recording time available."],
 ["Can I reschedule?","You get one free reschedule when requested more than 48 hours before the session. Requests 24–48 hours before receive studio credit rather than a cash refund. Under 24 hours is non-refundable."],
 ["What happens if I miss my session?","A no-show forfeits the full booking value or studio credits used for the booking."],
-["What is Studio Finish?","Studio Finish is our £60 post-session finishing service. We spend additional time cleaning, balancing, processing and preparing your song after the session. Delivery is within 7 days and one revision is included. Additional work or revisions can be quoted separately."],
+["What is Studio Finish?","Studio Finish is additional post-session work to get your track closer to release-ready. It can include editing, tuning, vocal cleanup, production tweaks, balance, effects, mix preparation or mastering. Pricing depends on what the track actually needs: a small fix may only be £25–£30, while more involved finishing work costs more. We’ll confirm the scope and price with you before we start."],
 ["How long do you keep my files?","We retain studio project/session files for up to 12 months after the session. Artists should always keep their own copies of masters, stems and important files."],
 ["What music can I record?","Silkcrayon has a strict No Harmful Music Policy. We do not facilitate material that glorifies real-world violence, targeted threats, hate or dehumanisation, sexual exploitation, or harassment."],
 ["Can I smoke or vape in the studio?","No. Smoking, vaping, cannabis and illegal drugs are not permitted on the premises."],
