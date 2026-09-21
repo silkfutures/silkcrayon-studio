@@ -1,19 +1,30 @@
-# Silkcrayon PATCH v20.12.35 — Studio Finish flexible pricing
+# Silkcrayon v20.12.36 — AI Call Prep
 
-Apply this patch on top of v20.12.34.
+## What this adds
 
-## What changed
-- Removed the public £60 fixed-price claim from the FAQ.
-- FAQ now explains that Studio Finish is scoped to the actual track; small jobs may be around £25–£30 while larger jobs cost more.
-- Terms now state that scope, price, turnaround and included revisions are agreed before work starts.
-- Post-session follow-up email no longer advertises Studio Finish at a fixed £60.
-- Customer Studio Finish page no longer offers a fixed-price checkout; it now routes the customer to request a quote.
-- Internal Studio OS quoting remains flexible and can still use your configured Studio Finish price as a starting/default quote.
+- Automatically prepares useful bookings and website enquiries after they arrive.
+- Shows a 10-second brief, call objective, key expectation, questions, a full phone script, preparation tasks and after-call actions.
+- Adds **Call customer**, **Copy**, **Regenerate** and checklist controls.
+- Uses the booking or enquiry already stored in the OS; email addresses and phone numbers are not sent to the model.
+- Caches each result and regenerates only when the source details change or a staff member presses **Regenerate**.
+- Keeps recording time, post-session Studio Finish and podcast post-production clearly separated.
 
-## Files
-- `app/faq/page.js`
-- `app/terms/page.js`
-- `app/account/mix-master/page.js`
-- `notifications.js`
+## Apply
 
-No Supabase migration required.
+1. Upload the folders and files in this patch over the repository root, preserving their paths.
+2. Run `supabase/v20-12-36-ai-call-prep.sql` in the Supabase SQL editor.
+3. Add `OPENAI_API_KEY` to the Vercel project environment variables for Production, Preview and Development.
+4. Optional: add `OPENAI_CALL_PREP_MODEL` to override the default `gpt-4o-mini` model.
+5. Redeploy.
+
+## Where it appears
+
+- **Bookings:** open a session from the owner/engineer dashboard. AI Call Prep appears directly below the session brief.
+- **Enquiries:** open **Enquiries**. Each enquiry has its own AI Call Prep card.
+
+New enquiries and completed paid bookings generate in the background when the customer request finishes. Older bookings with a meaningful note generate when opened. Existing enquiries can be prepared with **Create call prep**.
+
+## Verification
+
+- `npm run build` passes, including the existing import and regression test suite.
+- The patch does not require a new npm package.

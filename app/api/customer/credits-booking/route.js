@@ -4,6 +4,8 @@ import {getAdminDb} from '../../../../lib/supabase';
 import {SERVICES,priceFor} from '../../../../lib/services';
 import {generateSlots} from '../../../../lib/availability';
 import {confirmationEmail,newBookingOwnerEmail,ownerEmails,sendLoggedNotification,sendStaffLoggedNotification} from '../../../../lib/notifications';
+import {after} from 'next/server';
+import {ensureCallPrep} from '../../../../lib/callPrep';
 
 export async function POST(req){
  try{
@@ -26,6 +28,7 @@ export async function POST(req){
   const {data:id,error}=await db.rpc('reserve_credit_booking',{p_customer_id:ctx.customer.id,p_service_slug:service.slug,p_service_name:service.name,p_booking_date:b.date,p_start_time:b.start,p_end_time:b.end,p_duration_minutes:duration,p_genre:b.genre?.trim()||null,p_notes:b.notes?.trim()||null,p_amount_pence:priceFor(service,duration),p_harmful_music_policy_accepted:true});
   if(error){if(error.message?.includes('slot_unavailable'))return NextResponse.json({error:'That slot has just become unavailable.'},{status:409});if(error.message?.includes('insufficient_credits'))return NextResponse.json({error:'Your studio-hour balance changed. Please refresh and try again.'},{status:409});throw error}
   const {data:booking}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();
+  after(()=>ensureCallPrep({sourceType:'booking',sourceId:id}).catch(error=>console.error('Automatic booking call prep failed',error?.message||error)));
   if(booking?.customers?.email){const msg=confirmationEmail(booking,booking.customers,{firstTime:false,paymentLabel:`${needed}h studio credit`});await sendLoggedNotification({booking,customer:booking.customers,type:'credit_booking_confirmation',...msg})}
   const owners=await ownerEmails();const msg=newBookingOwnerEmail(booking,booking.customers||{},{firstTime:false,bookingCount:0,lifetimeSpendPence:0,paymentLabel:`${needed}h credit used`});for(const email of owners)await sendStaffLoggedNotification({booking,type:'owner_new_booking',to:email,...msg});
   return NextResponse.json({ok:true,bookingId:id});

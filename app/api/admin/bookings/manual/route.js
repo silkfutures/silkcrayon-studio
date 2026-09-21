@@ -9,6 +9,8 @@ import {londonDateTimeToUtc,londonDateOffset} from '../../../../../lib/time';
 import {formatUkDate} from '../../../../../lib/dates';
 import {ensureDryHireIdRequest} from '../../../../../lib/dryHireId';
 import {recordBookingEvent} from '../../../../../lib/bookingEvents';
+import {after} from 'next/server';
+import {ensureCallPrep} from '../../../../../lib/callPrep';
 
 function money(v){return Math.round(Number(v||0)*100)}
 function esc(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -121,5 +123,6 @@ export async function POST(req){try{
  }catch(paymentError){paymentLinkWarning=paymentUrl?'Booking created, but payment-link delivery could not be confirmed. Open the existing booking to check before sending again.':'Booking created, but the payment link could not be created. Open the existing booking to arrange payment; do not create it again.';console.error('Booking payment link failed',paymentError?.message);}
  }
  if(project){await db.from('studio_projects').update({status:['quoted','accepted','deposit_due'].includes(project.status)?'scheduled':project.status,updated_at:new Date().toISOString()}).eq('id',project.id);}
+ after(()=>ensureCallPrep({sourceType:'booking',sourceId:id,createdBy:ctx.user.id}).catch(error=>console.error('Automatic booking call prep failed',error?.message||error)));
  return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,dryHireIdRequired:dryHire?dryHireIdRequired:null,projectId:project?.id||null});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}

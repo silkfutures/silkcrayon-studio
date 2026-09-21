@@ -3,6 +3,8 @@ import {getAdminDb} from '../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../lib/notifications';
 import {rateLimit} from '../../../lib/rateLimit';
 import {looksLikeObviousSpam} from '../../../lib/leadSpam';
+import {after} from 'next/server';
+import {ensureCallPrep} from '../../../lib/callPrep';
 
 function e(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 export async function POST(req){
@@ -20,6 +22,7 @@ export async function POST(req){
   const row={enquiry_type,client_type:body.client_type||'client',full_name:String(body.full_name).trim(),artist_or_company:body.artist_or_company||null,email:String(body.email).trim().toLowerCase(),phone:body.phone||null,preferred_call_time:body.preferred_call_time||null,project_type:body.project_type||null,project_details:body.project_details||null,budget_range:body.budget_range||null,deadline:body.deadline||null,word_count_runtime:body.word_count_runtime||null,speakers:body.speakers||null,editing_required:body.editing_required||null,track_count:body.track_count||null,stems_available:body.stems_available||null,reference_tracks:body.reference_tracks||null,episode_count:body.episode_count?Number(body.episode_count):null,episode_length_minutes:body.episode_length_minutes?Number(body.episode_length_minutes):null,recording_hours:body.recording_hours?Number(body.recording_hours):null,video_required:body.video_required||null,target_dates:body.target_dates||null,recurring_project:Boolean(body.recurring_project),source:'website'};
   const db=getAdminDb();
   const {data,error}=await db.from('leads').insert(row).select('id').single();if(error)throw error;
+  after(()=>ensureCallPrep({sourceType:'enquiry',sourceId:data.id}).catch(error=>console.error('Automatic enquiry call prep failed',error?.message||error)));
   await db.from('crm_contacts').upsert({full_name:row.full_name,email:row.email,phone:row.phone,company:row.artist_or_company||null,source:'Website enquiry',marketing_status:'unknown',marketing_consent:false,updated_at:new Date().toISOString()},{onConflict:'email'});
   const owners=await ownerEmails();
   const subject=`New ${enquiry_type==='call-request'?'call request':enquiry_type==='podcast-recording'?'podcast enquiry':'website enquiry'} — ${row.full_name}`;
