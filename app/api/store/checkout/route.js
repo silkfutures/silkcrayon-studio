@@ -1,3 +1,4 @@
+import {publicFormGuard} from "../../../../lib/publicFormGuard";
 import {NextResponse} from "next/server";
 import {getAdminDb} from "../../../../lib/supabase";
 import {getStripe} from "../../../../lib/stripe";
@@ -11,6 +12,10 @@ const RELAUNCH_CODE="RELAUNCH_2H_100";
 function clean(v,n=254){return String(v||"").trim().slice(0,n)}
 
 export async function POST(req){
+  let submitted;try{submitted=await req.clone().json()}catch{return NextResponse.json({error:'Invalid form submission.'},{status:400})}
+  const blocked=await publicFormGuard(req,submitted,{lead:false});
+  if(blocked)return blocked;
+
  try{
   const b=await req.json();
   const requestedHours=Number(b.hours);

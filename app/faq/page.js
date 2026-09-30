@@ -3,6 +3,7 @@ export const metadata={title:"Studio FAQ",description:"Frequently asked question
 const qs=[
 ["Where is the studio?","Silkcrayon Studio is at 113–116 Portland House, Bute Street, Cardiff CF10 5EQ, in Cardiff Bay. Your reminder email includes arrival information."],
 ["What should I bring?","Bring your lyrics, references and any instrumental files you need. Having WAV files or download links ready before the session helps you spend more of your time creating."],
+["Does vocal recording include mixing and mastering?","Yes. Your hourly vocal recording booking includes an engineer, mixing and mastering during your booked time. Allow time for both recording and finishing. Additional work after the session is quoted separately."],
 ["Is an engineer included?","Yes. Vocal Recording sessions include an engineer for the booked studio time unless a service is explicitly described otherwise."],
 ["Can I bring friends?","Yes — up to four guests. Please keep the room comfortable and workable for the engineer and artist."],
 ["Can under-16s attend?","Yes, but anyone under 16 must attend with a responsible adult."],

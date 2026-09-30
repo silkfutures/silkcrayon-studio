@@ -15,7 +15,7 @@ export default async function Services(){
  const pricing=await getStudioSettings();
  const money=p=>`£${(Number(p||0)/100).toFixed(Number(p||0)%100?2:0)}`;
  const services=[
-  {n:"01",title:"Vocal Recording",copy:"Record through a Neumann U87 with an engineer who understands performance, doubles, harmonies, layers and the details that make a vocal feel finished.",meta:`From ${money(pricing.studioHourlyPricePence)} / hour`,href:"/booking?service=vocal-recording",cta:"Book →"},
+  {n:"01",title:"Vocal Recording",copy:"Record singing or rap vocals over your beat or backing track. Charged by the hour, with an engineer, mixing and mastering included during your booked time.",meta:`From ${money(pricing.studioHourlyPricePence)} / hour`,href:"/booking?service=vocal-recording",cta:"Book →"},
   {title:"Studio Dry Hire",copy:"Use the studio with your own engineer. No Silkcrayon engineer is included.",meta:"£40 / hour · 2h minimum",href:"/dry-hire-cardiff",cta:"View dry hire →"},
   {title:"Full Day Studio",copy:"Eight hours for focused recording, writing and production.",meta:`${money(pricing.fullDayPricePence)} / day`,href:"/booking?service=full-day",cta:"Book a full day →"},
   {n:"02",title:"Mixing & Mastering",copy:"Take the record beyond the session with focused clean-up, balance, detail and a release-ready finish.",meta:"Tailored quote · upload your track",href:"/mix-request",cta:"Upload for a quote →"},

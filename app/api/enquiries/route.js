@@ -1,17 +1,19 @@
+import {publicFormGuard} from "../../../lib/publicFormGuard";
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../lib/notifications';
 import {rateLimit} from '../../../lib/rateLimit';
-import {looksLikeObviousSpam} from '../../../lib/leadSpam';
 import {after} from 'next/server';
 import {ensureCallPrep} from '../../../lib/callPrep';
 
 function e(v=''){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 export async function POST(req){
+  let submitted;try{submitted=await req.clone().json()}catch{return NextResponse.json({error:'Invalid form submission.'},{status:400})}
+  const blocked=await publicFormGuard(req,submitted,{lead:true});
+  if(blocked)return blocked;
+
  try{
   const body=await req.json();
-  const started=Number(body.form_started_at||0),elapsed=Date.now()-started;
-  if(String(body.website||'').trim()||!started||elapsed<1800||elapsed>7200000||looksLikeObviousSpam(body))return NextResponse.json({ok:true});
   const ipOk=await rateLimit(req,{scope:'enquiry-ip',limit:20,windowSeconds:3600});
   const emailOk=await rateLimit(req,{scope:'enquiry-email',limit:4,windowSeconds:3600,identity:body.email||''});
   if(!ipOk||!emailOk)return NextResponse.json({error:'Too many enquiries from this connection. Please try again later.'},{status:429});

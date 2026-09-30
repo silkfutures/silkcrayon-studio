@@ -1,13 +1,15 @@
 "use client";
+import FormProtection from './FormProtection';
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const services = {
-  "vocal-recording": { name: "Vocal Recording", durations: [60,120,180,240,300,360,420] },
-  "dry-hire": { name: "Studio Dry Hire", durations: [120,180,240,300,360,420,480] },
-  "full-day": { name: "Full Day Studio", durations: [480] },
-  "artist-development": { name: "Artist Development Session", durations: [60] },
-  "system-test": { name: "30p Test Booking", durations: [60] },
+ "vocal-recording": {name:"Vocal Recording", description:"For singing or rapping over a beat or backing track. Charged by the hour, with an engineer, mixing and mastering included in your booked time.",durations:[60,120,180,240,300,360,420]},
+ "full-day": {name:"Full Day Studio",description:"Book 8 hours for a longer recording project, with an engineer. Choose this when you need a whole day in the studio.",durations:[480]},
+ "artist-development": {name:"Artist Development Session",description:"A 60-minute planning session with Nathan or Toni for advice on your music, releases and next steps. Choose Vocal Recording to record a song.",durations:[60]},
+ "dry-hire": {name:"Studio Hire — Bring Your Own Engineer",description:"Room and equipment hire for people who can run their own session. No studio engineer, mixing or mastering included. 2-hour minimum.",durations:[120,180,240,300,360,420,480]},
+ "system-test": {name:"30p Test Booking",description:"Test checkout.",durations:[60]},
 };
 
 function durationLabel(m) { return m >= 60 ? `${m/60} ${m === 60 ? "hour" : "hours"}` : `${m} mins`; }
@@ -153,16 +155,17 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   };
   const serviceCardPrice=slug=>{
     if(slug==="artist-development") return "£75 · 60 minutes";
-    if(slug==="full-day") return money(pricing.fullDayPricePence||40000);
+    if(slug==="full-day") return `${money(pricing.fullDayPricePence||40000)} · 8 hours`;
     if(slug==="system-test") return "£0.30";
     if(slug==="dry-hire") return "£40 / hour · 2h minimum";
     return `${money(pricing.studioHourlyPricePence||5000)} / hour`;
   };
 
   return (
-    <form className={`bookingPanel ${service==="artist-development"?"artistDevelopmentBooking":""}`} onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small>{slug==="dry-hire"&&<span className="dryHireMini">NO ENGINEER INCLUDED</span>}{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}<a className="option optionLink" href="/buy-hours"><b>Studio Hour Packs</b><small>3–10 hours · better rates · date later</small><span>→</span></a><a className="option optionLink giftOption" href="/gift-studio-time"><b>Gift Studio Time</b><small>Choose 1–8 hours</small><span>→</span></a></div></div></div>
+    <form className={`bookingPanel ${service==="artist-development"?"artistDevelopmentBooking":""}`} onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
+      <div className="bookingSection"><span className="step">01</span><div><h2>What would you like to do?</h2><p className="bookingGuide">Want to record a song? Choose <strong>Vocal Recording</strong>. Your engineer will help you record, mix and master during your booked time.</p><div className="optionGrid">{Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="dry-hire"&&<span className="dryHireMini">NO ENGINEER INCLUDED</span>}{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div></div></div>
 
+      <div className="bookingHelp"><p><strong>Already recorded your song?</strong> <a href="/mix-request">Get mixing & mastering →</a></p><p><strong>Not sure, or recording instruments / spoken word?</strong> <a href="/contact">Tell us what you want to make →</a></p><details><summary>Buying hours for later or as a gift?</summary><p><a href="/buy-hours">Studio hour packs — buy now, choose dates later →</a></p><p><a href="/gift-studio-time">Gift studio time →</a></p></details></div>
       <div className="bookingSection"><span className="step">02</span><div><h2>Choose duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=promotions.find(p=>p.showOnBooking&&p.serviceSlug===service&&Number(p.durationMinutes)===d);return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} onClick={()=>setDuration(d)}><span>{durationLabel(d)} · {offer?`£${offer.offerPricePence/100}`:livePrice(service,d)}</span>{offer&&<small><s>£{offer.normalPricePence/100}</s> · SAVE £{(offer.normalPricePence-offer.offerPricePence)/100} · OFFER</small>}</button>})}</div>
         <p className="dateHint">Choose a day — no typing required.</p>
         <div className="dateGrid">{quickDates.map(d=>{const v=isoLocal(d); const p=prettyDay(d); return <button type="button" key={v} className={`dateCard ${date===v?"selected":""}`} onClick={()=>setDate(v)}><span>{p.weekday}</span><b>{p.day}</b><small>{p.month}</small></button>})}</div>

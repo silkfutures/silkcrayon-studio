@@ -1,0 +1,41 @@
+SILKCRAYON — BOOKING CLARITY + PUBLIC FORM PROTECTION
+30 September 2026
+
+UPLOAD
+1. Unzip this download.
+2. Open the silkcrayon-studio-main folder.
+3. Upload the contents into the ROOT of your existing GitHub repository, replacing matching files. Do not upload the ZIP itself or nest the folder inside the repository.
+4. Commit the upload and let your existing Vercel deployment finish.
+5. Open /booking on your phone and send one genuine test enquiry.
+
+This is the complete website source, not just a patch. Your existing Vercel environment variables stay in Vercel. No live deployment or database changes have been made from this workspace.
+
+BOOKING CHANGES
+- Vocal Recording first: singing/rapping over a beat or backing track, charged hourly, with an engineer, mixing and mastering included during booked time.
+- Full Day Studio next, clearly labelled as 8 hours.
+- Artist Development explains that it is a planning/advice session.
+- Studio Hire / Bring Your Own Engineer is last, with a clear description of what is excluded.
+- Already-recorded tracks link directly to the mixing quote form.
+- Unsure customers and instrument/spoken-word projects are directed to contact the studio.
+- Hour packs and gifts sit in a separate expandable section instead of appearing as competing session types.
+- Homepage, services and FAQ vocal-recording descriptions updated consistently.
+- Additional post-session finishing remains separately quoted; no promises of unlimited work or guaranteed completion in one hour.
+
+SPAM PROTECTION
+The example came from the artist-support application. Unlike general enquiries, that endpoint previously lacked honeypot/timing/content checks and only limited each IP+email combination. Changing email addresses could bypass that limit.
+
+Shared server checks now cover general/project/call enquiries, artist support, public mixing requests, booking checkout, hour packs/gifts, newsletter signup and customer login-link requests. They include a hidden bot trap, signed expiring form tokens, minimum elapsed time, replay protection using the existing database rate limiter, a shared per-IP limit, an email limit across IP addresses, origin checks, email and length validation, and existing spam-pattern checks for enquiries. Rejections happen before writes, email sends or AI call preparation. Ordinary forms show errors instead of pretending an enquiry was received. Login failures redirect back to the login page.
+
+The existing authenticated staff/customer forms and private-token review/upload routes retain their access controls. Payment webhooks are not public forms and are unchanged. Existing spam records have not been deleted.
+
+No CAPTCHA account or new environment variable is required for the baseline checks: the server uses FORM_SECURITY_SECRET if supplied, otherwise its existing SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY. These keys never go to the browser. The existing consume_api_rate_limit database function is required (already used by the previous website); protection fails closed if unavailable. If your previous forms already worked, no database migration is expected. The existing SQL definition is in supabase/v20-2-6-release-hardening.sql.
+
+No system is completely spam-proof. These controls block simple/direct scripts and limit repeat abuse, but signed tokens prove a form was loaded, not that the visitor is human. A determined bot can fetch fresh tokens and use multiple addresses/IPs. A managed CAPTCHA can be added if abuse persists. Layered controls follow OWASP guidance: https://cheatsheetseries.owasp.org/cheatsheets/Bot_Management_and_Anti-Automation_Cheat_Sheet.html
+
+VALIDATION
+- Existing automated tests passed.
+- Added public-form tests: valid request, screenshot spam, missing/forged/expired/too-new tokens, replay, cross-site requests, rate limits and limiter outage.
+- Relative import checks passed.
+- Next.js production build passed.
+- Local HTTP checks verified booking copy/order, token issuance and missing-token rejection on all six JSON form endpoints.
+- Browser screenshot verification was unavailable: browser download failed in this environment. Real payments, email delivery and live database writes were not exercised. Check a genuine enquiry and the mobile booking page after deployment.

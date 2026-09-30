@@ -1,3 +1,4 @@
+import {publicFormGuard} from "../../../lib/publicFormGuard";
 import { NextResponse } from "next/server";
 import { SERVICES, priceFor } from "../../../lib/services";
 import { getAdminDb } from "../../../lib/supabase";
@@ -9,6 +10,10 @@ import { getPromotionFor } from "../../../lib/promotions";
 import {getStudioSettings} from "../../../lib/studioSettings";
 
 export async function POST(request) {
+  let submitted;try{submitted=await request.clone().json()}catch{return NextResponse.json({error:'Invalid form submission.'},{status:400})}
+  const blocked=await publicFormGuard(request,submitted,{lead:false});
+  if(blocked)return blocked;
+
   let bookingId = null;
   try {
     const body = await request.json();

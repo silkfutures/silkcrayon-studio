@@ -1,4 +1,6 @@
 'use client';
+import FormProtection from './FormProtection';
+
 import {useState} from 'react';
 
 const configs={
@@ -12,12 +14,11 @@ const configs={
 };
 
 export default function EnquiryForm({type}){
- const c=configs[type]||configs.general;const [state,setState]=useState('idle');const [started]=useState(()=>Date.now());
- async function submit(e){e.preventDefault();setState('sending');const f=Object.fromEntries(new FormData(e.currentTarget));f.enquiry_type=type;f.recurring_project=f.recurring_project==='on';const r=await fetch('/api/enquiries',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(f)});setState(r.ok?'done':'error')}
+ const c=configs[type]||configs.general;const [state,setState]=useState('idle');const [message,setMessage]=useState('');
+ async function submit(e){e.preventDefault();setState('sending');const f=Object.fromEntries(new FormData(e.currentTarget));f.enquiry_type=type;f.recurring_project=f.recurring_project==='on';try{const r=await fetch('/api/enquiries',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(f)});const j=await r.json().catch(()=>({}));setMessage(j.error||'Something went wrong. Please try again.');setState(r.ok?'done':'error')}catch{setMessage('Please check your connection and try again.');setState('error')}}
  if(state==='done')return <div className="enquirySuccess"><p className="eyebrow">Enquiry received</p><h2>We’ve got your project.</h2><p>Silkcrayon will review what you’ve sent and get back to you shortly.</p><a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer">See what’s happening at @silkcrayon ↗</a></div>;
  const podcast=type==='podcast-recording'||type==='audiobook-podcast';const spoken=type==='audiobook-voiceover'||type==='audiobook-podcast';
- return <form className="enquiryForm" onSubmit={submit}>
-  <input className="formTrap" type="text" name="website" tabIndex="-1" autoComplete="off" aria-hidden="true"/><input type="hidden" name="form_started_at" value={started}/>
+ return <form className="enquiryForm" onSubmit={submit}><FormProtection/>
   <div><p className="eyebrow">Enquire</p><h1>{c.title}</h1><p>{c.intro}</p></div>
   {podcast&&<div className="pricingSplitNotice"><b>Recording and post-production are separate.</b><span>Your recording quote covers booked studio time, a recording engineer and organised raw audio. Editing, mixing, mastering, episode assembly and video editing are additional and quoted separately.</span></div>}
   <div className="enquiryGrid">
@@ -30,6 +31,6 @@ export default function EnquiryForm({type}){
    {type!=='call-request'&&!podcast&&<label>Desired deadline<input name="deadline"/></label>}
    <label className="wide">What do you need help with?*<textarea name="project_details" required rows="6" placeholder="Tell us where the project is now and what you want to leave with."/></label>
   </div>
-  <button className="button primary" disabled={state==='sending'}>{state==='sending'?'Sending…':'Send enquiry →'}</button>{state==='error'&&<p className="formError">Something went wrong. Please try again.</p>}
+  <button className="button primary" disabled={state==='sending'}>{state==='sending'?'Sending…':'Send enquiry →'}</button>{state==='error'&&<p className="formError">{message}</p>}
  </form>
 }

@@ -20,7 +20,7 @@ export default async function Home(){
   const hourly=`£${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}`;
   const fullDay=`£${(pricing.fullDayPricePence/100).toFixed(pricing.fullDayPricePence%100?2:0)}`;
   const services=[
-    {n:'01',title:'Vocal Recording',copy:'Record through a Neumann U87 with engineers who understand performance, doubles, harmonies, layers and the details that make a vocal feel finished.',meta:`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
+    {n:'01',title:'Vocal Recording',copy:'Record singing or rap vocals over your beat or backing track. Charged by the hour, with an engineer, mixing and mastering included during your booked time.',meta:`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
     {n:'02',title:'Studio Dry Hire',copy:'Already know what you are doing? Bring your own engineer or run the session yourself. Use the Silkcrayon room, booth, monitoring and studio setup without a Silkcrayon engineer.',meta:'£40 / hour · 2h minimum',href:'/dry-hire-cardiff'},
     {n:'03',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'Tailored quote per track',href:'/mix-request',enquire:true},
     {n:'04',title:'Artist Development',copy:'Choose the next record, plan the release and turn an unfinished backlog into clear actions with Nathan or Toni.',meta:'One-off session · £75',href:'/artist-development',enquire:true},

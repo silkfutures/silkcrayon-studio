@@ -1,4 +1,6 @@
 "use client";
+import FormProtection from './FormProtection';
+
 import {useMemo,useState} from "react";
 
 const GIFT_OPTIONS=[1,2,3,4,5,6,7,8];
@@ -14,7 +16,7 @@ export default function StudioHoursStore({gift=false,offer=false,hourlyPrice=50,
  async function submit(e){
   e.preventDefault();setBusy(true);setMsg("Opening secure checkout…");
   const fd=new FormData(e.currentTarget);
-  const body={kind:offer?"relaunch":gift?"gift":"hours",hours,
+  const body={form_token:fd.get("form_token"),website:fd.get("website"),kind:offer?"relaunch":gift?"gift":"hours",hours,
    buyerName:String(fd.get("buyerName")||""),buyerEmail:String(fd.get("buyerEmail")||""),
    recipientName:gift?String(fd.get("recipientName")||""):String(fd.get("buyerName")||""),
    recipientEmail:gift?String(fd.get("recipientEmail")||""):String(fd.get("buyerEmail")||""),
@@ -25,7 +27,7 @@ export default function StudioHoursStore({gift=false,offer=false,hourlyPrice=50,
   location.href=j.url;
  }
 
- return <form className={`hoursStore ${offer?"relaunchStore":""}`} onSubmit={submit}>
+ return <form className={`hoursStore ${offer?"relaunchStore":""}`} onSubmit={submit}><FormProtection/>
    {offer?<div className="relaunchOfferPrice"><div><small>LIMITED RELAUNCH OFFER</small><b>2 hours</b></div><div><strong>£{relaunchPrice}</strong><span><s>£{2*hourlyPrice}</s> · save £{Math.max(0,2*hourlyPrice-relaunchPrice)}</span></div></div>
    :gift?<div className="hoursChoice">{GIFT_OPTIONS.map(h=><button type="button" key={h} className={hours===h?"active":""} onClick={()=>setHours(h)}><b>{h}h</b><span>£{h*hourlyPrice}</span></button>)}</div>
    :<div className="hourWheel">
