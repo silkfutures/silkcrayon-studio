@@ -1,0 +1,22 @@
+/* Keep the booking route compact; scope overrides to this page. */
+.bookingPage .bookingHero{width:min(var(--max),calc(100% - 48px));margin:30px auto 24px}
+.bookingPage .bookingHero h1{font-size:clamp(30px,4vw,42px);line-height:1.12;letter-spacing:-.035em}
+.bookingPage .bookingSection{padding:28px 0!important;grid-template-columns:40px 1fr}
+.bookingPage .bookingSection h2{font-size:24px!important;line-height:1.2!important;margin:0 0 16px}
+.bookingPage .optionGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.bookingPage .option{padding:16px;min-height:0}
+.bookingPage .option b{font-size:17px;line-height:1.3}
+.bookingPage .option small{font-size:14px;margin-top:5px}
+.bookingPage .option .serviceDescription{font-size:13px;line-height:1.5;margin-top:8px}
+.bookingPage .bookingAsk{font-size:13px;color:var(--muted);margin:14px 0 0}
+.bookingPage .bookingAsk a{text-decoration:underline;text-underline-offset:3px}
+.bookingPage .bookingExtras{display:flex;flex-wrap:wrap;gap:12px 24px;padding:24px 0;font-size:13px;color:var(--muted)}
+.bookingPage .bookingExtras a{text-decoration:underline;text-underline-offset:3px}
+@media(max-width:850px){
+ .bookingPage .bookingHero{width:calc(100% - 28px);margin:22px auto}
+ .bookingPage .bookingSection{padding:22px 0!important}
+ .bookingPage .bookingSection>.step{font-size:11px!important;margin-bottom:6px!important}
+ .bookingPage .bookingSection h2{font-size:22px!important}
+ .bookingPage .optionGrid{grid-template-columns:1fr}
+ .bookingPage .option{padding:14px 16px}
+}
