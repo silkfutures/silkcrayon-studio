@@ -25,8 +25,6 @@ export default async function More(){
   ['/admin/staff','Staff','People, roles & access','◌']
  ]:[
   ['/admin/calendar','Calendar','Your visual schedule','▦'],
-  ['/admin/artists','Artists','Profiles & history','◎'],
-  ['/admin/payments','Payments','Take payment or sell hours','£'],
   ['/admin/sessions','Session reports','Complete & review your reports','✓']
  ];
  return <main className={owner?'engineerApp':'engApp'}>
