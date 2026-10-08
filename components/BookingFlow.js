@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const services = {
- "vocal-recording": {name:"Vocal Recording", description:"Record singing or rap vocals. Engineer, mixing & mastering included within your booked time.",durations:[60,120,180,240,300,360,420]},
+ "vocal-recording": {name:"Vocal Recording", description:"Record singing or rap vocals with an engineer. Mixing and mastering can be worked on within your booked time.",durations:[60,120,180,240,300,360,420,480]},
  "full-day": {name:"Full Day Studio",description:"A full day in the studio with an engineer.",durations:[480]},
  "artist-development": {name:"Artist Development",description:"One hour of guidance on your music and releases.",durations:[60]},
  "dry-hire": {name:"Studio Dry Hire",description:"Bring your own engineer. Two-hour minimum.",durations:[120,180,240,300,360,420,480]},
@@ -43,11 +43,12 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   const showTest = params.get("test") === "1";
   const requestedService=params.get("service");
   const promo=promotions.find(p=>p.showOnBooking&&p.serviceSlug==="vocal-recording"&&Number(p.durationMinutes)===120)||null;
-  const initial = requestedService && services[requestedService] && (requestedService!=="system-test"||showTest) ? requestedService : "vocal-recording";
+  const publicServices = ["vocal-recording", "dry-hire"];
+  const initial = requestedService && (publicServices.includes(requestedService) || (requestedService === "system-test" && showTest)) ? requestedService : "vocal-recording";
   const quickDates = useMemo(() => nextBookableDays(18), []);
   const [service, setService] = useState(initial);
   const requestedDuration=Number(params.get("duration"));
-  const initialDuration=services[initial].durations.includes(requestedDuration)?requestedDuration:services[initial].durations[0];
+  const initialDuration=services[initial].durations.includes(requestedDuration)?requestedDuration:services[initial].durations.includes(120)?120:services[initial].durations[0];
   const [duration, setDuration] = useState(initialDuration);
   const [date, setDate] = useState(() => isoLocal(nextBookableDays(1)[0]));
   const [slots, setSlots] = useState([]);
@@ -70,7 +71,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     // Set service + its valid default duration in the same interaction so an
     // intermediate "new service / old duration" request can never be sent.
     setService(slug);
-    setDuration(next.durations[0]);
+    setDuration(next.durations.includes(120)?120:next.durations[0]);
   }
   useEffect(() => { fetch("/api/public/engineers").then(r=>r.json()).then(j=>setEngineers(j.engineers||[])).catch(()=>setEngineers([])); }, []);
   useEffect(() => {
@@ -162,11 +163,11 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   };
 
   return (
-    <form className={`bookingPanel ${service==="artist-development"?"artistDevelopmentBooking":""}`} onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>slug!=="system-test"||showTest).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/request-a-call">Not sure what to book? Ask us</a></p></div></div>
+    <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
+      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/request-a-call">Not sure what to book? Ask us</a></p></div></div>
 
 
-      <div className="bookingSection"><span className="step">02</span><div><h2>Duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=promotions.find(p=>p.showOnBooking&&p.serviceSlug===service&&Number(p.durationMinutes)===d);return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} onClick={()=>setDuration(d)}><span>{durationLabel(d)} · {offer?`£${offer.offerPricePence/100}`:livePrice(service,d)}</span>{offer&&<small><s>£{offer.normalPricePence/100}</s> · SAVE £{(offer.normalPricePence-offer.offerPricePence)/100} · OFFER</small>}</button>})}</div>
+      <div className="bookingSection"><span className="step">02</span><div><h2>Duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=promotions.find(p=>p.showOnBooking&&p.serviceSlug===service&&Number(p.durationMinutes)===d);return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} onClick={()=>setDuration(d)}><span>{d===480?"Full day (8 hours)":durationLabel(d)} · {offer?`£${offer.offerPricePence/100}`:livePrice(service,d)}</span>{offer&&<small><s>£{offer.normalPricePence/100}</s> · SAVE £{(offer.normalPricePence-offer.offerPricePence)/100} · OFFER</small>}</button>})}</div>
         <p className="dateHint">Choose a day</p>
         <div className="dateGrid">{quickDates.map(d=>{const v=isoLocal(d); const p=prettyDay(d); return <button type="button" key={v} className={`dateCard ${date===v?"selected":""}`} onClick={()=>setDate(v)}><span>{p.weekday}</span><b>{p.day}</b><small>{p.month}</small></button>})}</div>
         <details className="moreDates"><summary>Choose a later date</summary><label className="field"><span>Date</span><input type="date" value={date} min={minDate} onChange={e=>setDate(e.target.value)} required /></label></details>
