@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';import {londonDateTimeToUtc,londonToday} from '../lib/time.js';import {SERVICES} from '../lib/services.js';
 import {blocksFromCalendarText,normaliseAppleFeedUrl} from '../lib/appleCalendarSync.js';
 import {generateSlots} from '../lib/availability.js';
-assert.deepEqual(SERVICES['vocal-recording'].durations,[60,120,180,240,300,360,420]);
-assert.equal(SERVICES['vocal-recording'].durations.includes(480),false);
+assert.deepEqual(SERVICES['vocal-recording'].durations,[60,120,180,240,300,360,420,480]);
+assert.equal(SERVICES['vocal-recording'].durations.includes(480),true);
 assert.deepEqual(SERVICES['dry-hire'].durations,[120,180,240,300,360,420,480]);
 assert.equal(SERVICES['dry-hire'].hourlyPence,4000);
 assert.equal(SERVICES['artist-development'].fixedPence,7500);
