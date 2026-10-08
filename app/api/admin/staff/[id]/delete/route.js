@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
-import {getStaffContext} from '../../../../../lib/auth';
-import {getAdminDb} from '../../../../../lib/supabase';
+import {getStaffContext} from '../../../../../../lib/auth';
+import {getAdminDb} from '../../../../../../lib/supabase';
 export async function DELETE(req,{params}){
  try{
   const ctx=await getStaffContext();
