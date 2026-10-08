@@ -2,14 +2,14 @@ import {formatUkDate} from '../../../../lib/dates';
 import Link from 'next/link';
 import AdminNav from '../../../../components/AdminNav';
 import {EngineerHeader,EngineerBottomNav} from '../../../../components/EngineerShell';
-import {requireStaff} from '../../../../lib/auth';
+import {requireOwner} from '../../../../lib/auth';
 import {getAdminDb} from '../../../../lib/supabase';
 import {formatGBP} from '../../../../lib/services';
 import {DeleteTestCustomer} from '../../../../components/AdminActions';
 import LegacyCreditForm from '../../../../components/LegacyCreditForm';
 export const dynamic='force-dynamic';
 export default async function ArtistProfile({params}){
- const ctx=await requireStaff(); const {id}=await params; const db=getAdminDb();
+ const ctx=await requireOwner(); const {id}=await params; const db=getAdminDb();
  const [{data:c},{data:reports=[]},{data:payments=[]},{data:credits=[]}]=await Promise.all([db.from('customers').select('*,bookings(*)').eq('id',id).single(),db.from('session_reports').select('*').eq('customer_id',id).order('session_date',{ascending:false}).limit(20),db.from('studio_payments').select('*').eq('customer_id',id).order('created_at',{ascending:false}).limit(20),db.from('credit_ledger').select('hours_delta').eq('customer_id',id)]);
  if(!c)return <main className="engApp"><h1>Artist not found</h1></main>;
  const hours=(c.bookings||[]).filter(b=>!['cancelled','no_show'].includes(b.status)).reduce((s,b)=>s+b.duration_minutes/60,0); const noShows=(c.bookings||[]).filter(b=>b.status==='no_show').length; const bookingSpend=(c.bookings||[]).filter(b=>b.payment_status==='paid').reduce((s,b)=>s+b.amount_pence,0); const directSpend=payments.filter(p=>p.status==='paid').reduce((s,p)=>s+p.amount_pence,0); const balance=credits.reduce((s,x)=>s+Number(x.hours_delta||0),0); const eng=ctx.profile.role==='engineer';
