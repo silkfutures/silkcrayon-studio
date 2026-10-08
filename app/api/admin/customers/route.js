@@ -12,7 +12,7 @@ function missingConsentAuditColumns(error){
 export async function POST(req){
  try{
   const ctx=await getStaffContext();
-  if(!ctx)return NextResponse.json({error:'Staff access required.'},{status:403});
+  if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
   const b=await req.json();
   if(!b.fullName?.trim()||!b.email?.trim()||!b.artistName?.trim())return NextResponse.json({error:'Artist name, full name and email are required.'},{status:400});
   if(!b.harmfulMusicPolicy)return NextResponse.json({error:'No Harmful Music Policy acceptance is required.'},{status:400});
