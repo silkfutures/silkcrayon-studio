@@ -24,9 +24,9 @@ assert.equal(rowsInMonth([{date:'2026-08-31T23:30:00Z'}],'2026-09-01').length,1,
 assert.deepEqual(receiptRows(),[]);
 for(const role of ['owner','engineer']){
  const items=primaryNavigation(role);
- assert.equal(items.length,role==='engineer'?4:5);
+ assert.equal(items.length,5);
  assert.equal(items[0].href,'/admin/engineer','Today opens the shared session view for owners and engineers');
- const paths=role==='engineer'?[items[0].href,'/admin/calendar','/admin/engineer/book','/admin/more']:[items[0].href,'/admin/calendar','/admin/artists/123','/admin/accounting','/admin/settings','/admin/projects/123'];
+ const paths=role==='engineer'?[items[0].href,'/admin/calendar','/admin/engineer/book','/admin/engineer/artists','/admin/more']:[items[0].href,'/admin/calendar','/admin/artists/123','/admin/accounting','/admin/settings','/admin/projects/123'];
  for(const path of paths){
   assert.equal(items.filter(item=>navigationActive(path,item.href,items)).length,1,`${role} ${path} has exactly one active destination`);
  }
