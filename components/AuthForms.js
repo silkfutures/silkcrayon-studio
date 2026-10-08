@@ -23,8 +23,27 @@ export function LogoutButton(){const router=useRouter();async function out(){awa
 
 export function StaffCreateForm(){
  const [msg,setMsg]=useState(''); const router=useRouter();
- async function submit(e){e.preventDefault();setMsg('Creating…');const body=Object.fromEntries(new FormData(e.currentTarget).entries());const r=await fetch('/api/admin/staff',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});const j=await r.json();if(!r.ok){setMsg(j.error||'Could not create staff account.');return;}e.currentTarget.reset();setMsg('Staff account created.');router.refresh();}
- return <form className="staffForm" onSubmit={submit}><label className="field"><span>Name</span><input name="fullName" required/></label><label className="field"><span>Engineer display name</span><input name="engineerName" placeholder="e.g. Isaak"/></label><label className="field"><span>Email</span><input type="email" name="email" required/></label><label className="field"><span>Phone</span><input name="phone" placeholder="+44…"/></label><label className="field"><span>Temporary password</span><input type="password" name="password" minLength="10" required/></label><label className="field"><span>Role</span><select name="role" defaultValue="engineer"><option value="engineer">Engineer</option><option value="owner">Owner</option></select></label><button className="button primary">Create account</button>{msg&&<small className="muted">{msg}</small>}</form>
+ const [busy,setBusy]=useState(false);
+ async function submit(e){
+  e.preventDefault();
+  if(busy)return;
+  const form=e.currentTarget;
+  const body=Object.fromEntries(new FormData(form).entries());
+  setBusy(true);setMsg('Creating…');
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),20000);
+  try{
+   const response=await fetch('/api/admin/staff',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body),signal:controller.signal});
+   const data=await response.json().catch(()=>({}));
+   if(!response.ok){setMsg(data.error||'Could not create staff account.');return;}
+   form.reset();setMsg('Staff account created.');router.refresh();
+  }catch(error){
+   setMsg(error.name==='AbortError'?'Request timed out. Refresh the staff list to check whether the account was created before trying again.':'Connection error. Refresh the staff list before retrying to avoid duplicate accounts.');
+  }finally{
+   clearTimeout(timeout);setBusy(false);
+  }
+ }
+ return <form className="staffForm" onSubmit={submit}><label className="field"><span>Name</span><input name="fullName" required/></label><label className="field"><span>Engineer display name</span><input name="engineerName" placeholder="e.g. Isaak"/></label><label className="field"><span>Email</span><input type="email" name="email" required/></label><label className="field"><span>Phone</span><input name="phone" placeholder="+44…"/></label><label className="field"><span>Temporary password</span><input type="password" name="password" minLength="10" required/></label><label className="field"><span>Role</span><select name="role" defaultValue="engineer"><option value="engineer">Engineer</option><option value="owner">Owner</option></select></label><button className="button primary" disabled={busy}>{busy?"Creating…":"Create account"}</button>{msg&&<small className="muted" role="status">{msg}</small>}</form>
 }
 
 export function StaffActiveToggle({id,active}){const router=useRouter();const [busy,setBusy]=useState(false);async function toggle(){setBusy(true);await fetch(`/api/admin/staff/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({active:!active})});router.refresh();setBusy(false);}return <button className="miniButton" disabled={busy} onClick={toggle}>{active?'Deactivate':'Reactivate'}</button>}
