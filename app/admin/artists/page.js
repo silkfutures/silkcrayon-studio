@@ -3,11 +3,11 @@ import AdminNav from '../../../components/AdminNav';
 import {EngineerHeader,EngineerBottomNav} from '../../../components/EngineerShell';
 import CustomerCreateForm from '../../../components/CustomerCreateForm';
 import ArtistBulkDeleteList from '../../../components/ArtistBulkDeleteList';
-import {requireStaff} from '../../../lib/auth';
+import {requireOwner} from '../../../lib/auth';
 import {getAdminDb} from '../../../lib/supabase';
 export const dynamic='force-dynamic';
 export default async function Artists({searchParams}){
- const ctx=await requireStaff(); const sp=await searchParams; const showNew=sp?.new==='1'; const deleted=sp?.deleted==='1'; const q=(sp?.q||'').trim();
+ const ctx=await requireOwner(); const sp=await searchParams; const showNew=sp?.new==='1'; const deleted=sp?.deleted==='1'; const q=(sp?.q||'').trim();
  let query=getAdminDb().from('customers').select('id,full_name,artist_name,email,phone,postcode,preferred_genre,created_at').order('created_at',{ascending:false}).limit(250);
  if(q) query=query.or(`artist_name.ilike.%${q}%,full_name.ilike.%${q}%,email.ilike.%${q}%,phone.ilike.%${q}%`);
  const {data:customers=[]}=await query; const eng=ctx.profile.role==='engineer';
