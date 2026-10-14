@@ -44,6 +44,17 @@ const route=await loadRoute('../app/api/engineer/bookings/route.js',{...bindings
 const request={date:'2027-01-15',start:'18:00',hours:2,email:'artist@example.com',customerTermsConfirmed:true};
 let result=await route.POST({json:async()=>request});assert.equal(result.status,500);assert.equal(reachedCustomerLookup,true);
 result=await route.POST({json:async()=>({...request,start:'25:00'})});assert.equal(result.status,400);
+// Every offered duration reaches booking creation; invalid lengths and closing-time overruns fail early.
+for(const hours of [1,2,3,4,5,6,7,8]){
+ reachedCustomerLookup=false;
+ const accepted=await route.POST({json:async()=>({...request,start:'10:00',hours})});
+ assert.equal(accepted.status,500);assert.equal(reachedCustomerLookup,true);
+}
+for(const input of [{hours:0},{hours:9},{hours:2.5},{hours:8,start:'13:30'}]){
+ reachedCustomerLookup=false;
+ const rejected=await route.POST({json:async()=>({...request,start:'10:00',...input})});
+ assert.equal(rejected.status,400);assert.equal(reachedCustomerLookup,false);
+}
 // Collector must not report success on database failure, or an unavailable rate limiter.
 let insertFails=true,limitFails=false;
 const collector=await loadRoute('../app/api/analytics/route.js',{'next/server':{NextResponse:response},rateLimit:{rateLimit:async()=>{if(limitFails)throw new Error('limiter missing');return true;}},supabase:{getAdminDb:()=>({from:()=>({insert:async()=>({error:insertFails?new Error('write failed'):null})})})}});

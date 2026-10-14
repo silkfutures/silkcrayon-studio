@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import {londonToday} from '../../../lib/time';
 import {requireStaff} from '../../../lib/auth';
 import {getAdminDb} from '../../../lib/supabase';
 import {EngineerHeader,EngineerBottomNav} from '../../../components/EngineerShell';
@@ -29,19 +30,40 @@ function shiftAnchor(view,anchor,dir){
  return addDays(anchor,(view==='agenda'?14:7)*dir);
 }
 
+async function loadStudioBusy(db,start,end,engineerId,now){
+ const data=[];
+ for(let offset=0;;offset+=500){
+  const result=await db.from('bookings').select('id,booking_date,start_time,end_time,status,hold_expires_at,engineer_user_id').gte('booking_date',start).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time').order('id').range(offset,offset+499);
+  if(result.error)return {error:result.error};
+  for(const row of result.data||[]){
+   if(row.engineer_user_id===engineerId)continue;
+   if(row.status==='pending'&&row.hold_expires_at&&new Date(row.hold_expires_at)<=now)continue;
+   data.push({booking_date:row.booking_date,start_time:row.start_time,end_time:row.end_time});
+  }
+  if((result.data||[]).length<500)return {data};
+ }
+}
+
 export default async function CalendarPage({searchParams}){
  const ctx=await requireStaff(),sp=await searchParams,db=getAdminDb(),now=new Date();
- const today=now.toISOString().slice(0,10),anchor=validDate(sp?.date)?sp.date:today,view=['week','month','agenda'].includes(sp?.view)?sp.view:'week';
+ const today=londonToday(),anchor=validDate(sp?.date)?sp.date:today,view=['week','month','agenda'].includes(sp?.view)?sp.view:'week';
  const {start,end,days}=rangeFor(view,anchor),eng=ctx.profile.role==='engineer',feedUrl=ctx.profile.role==='owner'?calendarFeedUrl():null,appleUrl=webcalUrl(feedUrl);
  let q=db.from('bookings').select('id,booking_date,start_time,end_time,service_name,status,payment_status,engineer_user_id,assigned_engineer,customers(id,full_name,artist_name)').gte('booking_date',start).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time');
  if(eng)q=q.eq('engineer_user_id',ctx.user.id);
- const [{data:bookings=[]},{data:blockouts=[]},{data:calendarSources=[]}]=await Promise.all([
+ // Detailed records remain restricted to this engineer's assigned sessions.
+ // Other studio occupancy is queried separately without customer or service data.
+ const results=await Promise.all([
   q,
-  eng?Promise.resolve({data:[]}):db.from('blockouts').select('id,booking_date,start_time,end_time,reason,external_calendar_id').gte('booking_date',start).lte('booking_date',end).order('booking_date').order('start_time'),
-  eng?Promise.resolve({data:[]}):db.from('external_calendars').select('id,name,active,block_all_day,buffer_before_minutes,buffer_after_minutes,ignored_service_slugs,last_synced_at,last_error,created_at').order('created_at')
+  db.from('blockouts').select(eng?'booking_date,start_time,end_time':'id,booking_date,start_time,end_time,reason,external_calendar_id').gte('booking_date',start).lte('booking_date',end).order('booking_date').order('start_time'),
+  eng?Promise.resolve({data:[]}):db.from('external_calendars').select('id,name,active,block_all_day,buffer_before_minutes,buffer_after_minutes,ignored_service_slugs,last_synced_at,last_error,created_at').order('created_at'),
+  eng?loadStudioBusy(db,start,end,ctx.user.id,now):Promise.resolve({data:[]})
  ]);
+ if(results.some(result=>result.error))throw new Error('Could not load the studio calendar. Please retry.');
+ const [bookings,blockouts,calendarSources,busy]=results.map(result=>result.data||[]);
  const byDate={};for(const b of bookings)(byDate[b.booking_date]??=[]).push({...b,kind:'booking'});
- for(const b of blockouts)(byDate[b.booking_date]??=[]).push({...b,kind:'blockout'});
+ for(const [i,b] of blockouts.entries())(byDate[b.booking_date]??=[]).push(eng?{booking_date:b.booking_date,start_time:b.start_time,end_time:b.end_time,id:`blocked-${i}`,kind:'blockout',reason:'Studio unavailable'}:{...b,kind:'blockout'});
+ for(const [i,b] of busy.entries())(byDate[b.booking_date]??=[]).push({...b,id:`busy-${i}`,kind:'blockout',reason:'Studio booked'});
+ for(const items of Object.values(byDate))items.sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));
  let cells=[];
  if(view==='month'){
   const m=monthBounds(anchor),firstPad=weekdayMonday(m.start);
@@ -56,8 +78,9 @@ export default async function CalendarPage({searchParams}){
   {eng?<EngineerHeader profile={ctx.profile} eyebrow="Calendar"/>:<header className="adminHeader"><div><p className="eyebrow">Studio schedule</p><h1>Calendar.</h1><p className="muted">Switch between the week, month and a simple upcoming agenda.</p></div><AdminNav profile={ctx.profile}/></header>}
   <section className={eng?'engWelcome compact':'adminSection calendarTop'}>
    <div className="calendarMonthNav"><Link href={viewHref(view,prev)}>←</Link><div><p className="eyebrow">{view} view</p><h2>{titleFor(view,anchor,start,end)}</h2></div><Link href={viewHref(view,next)}>→</Link></div>
-   <div className="calendarTopRight"><div className="calendarViewToggle" aria-label="Calendar view"><Link className={view==='week'?'active':''} href={viewHref('week',anchor)}>Week</Link><Link className={view==='month'?'active':''} href={viewHref('month',anchor)}>Month</Link><Link className={view==='agenda'?'active':''} href={viewHref('agenda',anchor)}>Agenda</Link></div><div className="calendarActions"><Link className="button outline" href={viewHref(view,today)}>Today</Link><Link className="button primary" href="/admin/bookings/new">+ New booking</Link><Link className="button outline" href="/admin/sessions">Session reports</Link></div></div>
+   <div className="calendarTopRight"><div className="calendarViewToggle" aria-label="Calendar view"><Link className={view==='week'?'active':''} href={viewHref('week',anchor)}>Week</Link><Link className={view==='month'?'active':''} href={viewHref('month',anchor)}>Month</Link><Link className={view==='agenda'?'active':''} href={viewHref('agenda',anchor)}>Agenda</Link></div><div className="calendarActions"><Link className="button outline" href={viewHref(view,today)}>Today</Link><Link className="button primary" href={eng?'/admin/engineer/book':'/admin/bookings/new'}>+ New booking</Link><Link className="button outline" href="/admin/sessions">Session reports</Link></div></div>
   </section>
+  {eng&&<p className="muted">Your assigned sessions show their details. Other bookings appear as Studio booked; blocked times appear as Studio unavailable. All times are UK local time.</p>}
   {view==='agenda'?<section className={eng?'engSection calendarAgenda':'adminSection calendarAgenda'}>{cells.map(date=><div className={`agendaDay ${date===today?'today':''}`} key={date}><div className="agendaDate"><small>{new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB',{weekday:'short'}).toUpperCase()}</small><b>{formatUkDate(date)}</b></div><div className="agendaItems">{(byDate[date]||[]).length?(byDate[date]||[]).map(event):<span className="agendaEmpty">No sessions</span>}</div></div>)}</section>:<section className={eng?'engSection':'adminSection'}>
    <div className="calendarWeekdays">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=><span key={x}>{x}</span>)}</div>
    <div className={`studioCalendar ${view==='week'?'weekView':view==='month'?'monthView':''}`}>{cells.map((date,i)=>{

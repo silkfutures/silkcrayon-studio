@@ -21,8 +21,8 @@ export async function POST(req){
   const date=String(body.date||''),start=String(body.start||'');
   const minutes=clockToMinutes(start);
   const hours=Number(body.hours);
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||minutes===null||![2,3].includes(hours))
-   return fail('Select a date, time and a 2- or 3-hour recording session.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||minutes===null||!Number.isInteger(hours)||hours<1||hours>8)
+   return fail('Select a date, time and a recording session between 1 and 8 whole hours.');
   if(minutes<600||minutes+hours*60>1260)return fail('Sessions must finish by 21:00 and start no earlier than 10:00.');
   const utc=londonDateTimeToUtc(date,start);
   if(!utc||utc.getTime()<=Date.now())return fail('Choose a future time.');
