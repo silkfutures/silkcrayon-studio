@@ -1,11 +1,11 @@
-Apply after the main silkcrayon-studio-patch.zip update. This includes and replaces both smaller engineer booking/calendar patches.
+NAVIGATION, QUOTES AND AUTOMATIONS PATCH
 
-1. Run supabase/v20-12-37-overnight-bookings.sql in the Supabase SQL editor BEFORE deploying.
-2. Extract this ZIP into your project root, merge folders and replace matching files.
-3. Redeploy.
+Apply after engineer-overnight-patch.zip.
+1. Run supabase/v20-12-38-message-activity.sql in Supabase BEFORE deploying. Messages will not send if the new audit table is unavailable.
+2. Merge the included files into your project root, replacing matching files, and redeploy.
 
-Engineer New Booking now supports 1–8 hours, with start times throughout the day and no closing-time limit. 18:00 + 8 hours displays 02:00 (next day). Intro and terms guidance are softer. Fee display remains removed. Other bookings remain anonymous in the engineer calendar.
+Menu is first in navigation. The old global history Back button now opens Menu directly. Login replaces its history entry, and authenticated visits to login return to Today. Account actions are separate from the main navigation. Privacy control no longer adds a layout row on mobile. Quote creation fits its enquiry card.
 
-Overnight calendar segments, calendar exports and availability checks are updated. The database migration adds overlap protection across dates for booking inserts and updates. Public self-service opening hours remain as configured.
+Automations now contains a paginated All message activity log. Central transports log all application-controlled emails and SMS, including quotes, engineer workflow emails, and marketing tests/broadcasts. Actor identity is captured where a signed-in staff request is available; background sends show as automatic. Sent means accepted by provider, not confirmed inbox delivery. Broadcasts are campaign-level records, not individual recipient delivery receipts. Provider-managed authentication emails, Stripe receipts and messages sent outside this application are not included. Older unlogged emails cannot be recovered. Existing workflow history remains visible.
 
-Build and automated checks passed, including PostgreSQL-compatible migration tests for cross-date overlaps and blockouts. Live payment and email delivery were not exercised.
+Validated: production build and existing test suite; message audit failure/status tests; migration against PostgreSQL-compatible test database; real components at 1440px and 390px (quote stays inside card, no horizontal overflow). No real emails sent or live login performed.

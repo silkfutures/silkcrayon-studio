@@ -28,8 +28,8 @@ export default async function More(){
   ['/admin/sessions','Session reports','Complete & review your reports','✓']
  ];
  return <main className={owner?'engineerApp':'engApp'}>
-  {owner?<header className="mobileTop"><div><p className="eyebrow">Studio OS</p><h1>More.</h1><p className="muted">Everything beyond today’s workflow.</p></div><AdminNav profile={ctx.profile}/></header>:<EngineerHeader profile={ctx.profile} eyebrow="More"/>}
-  <section className="engWelcome compact"><p className="eyebrow">{owner?'Owner tools':'Engineer tools'}</p><h1>Everything else.</h1><p>Keep the daily app simple. The less-used controls live here.</p></section>
+  {owner?<header className="mobileTop"><div><p className="eyebrow">Studio OS</p><h1>Menu.</h1><p className="muted">Everything beyond today’s workflow.</p></div><AdminNav profile={ctx.profile}/></header>:<EngineerHeader profile={ctx.profile} eyebrow="Menu"/>}
+  <section className="engWelcome compact"><p className="eyebrow">{owner?'Owner tools':'Engineer tools'}</p><h1>Studio menu.</h1><p>Choose where you want to go.</p></section>
   <section className="engSection"><div className="moreGrid">{links.map(([href,title,desc,icon])=><Link key={href} href={href} className="moreTile"><span>{icon}</span><div><b>{title}</b><small>{desc}</small></div><em>→</em></Link>)}</div></section>
   <section className="engSection"><a className="moreTile" href="/"><span>↗</span><div><b>Public website</b><small>Open silkcrayon.com</small></div><em>→</em></a></section>
   <section className="engSection mobileLogout"><LogoutButton/></section>

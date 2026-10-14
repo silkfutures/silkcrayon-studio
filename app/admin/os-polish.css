@@ -53,3 +53,29 @@
 @media(max-width:600px){.dailyVisitors{padding:18px 14px}.dailyVisitorStats{gap:8px}.dailyVisitorStats>div{padding:12px 10px}.dailyVisitorStats b{font-size:30px}.dailyVisitorStats small{font-size:10px}.dailyVisitorHeading{align-items:stretch;flex-direction:column}.dailyVisitorReadout{min-width:0}.visitorDailyTable th,.visitorDailyTable td{padding:12px 9px}.analyticsSvgWrap{overflow:auto}.analyticsSvgWrap svg{min-width:650px}}
 .projectQuoteComposer{margin-top:40px;padding:28px;border:1px solid #473252;border-radius:18px;background:#100b15}.projectQuoteComposer h2{font-size:30px;margin:8px 0}.projectQuoteComposer p{font-size:14px;line-height:1.7;color:#c4b8cd}.projectQuoteComposer form{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:24px 0}.projectQuoteComposer label{display:flex;flex-direction:column;gap:8px;font-size:13px}.projectQuoteComposer label:first-child{grid-column:1/-1}.projectQuoteComposer :is(select,textarea){background:#09070d;color:#f4eefa;border:1px solid #51405f;border-radius:9px;padding:12px;font:inherit;line-height:1.6}.quoteCustomerPreview{background:#191022;padding:24px;margin:24px 0;border-radius:12px;border:1px solid #4a325d;max-width:720px}.quoteCustomerPreview h3{font-size:26px}.quoteCustomerPreview h4{margin-bottom:0;color:#e2ccfa}.quotePreviewLine{display:flex;justify-content:space-between;gap:20px;padding:10px 0;border-bottom:1px solid #493355}.quotePreviewLine.total{font-size:20px;padding:18px 0}.leadProjectMiniForm select{background:#110b18;color:white;border:1px solid #51405f;padding:12px}
 @media(max-width:650px){.projectQuoteComposer{padding:20px 16px}.projectQuoteComposer form{grid-template-columns:1fr}.quoteCustomerPreview{padding:18px}}
+/* Clear navigation hierarchy and a compact screen-privacy control. */
+.adminHeader,.mobileTop{flex-direction:column;align-items:stretch;gap:24px}
+.osNav{display:flex;align-items:center;justify-content:space-between;width:100%;gap:18px;border-top:1px solid #302837;padding-top:12px}
+.osPrimaryLinks,.osUtilities{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;min-width:0}
+.osPrimaryLinks a{padding:8px 2px;white-space:nowrap}
+.osPrimaryLinks a[aria-current=page]{color:#c394ff;border-bottom:2px solid #c394ff}
+.osUtilities{margin-left:auto;font-size:12px;gap:14px}
+.engineerPrimaryNav{margin-top:12px;padding:4px 0;border-top:0;border-bottom:1px solid #302837}
+.privacyToolbar{position:fixed;z-index:1100;right:16px;top:10px;max-width:calc(100vw - 120px);margin:0;padding:0;gap:0}
+.privacyToolbar small{display:none}.privacyToolbar button{min-height:38px;padding:8px 13px;background:#17101ef5}
+.leadCard,.leadProjectAction{min-width:0;max-width:100%;box-sizing:border-box}
+.leadProjectAction{display:flex;width:100%;align-items:stretch}
+.leadProjectAction>button{align-self:flex-start;max-width:100%}
+.leadProjectMiniForm{display:flex;flex-direction:column;min-width:0;width:100%;max-width:100%;box-sizing:border-box;gap:14px;padding:14px}
+.leadProjectMiniForm>*{min-width:0;max-width:100%;box-sizing:border-box}
+.leadProjectMiniForm label{width:100%}.leadProjectMiniForm p{margin:0;font-size:13px;line-height:1.5}
+.leadProjectMiniForm input,.leadProjectMiniForm select{width:100%;min-width:0;max-width:100%;box-sizing:border-box;background:#151119;color:#fff;border:1px solid #3d3150;border-radius:8px;padding:10px;font:inherit}
+.leadProjectMiniForm .check input{width:auto}.leadProjectMiniForm small{line-height:1.5;overflow-wrap:anywhere}
+.leadProjectMiniForm .quoteSplitPreview{width:100%;box-sizing:border-box}.quoteSplitPreview span{gap:12px;overflow-wrap:anywhere}.quoteSplitPreview b{flex-shrink:0}
+@media(min-width:761px){.staffBottomNav{display:none!important}}
+@media(max-width:760px){
+ .privacyToolbar{top:10px;right:10px}.privacyToolbar button{font-size:11px;min-height:36px;padding:8px 10px}
+ .adminHeader,.mobileTop{gap:14px}.osNav{gap:10px}.osUtilities{margin-left:0;gap:12px}.navIdentity{display:none}
+ .osPrimaryLinks{gap:4px 14px;font-size:12px}.osPrimaryLinks a{min-height:38px}
+ .osPrivacyScope>.engApp,.osPrivacyScope>.adminPage,.osPrivacyScope>.engineerApp{margin-top:60px;padding-top:0}
+}

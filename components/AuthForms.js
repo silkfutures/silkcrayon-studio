@@ -9,7 +9,7 @@ function browserClient(){
 
 export function LoginForm(){
   const [msg,setMsg]=useState(''); const [busy,setBusy]=useState(false); const router=useRouter(); const params=useSearchParams();
-  async function submit(e){e.preventDefault();setBusy(true);setMsg('');const fd=new FormData(e.currentTarget);const {error}=await browserClient().auth.signInWithPassword({email:fd.get('email'),password:fd.get('password')});if(error){setMsg(error.message);setBusy(false);return;}router.push(params.get('next')||'/admin');router.refresh();}
+  async function submit(e){e.preventDefault();setBusy(true);setMsg('');const fd=new FormData(e.currentTarget);const {error}=await browserClient().auth.signInWithPassword({email:fd.get('email'),password:fd.get('password')});if(error){setMsg(error.message);setBusy(false);return;}const next=params.get('next');const destination=next&&/^\/admin(?:\/|$)/.test(next)&&!next.includes('\\')&&!/^\/admin\/(login|setup)(?:[/?#]|$)/.test(next)?next:'/admin/engineer';router.replace(destination);router.refresh();}
   return <form className="authForm" onSubmit={submit}><label><span>Email</span><input type="email" name="email" autoComplete="email" required/></label><label><span>Password</span><input type="password" name="password" autoComplete="current-password" required/></label><button className="button primary" disabled={busy}>{busy?'Signing in…':'Log in →'}</button>{msg&&<p className="authError">{msg}</p>}</form>
 }
 
@@ -19,7 +19,7 @@ export function SetupForm(){
   return <form className="authForm" onSubmit={submit}><div className="authDivider">Existing temporary admin credentials</div><label><span>Legacy username</span><input name="legacyUsername" required defaultValue="silkcrayon"/></label><label><span>Legacy admin password</span><input type="password" name="legacyPassword" required/></label><div className="authDivider">Your new owner account</div><label><span>Your name</span><input name="fullName" required placeholder="Nathan Misra"/></label><label><span>Email</span><input type="email" name="email" required/></label><label><span>New password</span><input type="password" name="newPassword" minLength="10" required/></label><button className="button primary" disabled={busy}>{busy?'Creating…':'Create owner account →'}</button>{msg&&<p className="muted">{msg}</p>}</form>
 }
 
-export function LogoutButton(){const router=useRouter();async function out(){await browserClient().auth.signOut();router.push('/admin/login');router.refresh();}return <button className="navLogout" onClick={out}>Log out</button>}
+export function LogoutButton(){const router=useRouter();async function out(){await browserClient().auth.signOut();router.replace('/admin/login');router.refresh();}return <button className="navLogout" onClick={out}>Log out</button>}
 
 export function StaffCreateForm(){
  const [msg,setMsg]=useState(''); const router=useRouter();

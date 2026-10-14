@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import StaffPrimaryNav from './StaffPrimaryNav';
 import { LogoutButton } from './AuthForms';
 import StaffBottomNav from './StaffBottomNav';
 
 export function EngineerHeader({profile, eyebrow='Engineer'}={}){
   const first=(profile?.full_name||'Engineer').split(' ')[0];
-  return <header className="engHeader">
+  return <><header className="engHeader">
     <div className="engBrandBlock">
       <Link href={profile?.role==='owner'?'/admin':'/admin/engineer'} className="engWordmark">SILKCRAYON</Link>
       <span>{eyebrow}</span>
@@ -14,7 +15,7 @@ export function EngineerHeader({profile, eyebrow='Engineer'}={}){
       <div><b>{first}</b><small>{profile?.role}</small></div>
       <LogoutButton/>
     </div>
-  </header>
+  </header><nav className="osNav engineerPrimaryNav" aria-label="Studio OS navigation"><StaffPrimaryNav role={profile?.role}/></nav></>;
 }
 
 export function EngineerBottomNav({profile}){
