@@ -23,7 +23,7 @@ export async function PATCH(req,{params}){
     if(hoursUntil(booking)<cutoffHours())return NextResponse.json({error:`Session change requests close ${cutoffHours()} hours before your session. Please contact the studio.`},{status:409});
     if(booking.change_request_status==='pending')return NextResponse.json({error:'You already have a change request awaiting confirmation.'},{status:409});
     if(!/^\d{4}-\d{2}-\d{2}$/.test(b.date||'')||!/^\d{2}:\d{2}$/.test(b.start||''))return NextResponse.json({error:'Choose a valid date and time.'},{status:400});
-    const [{data:existing=[]},{data:blockouts=[]}]=await Promise.all([db.from('bookings').select('id,start_time,end_time,status,hold_expires_at').eq('booking_date',b.date).in('status',['pending','confirmed']),db.from('blockouts').select('start_time,end_time,ignored_service_slugs').eq('booking_date',b.date)]);
+    const [{data:existing=[]},{data:blockouts=[]}]=await Promise.all([db.from('bookings').select('booking_date,id,start_time,end_time,status,hold_expires_at').gte('booking_date',new Date(new Date(b.date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)).lte('booking_date',b.date).in('status',['pending','confirmed']),db.from('blockouts').select('start_time,end_time,ignored_service_slugs').eq('booking_date',b.date)]);
     const now=new Date().toISOString(),live=existing.filter(x=>x.id!==id&&(x.status==='confirmed'||!x.hold_expires_at||x.hold_expires_at>now));
     const slot=generateSlots(b.date,booking.duration_minutes,live,blockouts,booking.service_slug).find(x=>x.start===b.start);
     if(!slot)return NextResponse.json({error:'That slot is no longer available.'},{status:409});

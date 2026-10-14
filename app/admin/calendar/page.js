@@ -33,7 +33,7 @@ function shiftAnchor(view,anchor,dir){
 async function loadStudioBusy(db,start,end,engineerId,now){
  const data=[];
  for(let offset=0;;offset+=500){
-  const result=await db.from('bookings').select('id,booking_date,start_time,end_time,status,hold_expires_at,engineer_user_id').gte('booking_date',start).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time').order('id').range(offset,offset+499);
+  const result=await db.from('bookings').select('id,booking_date,start_time,end_time,status,hold_expires_at,engineer_user_id').gte('booking_date',addDays(start,-1)).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time').order('id').range(offset,offset+499);
   if(result.error)return {error:result.error};
   for(const row of result.data||[]){
    if(row.engineer_user_id===engineerId)continue;
@@ -48,13 +48,13 @@ export default async function CalendarPage({searchParams}){
  const ctx=await requireStaff(),sp=await searchParams,db=getAdminDb(),now=new Date();
  const today=londonToday(),anchor=validDate(sp?.date)?sp.date:today,view=['week','month','agenda'].includes(sp?.view)?sp.view:'week';
  const {start,end,days}=rangeFor(view,anchor),eng=ctx.profile.role==='engineer',feedUrl=ctx.profile.role==='owner'?calendarFeedUrl():null,appleUrl=webcalUrl(feedUrl);
- let q=db.from('bookings').select('id,booking_date,start_time,end_time,service_name,status,payment_status,engineer_user_id,assigned_engineer,customers(id,full_name,artist_name)').gte('booking_date',start).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time');
+ let q=db.from('bookings').select('id,booking_date,start_time,end_time,service_name,status,payment_status,engineer_user_id,assigned_engineer,customers(id,full_name,artist_name)').gte('booking_date',addDays(start,-1)).lte('booking_date',end).neq('status','cancelled').order('booking_date').order('start_time');
  if(eng)q=q.eq('engineer_user_id',ctx.user.id);
  // Detailed records remain restricted to this engineer's assigned sessions.
  // Other studio occupancy is queried separately without customer or service data.
  const results=await Promise.all([
   q,
-  db.from('blockouts').select(eng?'booking_date,start_time,end_time':'id,booking_date,start_time,end_time,reason,external_calendar_id').gte('booking_date',start).lte('booking_date',end).order('booking_date').order('start_time'),
+  db.from('blockouts').select(eng?'booking_date,start_time,end_time':'id,booking_date,start_time,end_time,reason,external_calendar_id').gte('booking_date',addDays(start,-1)).lte('booking_date',end).order('booking_date').order('start_time'),
   eng?Promise.resolve({data:[]}):db.from('external_calendars').select('id,name,active,block_all_day,buffer_before_minutes,buffer_after_minutes,ignored_service_slugs,last_synced_at,last_error,created_at').order('created_at'),
   eng?loadStudioBusy(db,start,end,ctx.user.id,now):Promise.resolve({data:[]})
  ]);
@@ -63,6 +63,16 @@ export default async function CalendarPage({searchParams}){
  const byDate={};for(const b of bookings)(byDate[b.booking_date]??=[]).push({...b,kind:'booking'});
  for(const [i,b] of blockouts.entries())(byDate[b.booking_date]??=[]).push(eng?{booking_date:b.booking_date,start_time:b.start_time,end_time:b.end_time,id:`blocked-${i}`,kind:'blockout',reason:'Studio unavailable'}:{...b,kind:'blockout'});
  for(const [i,b] of busy.entries())(byDate[b.booking_date]??=[]).push({...b,id:`busy-${i}`,kind:'blockout',reason:'Studio booked'});
+ for(const [date,items] of Object.entries({...byDate})){
+  for(const item of [...items]){
+   if(String(item.end_time).slice(0,5)<=String(item.start_time).slice(0,5)){
+    const nextDate=addDays(date,1);
+    item.endsNextDay=true;
+    if(nextDate>=start&&nextDate<=end&&String(item.end_time).slice(0,5)!=='00:00')
+     (byDate[nextDate]??=[]).push({...item,id:`${item.id}-continued`,kind:'blockout',reason:item.kind==='booking'?'Your session continues':item.reason,start_time:'00:00',endsNextDay:false});
+   }
+  }
+ }
  for(const items of Object.values(byDate))items.sort((a,b)=>String(a.start_time).localeCompare(String(b.start_time)));
  let cells=[];
  if(view==='month'){
@@ -72,8 +82,8 @@ export default async function CalendarPage({searchParams}){
  }else cells=Array.from({length:days},(_,i)=>addDays(start,i));
  const prev=shiftAnchor(view,anchor,-1),next=shiftAnchor(view,anchor,1);
  const event=(item)=>item.kind==='blockout'
-  ?<div className="calendarEvent blockout" key={item.id}><b>{String(item.start_time).slice(0,5)}–{String(item.end_time).slice(0,5)}</b><span>{item.reason||'Blocked'}</span></div>
-  :<Link href={`/admin/engineer/session/${item.id}`} className="calendarEvent" key={item.id}><b>{String(item.start_time).slice(0,5)}–{String(item.end_time).slice(0,5)}</b><span>{item.customers?.artist_name||item.customers?.full_name}</span><small>{item.service_name} · {item.payment_status==='paid'?'Paid':'Payment due'} · {item.engineer_user_id?(item.assigned_engineer||'Assigned'):'UNASSIGNED'}</small></Link>;
+  ?<div className="calendarEvent blockout" key={item.id}><b>{String(item.start_time).slice(0,5)}–{String(item.end_time).slice(0,5)}{item.endsNextDay?' (+1 day)':''}</b><span>{item.reason||'Blocked'}</span></div>
+  :<Link href={`/admin/engineer/session/${item.id}`} className="calendarEvent" key={item.id}><b>{String(item.start_time).slice(0,5)}–{String(item.end_time).slice(0,5)}{item.endsNextDay?' (+1 day)':''}</b><span>{item.customers?.artist_name||item.customers?.full_name}</span><small>{item.service_name} · {item.payment_status==='paid'?'Paid':'Payment due'} · {item.engineer_user_id?(item.assigned_engineer||'Assigned'):'UNASSIGNED'}</small></Link>;
  return <main className={eng?'engApp calendarApp':'adminPage calendarApp'}>
   {eng?<EngineerHeader profile={ctx.profile} eyebrow="Calendar"/>:<header className="adminHeader"><div><p className="eyebrow">Studio schedule</p><h1>Calendar.</h1><p className="muted">Switch between the week, month and a simple upcoming agenda.</p></div><AdminNav profile={ctx.profile}/></header>}
   <section className={eng?'engWelcome compact':'adminSection calendarTop'}>

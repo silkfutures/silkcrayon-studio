@@ -38,7 +38,7 @@ export async function POST(request) {
     const developmentContext=service.slug==='artist-development'?[`ARTIST DEVELOPMENT SESSION`,body.developmentFormat?`Format: ${body.developmentFormat.replaceAll('_',' ')}`:'',body.developmentGoal?`Goal: ${body.developmentGoal}`:'',body.developmentBlocker?`Current blocker: ${body.developmentBlocker}`:'',body.developmentBacklog?`Unreleased catalogue: ${body.developmentBacklog}`:'',body.developmentMusicLink?`Music link: ${body.developmentMusicLink}`:'',body.developmentOutcome?`Useful outcome: ${body.developmentOutcome}`:''].filter(Boolean).join('\n\n'):String(body.notes||'').trim();
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
-    const { data: existing } = await db.from("bookings").select("start_time,end_time,status,hold_expires_at").eq("booking_date", body.date).in("status", ["pending","confirmed"]);
+    const { data: existing } = await db.from("bookings").select("booking_date,start_time,end_time,status,hold_expires_at").gte('booking_date',new Date(new Date(body.date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)).lte('booking_date',body.date).in("status", ["pending","confirmed"]);
     const liveBookings = (existing || []).filter(b => b.status === "confirmed" || !b.hold_expires_at || b.hold_expires_at > nowIso);
     const { data: blockouts } = await db.from("blockouts").select("start_time,end_time,ignored_service_slugs").eq("booking_date", body.date);
     const validSlots = generateSlots(body.date, duration, liveBookings, blockouts || [], service.slug);

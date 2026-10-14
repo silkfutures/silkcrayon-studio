@@ -16,7 +16,7 @@ export async function GET(request) {
     if (!date || !service || !service.durations.includes(duration)) return NextResponse.json({ error: "Invalid availability request" }, { status: 400 });
     const db = getAdminDb();
     const nowIso = new Date().toISOString();
-    const { data: bookings, error: bookingError } = await db.from("bookings").select("start_time,end_time,status,hold_expires_at").eq("booking_date", date).in("status", ["pending","confirmed"]);
+    const { data: bookings, error: bookingError } = await db.from("bookings").select("booking_date,start_time,end_time,status,hold_expires_at").gte('booking_date',new Date(new Date(date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)).lte('booking_date',date).in("status", ["pending","confirmed"]);
     if (bookingError) throw bookingError;
     const liveBookings = (bookings || []).filter(b => b.status === "confirmed" || !b.hold_expires_at || b.hold_expires_at > nowIso);
     const { data: blockouts, error: blockoutError } = await db.from("blockouts").select("start_time,end_time,ignored_service_slugs").eq("booking_date", date);

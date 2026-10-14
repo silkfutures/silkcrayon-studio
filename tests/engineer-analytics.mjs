@@ -23,7 +23,7 @@ async function loadRoute(file,bindings){
 }
 let ctx={user:{id:'billy'},profile:{role:'engineer',full_name:'Billy'}},writes=0,conflict=false,queryError=false,emails=[],assignmentArgs=[];
 let booking={id:'session',engineer_user_id:'billy',assigned_engineer:'Billy',status:'confirmed',booking_date:'2026-12-14',start_time:'10:00',end_time:'12:00',duration_minutes:120,service_slug:'vocal-recording',service_name:'Recording',updated_at:'2026-10-14T12:00:00Z',internal_notes:'private',customers:{id:'artist',artist_name:'A < B',email:'artist@example.com',phone:'07000000000'}};
-const db={from(table){let patch=null,filters={},select='';const q={select(s){select=s;return q},eq(k,v){filters[k]=v;return q},in(){return q},update(p){patch=p;return q},async single(){if(table==='staff_profiles')return {data:{user_id:'other',role:'engineer',active:true,full_name:'Other'}};if(patch){writes++;booking={...booking,...patch};}return {data:{...booking},error:null}},then(resolve){if(patch){writes++;booking={...booking,...patch};return Promise.resolve({data:booking}).then(resolve);}return Promise.resolve({data:[],error:queryError?new Error('database unavailable'):null}).then(resolve)}};return q;},async rpc(name,args){assert.equal(name,'staff_reschedule_booking_locked');assert.equal(args.p_actor_id,ctx.user.id);if(conflict)return {error:{message:'slot_unavailable'}};writes++;booking={...booking,booking_date:args.p_date,start_time:args.p_start,end_time:'14:00'};return {error:null};}};
+const db={from(table){let patch=null,filters={},select='';const q={select(s){select=s;return q},eq(k,v){filters[k]=v;return q},in(){return q},gte(){return q},lte(){return q},update(p){patch=p;return q},async single(){if(table==='staff_profiles')return {data:{user_id:'other',role:'engineer',active:true,full_name:'Other'}};if(patch){writes++;booking={...booking,...patch};}return {data:{...booking},error:null}},then(resolve){if(patch){writes++;booking={...booking,...patch};return Promise.resolve({data:booking}).then(resolve);}return Promise.resolve({data:[],error:queryError?new Error('database unavailable'):null}).then(resolve)}};return q;},async rpc(name,args){assert.equal(name,'staff_reschedule_booking_locked');assert.equal(args.p_actor_id,ctx.user.id);if(conflict)return {error:{message:'slot_unavailable'}};writes++;booking={...booking,booking_date:args.p_date,start_time:args.p_start,end_time:'14:00'};return {error:null};}};
 const response={json:(data,options={})=>({status:options.status||200,data})};
 const bindings={'next/server':{NextResponse:response},supabase:{getAdminDb:()=>db},auth:{getStaffContext:async()=>ctx},notifications:{engineerAssignedEmail:()=>({subject:'assigned',html:'assigned'}),sendStaffLoggedNotification:async a=>{assignmentArgs.push(a);return {ok:false,error:'provider offline'};},staffEmail:async()=> 'engineer@example.com',sendEmail:async a=>{emails.push(a);return {ok:false,error:'provider offline'};}},stripe:{getStripe:()=>{}},bookingEvents:{recordBookingEvent:async()=>{}},dates:{formatUkDate:v=>v},sms:{sendSms:async()=>({ok:true})},escapeHtml:{escapeHtml},dryHireId:{closeDryHireIdCheck:async()=>{}},availability:{generateSlots}};
 const {PATCH}=await loadRoute('../app/api/admin/bookings/[id]/route.js',bindings);
@@ -50,11 +50,13 @@ for(const hours of [1,2,3,4,5,6,7,8]){
  const accepted=await route.POST({json:async()=>({...request,start:'10:00',hours})});
  assert.equal(accepted.status,500);assert.equal(reachedCustomerLookup,true);
 }
-for(const input of [{hours:0},{hours:9},{hours:2.5},{hours:8,start:'13:30'}]){
+for(const input of [{hours:0},{hours:9},{hours:2.5}]){
  reachedCustomerLookup=false;
  const rejected=await route.POST({json:async()=>({...request,start:'10:00',...input})});
  assert.equal(rejected.status,400);assert.equal(reachedCustomerLookup,false);
 }
+reachedCustomerLookup=false;await route.POST({json:async()=>({...request,start:'18:00',hours:8})});assert.equal(reachedCustomerLookup,true);
+reachedCustomerLookup=false;await route.POST({json:async()=>({...request,start:'23:30',hours:8})});assert.equal(reachedCustomerLookup,true);
 // Collector must not report success on database failure, or an unavailable rate limiter.
 let insertFails=true,limitFails=false;
 const collector=await loadRoute('../app/api/analytics/route.js',{'next/server':{NextResponse:response},rateLimit:{rateLimit:async()=>{if(limitFails)throw new Error('limiter missing');return true;}},supabase:{getAdminDb:()=>({from:()=>({insert:async()=>({error:insertFails?new Error('write failed'):null})})})}});
@@ -77,3 +79,20 @@ ctx={user:{id:'owner'},profile:{role:'owner'}};assert.equal((await sendQuote(2))
 assert.equal((await sendQuote(1)).status,200);assert.equal(quoteSends,1);assert.equal(quoteLog.status,'sent');
 assert.equal((await sendQuote(1)).data.duplicate,true);assert.equal(quoteSends,1);
 console.log('Quote templates, totals, escaping, owner authorization, stale version and duplicate-send tests passed.');
+// Occupancy crosses midnight without blocking unrelated daytime slots.
+const overnight={booking_date:'2027-01-14',start_time:'23:30',end_time:'11:30'};
+const nextDaySlots=generateSlots('2027-01-15',60,[overnight]);
+assert.ok(!nextDaySlots.some(x=>x.start==='10:00'));
+assert.ok(nextDaySlots.some(x=>x.start==='11:30'));
+const lateSlots=generateSlots('2027-01-15',60,[{booking_date:'2027-01-15',start_time:'18:00',end_time:'02:00'}]);
+assert.ok(!lateSlots.some(x=>x.start==='18:00'));
+assert.ok(lateSlots.some(x=>x.start==='17:00'));
+const formSource=await fs.readFile(new URL('../components/EngineerBookingForm.js',import.meta.url),'utf8');
+const shiftSource=formSource.slice(formSource.indexOf('function shift('),formSource.indexOf('export default'));
+const shift=Function(`${shiftSource};return shift`)();
+assert.equal(shift('18:00',8),'02:00 (next day)');
+assert.equal(shift('23:30',1),'00:30 (next day)');
+assert.equal(shift('10:00',1),'11:00');
+const {bookingIcsEvent}=await import('../lib/calendarFeed.js');
+assert.match(bookingIcsEvent({id:'overnight',booking_date:'2027-01-15',start_time:'18:00',end_time:'02:00'}),/DTEND;TZID=Europe\/London:20270116T020000/);
+console.log('Overnight end labels, next-day occupancy and calendar export tests passed.');

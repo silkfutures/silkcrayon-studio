@@ -10,7 +10,7 @@ function clockToMinutes(value){
  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(value))return null;
  const [h,m]=value.split(':').map(Number);return h*60+m;
 }
-function hhmm(minutes){return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
+function hhmm(minutes){return `${String(Math.floor(minutes/60)%24).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
 function normalEmail(s){return String(s||'').trim().toLowerCase();}
 export async function POST(req){
  let bookingId=null;
@@ -23,7 +23,6 @@ export async function POST(req){
   const hours=Number(body.hours);
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||minutes===null||!Number.isInteger(hours)||hours<1||hours>8)
    return fail('Select a date, time and a recording session between 1 and 8 whole hours.');
-  if(minutes<600||minutes+hours*60>1260)return fail('Sessions must finish by 21:00 and start no earlier than 10:00.');
   const utc=londonDateTimeToUtc(date,start);
   if(!utc||utc.getTime()<=Date.now())return fail('Choose a future time.');
   if(body.customerTermsConfirmed!==true)return fail('Confirm that the customer has accepted the studio terms and recording policy.');
@@ -97,7 +96,7 @@ export async function POST(req){
    client_reference_id:payment.id,
    metadata:{studio_payment_id:payment.id,booking_id:id,customer_id:customer.id,payment_kind:'session'},
    line_items:[{quantity:1,price_data:{currency:'gbp',unit_amount:amountPence,
-    product_data:{name:'Silkcrayon — Vocal Recording',description:`${date} · ${start}–${end} · Cardiff Bay`}}}],
+    product_data:{name:'Silkcrayon — Vocal Recording',description:`${date} · ${start}–${end}${minutes+hours*60>=1440?' (next day)':''} · Cardiff Bay`}}}],
    success_url:`${BASE}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
    cancel_url:`${BASE}/booking`
   });

@@ -16,7 +16,7 @@ export async function POST(req){
   if(['system-test','dry-hire'].includes(service.slug))return NextResponse.json({error:service.slug==='dry-hire'?'Dry hire is paid separately at its own rate.':'Test bookings cannot use studio hours.'},{status:400});
   const db=getAdminDb(),now=new Date().toISOString();
   const [{data:existing=[]},{data:blockouts=[]},{data:ledger=[]}]=await Promise.all([
-    db.from('bookings').select('start_time,end_time,status,hold_expires_at').eq('booking_date',b.date).in('status',['pending','confirmed']),
+    db.from('bookings').select('booking_date,start_time,end_time,status,hold_expires_at').gte('booking_date',new Date(new Date(b.date+'T12:00:00Z').getTime()-86400000).toISOString().slice(0,10)).lte('booking_date',b.date).in('status',['pending','confirmed']),
     db.from('blockouts').select('start_time,end_time,ignored_service_slugs').eq('booking_date',b.date),
     db.from('credit_ledger').select('hours_delta').eq('customer_id',ctx.customer.id)
   ]);

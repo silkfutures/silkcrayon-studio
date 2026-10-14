@@ -1,5 +1,11 @@
-Apply after the main silkcrayon-studio-patch.zip update. This replaces the smaller engineer-booking-patch.zip; applying that smaller patch first is not required.
-Merge these files into your project root, replace matching files and redeploy. No additional SQL is needed.
+Apply after the main silkcrayon-studio-patch.zip update. This includes and replaces both smaller engineer booking/calendar patches.
 
-New booking: 1–8 whole hours; engineer fee and explanation removed.
-Calendar: own assigned session details remain available. Other studio bookings show only times and Studio booked. Blockouts show Studio unavailable without reasons or calendar names. Week, month and agenda supported. New booking includes a calendar link.
+1. Run supabase/v20-12-37-overnight-bookings.sql in the Supabase SQL editor BEFORE deploying.
+2. Extract this ZIP into your project root, merge folders and replace matching files.
+3. Redeploy.
+
+Engineer New Booking now supports 1–8 hours, with start times throughout the day and no closing-time limit. 18:00 + 8 hours displays 02:00 (next day). Intro and terms guidance are softer. Fee display remains removed. Other bookings remain anonymous in the engineer calendar.
+
+Overnight calendar segments, calendar exports and availability checks are updated. The database migration adds overlap protection across dates for booking inserts and updates. Public self-service opening hours remain as configured.
+
+Build and automated checks passed, including PostgreSQL-compatible migration tests for cross-date overlaps and blockouts. Live payment and email delivery were not exercised.
