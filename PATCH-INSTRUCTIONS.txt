@@ -1,0 +1,10 @@
+PATCH INSTALLATION
+
+For the silkcrayon-studio-main(4).zip version you supplied.
+
+1. Back up your current project.
+2. Extract this ZIP into the project root (the folder containing package.json), merging folders and replacing the included files. Keep all other project files.
+3. Run APPLY-THIS-UPDATE.sql in Supabase before deploying.
+4. Follow START-HERE-ENGINEER-UPDATE.md for deployment and live checks.
+
+This ZIP contains only new or changed files, with their original relative paths.

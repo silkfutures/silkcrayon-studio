@@ -7,7 +7,7 @@ import {londonDateTimeToUtc} from '../../../../lib/time';
 const BASE='https://silkcrayon.com';
 function fail(message,status=400){return NextResponse.json({error:message},{status});}
 function clockToMinutes(value){
- if(!/^([01]\\d|2[0-3]):[0-5]\\d$/.test(value))return null;
+ if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(value))return null;
  const [h,m]=value.split(':').map(Number);return h*60+m;
 }
 function hhmm(minutes){return `${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;}
@@ -21,7 +21,7 @@ export async function POST(req){
   const date=String(body.date||''),start=String(body.start||'');
   const minutes=clockToMinutes(start);
   const hours=Number(body.hours);
-  if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date)||minutes===null||![2,3].includes(hours))
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||minutes===null||![2,3].includes(hours))
    return fail('Select a date, time and a 2- or 3-hour recording session.');
   if(minutes<600||minutes+hours*60>1260)return fail('Sessions must finish by 21:00 and start no earlier than 10:00.');
   const utc=londonDateTimeToUtc(date,start);
@@ -29,7 +29,7 @@ export async function POST(req){
   if(body.customerTermsConfirmed!==true)return fail('Confirm that the customer has accepted the studio terms and recording policy.');
 
   const db=getAdminDb(),email=normalEmail(body.email);
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254)return fail('Enter the artist’s valid email.');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254)return fail('Enter the artist’s valid email.');
   const {data:matches,error:lookupError}=await db.from('customers').select('id,created_at,registered_by_user_id,full_name,email').eq('email',email).limit(1);
   if(lookupError)throw lookupError;
   let customer=matches?.[0]||null;

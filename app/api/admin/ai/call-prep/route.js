@@ -12,7 +12,7 @@ export async function POST(req){
   if(sourceType==='enquiry'&&ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
   if(sourceType==='booking'&&ctx.profile.role==='engineer'){
    const {data:booking}=await getAdminDb().from('bookings').select('engineer_user_id').eq('id',sourceId).maybeSingle();
-   if(!booking||booking.engineer_user_id&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This session is assigned to another engineer.'},{status:403});
+   if(!booking||booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This session is assigned to another engineer.'},{status:403});
   }
   const result=await ensureCallPrep({sourceType,sourceId,force:Boolean(body.regenerate),createdBy:ctx.user.id});
   return NextResponse.json({ok:true,...result});

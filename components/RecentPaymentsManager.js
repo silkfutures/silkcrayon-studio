@@ -40,15 +40,15 @@ export default function RecentPaymentsManager({payments=[]}){
  }
  return <>
    <section className="engSection"><div className="engSectionHead"><div><h2>Recent payments</h2><p>Money that actually moved or was formally reversed.</p></div></div>
-     <div className="engArtistList">{real.length?real.slice(0,8).map(p=><div key={p.id} className="engArtistRow paymentRow"><div className="engAvatar">£</div><div><b>{displayName(p)}</b><small>{p.description} · {String(p.status).replaceAll('_',' ')}</small></div><span>{gbp(p.amount_pence)}</span></div>):<div className="engEmptyState"><b>No completed payments yet.</b><p>Paid transactions will appear here.</p></div>}</div>
+     <div className="engArtistList">{real.length?real.slice(0,8).map(p=><div key={p.id} className="engArtistRow paymentRow"><div data-sensitive="financial" className="engAvatar">£</div><div><b>{displayName(p)}</b><small>{p.description} · {String(p.status).replaceAll('_',' ')}</small></div><span data-sensitive="financial">{gbp(p.amount_pence)}</span></div>):<div className="engEmptyState"><b>No completed payments yet.</b><p>Paid transactions will appear here.</p></div>}</div>
    </section>
    <section className="engSection paymentAttemptsSection">
     <button type="button" className="paymentAttemptsToggle" onClick={()=>setShowAbandoned(v=>!v)} aria-expanded={showAbandoned}>
-      <span><b>Pending / abandoned checkouts</b><small>{attempts.length} checkout attempt{attempts.length===1?'':'s'} · not counted as revenue</small></span><span>{showAbandoned?'−':'+'}</span>
+      <span><b>Pending / abandoned checkouts</b><small data-sensitive="financial">{attempts.length} checkout attempt{attempts.length===1?'':'s'} · not counted as revenue</small></span><span>{showAbandoned?'−':'+'}</span>
     </button>
     {showAbandoned&&<div className="paymentAttemptsBody">
       <div className="paymentAttemptsActions"><p>Delete obvious abandoned attempts individually, or clear anything expired/cancelled plus pending checkouts older than 24h.</p><button className="button outline small" disabled={busy==='clear'||!attempts.length} onClick={clearAbandoned}>{busy==='clear'?'Clearing…':'Clear abandoned'}</button></div>
-      <div className="engArtistList">{attempts.length?attempts.map(p=><div key={p.id} className="engArtistRow paymentRow paymentAttemptRow"><div className="engAvatar">£</div><div><b>{displayName(p)}</b><small>{p.description} · {p.status}{p.status==='pending'&&ageHours(p.created_at)>=24?' · old':''}</small></div><span>{gbp(p.amount_pence)}</span><button type="button" className="paymentDeleteBtn" disabled={busy===p.id} onClick={()=>removeOne(p)}>{busy===p.id?'Deleting…':'Delete'}</button></div>):<div className="engEmptyState"><b>Nothing to clean up.</b></div>}</div>
+      <div className="engArtistList">{attempts.length?attempts.map(p=><div key={p.id} className="engArtistRow paymentRow paymentAttemptRow"><div data-sensitive="financial" className="engAvatar">£</div><div><b>{displayName(p)}</b><small>{p.description} · {p.status}{p.status==='pending'&&ageHours(p.created_at)>=24?' · old':''}</small></div><span data-sensitive="financial">{gbp(p.amount_pence)}</span><button type="button" className="paymentDeleteBtn" disabled={busy===p.id} onClick={()=>removeOne(p)}>{busy===p.id?'Deleting…':'Delete'}</button></div>):<div className="engEmptyState"><b>Nothing to clean up.</b></div>}</div>
     </div>}
     {error&&<p className="formError">{error}</p>}
    </section>

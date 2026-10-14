@@ -2,7 +2,7 @@ import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../../../lib/supabase';
 import {getStaffContext} from '../../../../../lib/auth';
 import {getStripe} from '../../../../../lib/stripe';
-import {confirmationEmail,engineerAssignedEmail,sendLoggedNotification,sendStaffLoggedNotification} from '../../../../../lib/notifications';
+import {confirmationEmail,notifyAssignedEngineer,engineerAssignedEmail,sendLoggedNotification,sendStaffLoggedNotification} from '../../../../../lib/notifications';
 import {sendLoggedSms} from '../../../../../lib/sms';
 import {newToken,tokenHash} from '../../../../../lib/customerAuth';
 import {londonDateTimeToUtc,londonDateOffset} from '../../../../../lib/time';
@@ -26,7 +26,7 @@ export async function POST(req){try{
  const projectId=String(b.projectId||'').trim()||null;
  let project=null;
  if(projectId){const {data:p,error:pe}=await db.from('studio_projects').select('id,title,customer_id,status,project_type,recording_hours_included,recording_hours_used').eq('id',projectId).maybeSingle();if(pe)throw pe;if(!p)return NextResponse.json({error:'Project not found.'},{status:404});if(['lost','delivered'].includes(p.status))return NextResponse.json({error:'This project is closed.'},{status:409});if(p.customer_id&&p.customer_id!==b.customerId)return NextResponse.json({error:'This booking must use the customer linked to the project.'},{status:400});project=p;}
- const serviceSlug=project?'podcast-recording':b.serviceSlug==='dry-hire'?'dry-hire':'vocal-recording',dryHire=serviceSlug==='dry-hire';
+ const serviceSlug=project?(project.project_type==='dry-hire'?'dry-hire':project.project_type==='music'?'vocal-recording':project.project_type==='spoken-word'?'voiceover':'podcast-recording'):b.serviceSlug==='dry-hire'?'dry-hire':'vocal-recording',dryHire=serviceSlug==='dry-hire';
  const hours=Number(b.hours||0),duration=Math.round(hours*60),amount=money(b.amount);
  const paymentMode=project?'project_included':String(b.paymentMode||'unpaid');
  const isPartialPaid=!project&&paymentMode==='partial_paid';
@@ -49,7 +49,7 @@ export async function POST(req){try{
  let engineer=null;
  if(!dryHire&&b.engineerUserId){const {data:e}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,email,phone,photo_url,active,role').eq('user_id',b.engineerUserId).maybeSingle();if(e?.active)engineer=e}
  const {data:id,error:re}=await db.rpc('reserve_booking',{
-  p_customer_id:customer.id,p_service_slug:serviceSlug,p_service_name:project?'Podcast Recording':dryHire?'Studio Dry Hire':'Vocal Recording',
+  p_customer_id:customer.id,p_service_slug:serviceSlug,p_service_name:dryHire?'Studio Dry Hire':serviceSlug==='voiceover'?'Voiceover Recording':serviceSlug==='podcast-recording'?'Podcast Recording':'Vocal Recording',
   p_booking_date:b.date,p_start_time:b.start,p_end_time:b.end,p_duration_minutes:duration,
   p_genre:null,p_notes:String(b.notes||'').slice(0,2000)||null,p_amount_pence:amount,p_hold_expires_at:null,
   p_harmful_music_policy_accepted:true
@@ -85,7 +85,7 @@ export async function POST(req){try{
  const paymentLabel=project?'Included in your project recording quote':isManualPaid?`£${(amount/100).toFixed(2)} · Paid manually`:isPartialPaid?`£${(partialPaidPence/100).toFixed(2)} paid · £${(remainingPence/100).toFixed(2)} remaining · reminder ${formatUkDate(balanceReminderDate)}`:`£${(amount/100).toFixed(2)} · Payment due`;
  const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
  await sendLoggedNotification({booking,customer,type:'admin_booking_confirmation',...msg});
- if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:project?`Silkcrayon: your podcast recording session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. ${dryHireIdRequired?'If ID verification is still needed, a secure ID-check link will follow.':'No ID check is required for this booking.'}`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
+ if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:project?`Silkcrayon: your project session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. ${dryHireIdRequired?'If ID verification is still needed, a secure ID-check link will follow.':'No ID check is required for this booking.'}`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
  let idRequestWarning=null,idRequestSent=false;
  if(dryHire&&dryHireIdRequired){
   try{const idResult=await ensureDryHireIdRequest({booking,customer,ctx,source:'manual_booking'});idRequestSent=Boolean(idResult?.emailSent||idResult?.smsSent||idResult?.verified||idResult?.status==='requested'||idResult?.status==='submitted');}
@@ -96,7 +96,7 @@ export async function POST(req){try{
   }
  }
  if(dryHire&&!dryHireIdRequired){try{await recordBookingEvent({db,booking,eventType:'dry_hire_id_waived',reasonCode:'owner_booking_override',note:'Owner marked ID verification as not required for this Dry Hire booking.',ctx,snapshot:{customer_id:customer.id}})}catch{}}
- if(engineer?.email){const em=engineerAssignedEmail(booking,customer,engineer.engineer_name||engineer.full_name);await sendStaffLoggedNotification({booking,type:'engineer_assignment',to:engineer.email,...em})}
+ const assignmentNotification=engineer?await notifyAssignedEngineer({...booking,customers:customer}):null;
 
  let paymentUrl=null,paymentLinkWarning=null;
  if(!project&&['pay_by_bank','card_or_bank'].includes(paymentMode)){try{
@@ -124,5 +124,5 @@ export async function POST(req){try{
  }
  if(project){await db.from('studio_projects').update({status:['quoted','accepted','deposit_due'].includes(project.status)?'scheduled':project.status,updated_at:new Date().toISOString()}).eq('id',project.id);}
  after(()=>ensureCallPrep({sourceType:'booking',sourceId:id,createdBy:ctx.user.id}).catch(error=>console.error('Automatic booking call prep failed',error?.message||error)));
- return NextResponse.json({ok:true,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,dryHireIdRequired:dryHire?dryHireIdRequired:null,projectId:project?.id||null});
+ return NextResponse.json({ok:true,assignmentNotification,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,dryHireIdRequired:dryHire?dryHireIdRequired:null,projectId:project?.id||null});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}

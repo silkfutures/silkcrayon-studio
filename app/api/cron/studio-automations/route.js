@@ -1,6 +1,6 @@
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../../lib/supabase';
-import {sendLoggedNotification,reminderEmail,bookAgainEmail} from '../../../../lib/notifications';
+import {notifyAssignedEngineer,sendLoggedNotification,reminderEmail,bookAgainEmail} from '../../../../lib/notifications';
 import {sendLoggedSms} from '../../../../lib/sms';
 import {londonDateOffset} from '../../../../lib/time';
 import {formatUkDate} from '../../../../lib/dates';
@@ -66,7 +66,7 @@ export async function GET(request){
   else if(b.service_slug!=='dry-hire'&&defaultEngineer){
    const assignedName=defaultEngineer.engineer_name||defaultEngineer.full_name;
    const {data:updated}=await db.from('bookings').update({engineer_user_id:defaultEngineer.user_id,assigned_engineer:assignedName,updated_at:new Date().toISOString()}).eq('id',b.id).is('engineer_user_id',null).select('*,customers(*)').maybeSingle();
-   if(updated){working=updated;staff=defaultEngineer;}
+   if(updated){working=updated;staff=defaultEngineer;await notifyAssignedEngineer(updated);}
   }
   const {count:priorCount}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',c.id).lt('booking_date',working.booking_date).in('status',['confirmed','completed']);
   if(c.email){const msg=reminderEmail(working,c,{firstTime:Number(priorCount||0)===0,engineer:staff||null});const r=await sendLoggedNotification({booking:working,customer:c,type:'session_reminder',...msg});if(r.ok)sent++;}

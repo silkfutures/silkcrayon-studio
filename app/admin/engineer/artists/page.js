@@ -26,7 +26,7 @@ export default async function EngineerArtists(){
   <section className="engWelcome"><p className="eyebrow">Your artist relationships</p><h1>My Artists</h1><p>Only customers you introduced or were assigned to work with.</p></section>
   <EngineerArtistCreate/>
   <section className="engSection"><div className="engSectionHead"><h2>My customers</h2><span className="engCount">{artists.length}</span></div>
-   <div className="engSessionStack">{artists.length?artists.map(a=><article className="engSessionCard" key={a.id}>
+   <div className="engSessionStack">{artists.length?artists.map(a=><article className="engSessionCard engineerArtistCard" key={a.id}>
     <div className="engSessionMain"><h3>{a.artist_name||a.full_name}</h3><p>{a.full_name} · {a.origin}</p>
      <div className="recentCompletedActions"><a href={`mailto:${a.email}`}>Email</a>{a.phone&&<a href={`tel:${a.phone}`}>Call</a>}</div>
     </div>

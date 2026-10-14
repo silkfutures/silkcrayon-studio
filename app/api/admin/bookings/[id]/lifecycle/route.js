@@ -15,7 +15,7 @@ export async function POST(req,{params}){
   const {id}=await params,b=await req.json(),db=getAdminDb();
   const {data:booking,error}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(error)throw error;
   const owner=ctx.profile.role==='owner';
-  if(!owner&&booking.engineer_user_id&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This session is assigned to another engineer.'},{status:403});
+  if(!owner&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This session is assigned to another engineer.'},{status:403});
 
   if(b.action==='no_show'){
     if(!['confirmed','pending'].includes(booking.status))return NextResponse.json({error:'Only an active booking can be marked as a no-show.'},{status:409});

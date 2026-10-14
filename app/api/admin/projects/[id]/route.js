@@ -1,9 +1,11 @@
+import {QUOTE_TEMPLATES} from '../../../../../lib/quoteTemplates';
 import {NextResponse} from 'next/server';import {requireOwner} from '../../../../../lib/auth';import {getAdminDb} from '../../../../../lib/supabase';
 const allowed=new Set(['quoted','accepted','deposit_due','scheduled','recording','post_production','delivered','lost']);
 function pence(v){const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.round(n*100)):null}
 export async function PATCH(req,{params}){try{
  await requireOwner();const {id}=await params,b=await req.json(),db=getAdminDb();const patch={updated_at:new Date().toISOString()};
  if(allowed.has(b.status))patch.status=b.status;
+ if(b.quote){if(!QUOTE_TEMPLATES[b.quote.quote_template])return NextResponse.json({error:'Choose a quote template.'},{status:400});patch.project_type=QUOTE_TEMPLATES[b.quote.quote_template].type;for(const key of ['quote_template','quote_scope','quote_handover','quote_exclusions','quote_turnaround']){const value=String(b.quote[key]||'').trim();if(!value||value.length>3000)return NextResponse.json({error:'Complete the quote fields (maximum 3,000 characters each).'},{status:400});patch[key]=value;}}
  const audioRecording=pence(b.audioRecordingPounds),videoProduction=pence(b.videoProductionPounds),audioPost=pence(b.audioPostPounds),videoPost=pence(b.videoPostPounds);
  const hasNew=[audioRecording,videoProduction,audioPost,videoPost].some(v=>v!==null);
  if(hasNew){

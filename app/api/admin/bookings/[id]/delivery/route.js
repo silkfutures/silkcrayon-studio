@@ -9,7 +9,7 @@ import {recordBookingEvent} from '../../../../../../lib/bookingEvents';
 const BUCKET='session-deliveries';
 const site=()=>String(process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon.com').replace(/\/$/,'');
 const safeName=v=>String(v||'file').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-120)||'file';
-async function bookingAccess(db,id,ctx){const {data:b,error}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(error||!b)throw new Error('Booking not found.');if(ctx.profile.role==='engineer'&&b.engineer_user_id&&b.engineer_user_id!==ctx.user.id)throw new Error('This session is assigned to another engineer.');return b}
+async function bookingAccess(db,id,ctx){const {data:b,error}=await db.from('bookings').select('*,customers(*)').eq('id',id).single();if(error||!b)throw new Error('Booking not found.');if(ctx.profile.role==='engineer'&&b.engineer_user_id!==ctx.user.id)throw new Error('This session is assigned to another engineer.');return b}
 
 async function createDeliveryLog(db,{delivery,booking,customer,type,recipient,subject,channel}){
  const {data,error}=await db.from('notification_log').insert({booking_id:booking.id,customer_id:customer?.id||booking.customer_id,session_delivery_id:delivery.id,notification_type:type,recipient,subject,status:'queued',channel}).select('id').single();
