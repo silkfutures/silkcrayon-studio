@@ -79,3 +79,23 @@
  .osPrimaryLinks{gap:4px 14px;font-size:12px}.osPrimaryLinks a{min-height:38px}
  .osPrivacyScope>.engApp,.osPrivacyScope>.adminPage,.osPrivacyScope>.engineerApp{margin-top:60px;padding-top:0}
 }
+/* Keep wide charts inside their own scroll regions, never the page grid. */
+.analyticsPage,.analyticsPage section,.analyticsPage .adminHeader>div{min-width:0;box-sizing:border-box}
+.analyticsVisuals{grid-template-columns:minmax(0,1fr);min-width:0;max-width:100%}
+.analyticsVisuals>* ,.analyticsInsightGrid>*,.dailyVisitorStats>*,.analyticsPage .dashboardSplit>*,.analyticsPage .osMetrics>*{min-width:0;box-sizing:border-box}
+.analyticsChartCard,.dailyVisitors{max-width:100%;min-width:0;box-sizing:border-box}
+.visitorBarScroll,.analyticsSvgWrap,.hourBarScroll{width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+.visitorBarScroll:focus-visible,.hourBarScroll:focus-visible{outline:2px solid #c394ff;outline-offset:3px}
+.dailyVisitorStats{grid-template-columns:repeat(3,minmax(0,1fr))}
+.analyticsPage .analyticsRow span{min-width:0;overflow-wrap:anywhere}.analyticsPage .analyticsRow b{flex-shrink:0}
+.analyticsPage .serviceBars span{min-width:0;overflow-wrap:anywhere}.analyticsPage .serviceBars>div>div{flex-wrap:wrap}
+@media(max-width:760px){
+ .analyticsPage .osMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}.analyticsPage .osMetrics>div{padding:14px 10px}.analyticsPage .osMetrics b{font-size:24px;overflow-wrap:anywhere}
+ .analyticsPage .dashboardSplit,.analyticsInsightGrid{grid-template-columns:minmax(0,1fr)}
+ .analyticsPage .adminSection{padding-left:0;padding-right:0}.analyticsPage h2{overflow-wrap:anywhere}
+ .analyticsChartHead{min-width:0}.analyticsLegend{flex-wrap:wrap}.analyticsHero{grid-template-columns:minmax(0,1fr)}
+ .funnelSteps{grid-template-columns:repeat(3,minmax(0,1fr))}.funnelSteps>div{padding:10px 7px}.funnelSteps span{overflow-wrap:anywhere}
+ .hourBarScroll .hourBars{min-width:600px}.hourBarScroll .hourBarItem small,.hourBarScroll .hourBarItem b{display:block;font-size:10px}
+ .visitorDailyTable table{width:100%;table-layout:fixed}.visitorDailyTable th,.visitorDailyTable td{white-space:normal;overflow-wrap:anywhere}
+ .dailyVisitorStats>div{padding:12px 8px}.dailyVisitorStats b{font-size:28px}.dailyVisitorStats span{font-size:10px}
+}
