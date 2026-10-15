@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {verifySignupBot} from '../lib/verifySignupBot.js';
+const good={success:true,hostname:'silkcrayon.com',action:'email_signup'};
+const check=(data,token='token')=>verifySignupBot(token,{secret:'test-secret',fetcher:async()=>({ok:true,json:async()=>data})});
+assert.equal((await check(good)).ok,true);
+for(const bad of [{...good,success:false},{...good,hostname:'attacker.example'},{...good,action:'other'}])assert.equal((await check(bad)).ok,false);
+assert.equal((await check(good,'')).status,400);
+assert.equal((await verifySignupBot('token',{secret:''})).status,503);
+assert.equal((await verifySignupBot('token',{secret:'secret',fetcher:async()=>{throw Error('offline')}})).status,503);
+const source=fs.readFileSync(new URL('../app/api/marketing/signup/route.js',import.meta.url),'utf8').replace(/import[^;]+;/g,'').replace('export async function','async function');
+let writes=0,send=0,allowed=false;
+const make=new Function('verifySignupBot','publicFormGuard','NextResponse','getAdminDb','sendEmail','rateLimit','escapeHtml',source+';return POST');
+const post=make(async()=>({ok:allowed,status:403,error:'Denied'}),async()=>null,{json:(data,{status=200}={})=>({data,status})},()=>{writes++;throw Error('DB reached')},()=>{send++},async()=>false,x=>x);
+const req={clone:()=>({json:async()=>({email:'test@example.com',turnstileToken:'bad'})}),json:async()=>({email:'test@example.com'})};
+assert.equal((await post(req)).status,403);assert.equal(writes,0);assert.equal(send,0);
+allowed=true;assert.equal((await post(req)).status,429);assert.equal(writes,0);assert.equal(send,0);
+console.log('Signup protection passed: missing/invalid tokens, hostname/action mismatch, service outage, rate limiting and no signup/email before verification.');
