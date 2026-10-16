@@ -19,6 +19,7 @@ export default async function More(){
   ['/admin/mixes','Mixes','Payment-gated mix, master & revision pipeline','〽'],
   ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
   ['/admin/marketing','Marketing','Email campaigns & audience','✦'],
+  ['/admin/supported-artists','Supported artists','Applications, approvals & £30 studio access','♫'],
   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
   ['/admin/sessions','Session reports','Complete and review session reports','✓'],
   ['/admin/settings','Settings','Studio pricing and preferences','⚙'],

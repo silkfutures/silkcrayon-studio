@@ -1,3 +1,5 @@
+import {getCustomerContext} from '../../../lib/customerAuth';
+import {programmeSlotAllowed,PROGRAMME_RATE} from '../../../lib/supportedArtists';
 import {publicFormGuard} from "../../../lib/publicFormGuard";
 import { NextResponse } from "next/server";
 import { SERVICES, priceFor } from "../../../lib/services";
@@ -18,6 +20,17 @@ export async function POST(request) {
   try {
     const body = await request.json();
     if(!await rateLimit(request,{scope:'checkout',limit:20,windowSeconds:900,identity:body.email||''}))return NextResponse.json({error:'Too many booking attempts. Please wait a few minutes and try again.'},{status:429});
+    let programme=null;
+    if(body.supportedArtist===true){
+      const ctx=await getCustomerContext();
+      if(!ctx)return NextResponse.json({error:'Sign in to book at your supported rate.'},{status:401});
+      const {data:m,error}=await getAdminDb().from('supported_artists').select('*').eq('customer_id',ctx.customer.id).maybeSingle();
+      if(error)throw error;
+      if(body.service!=='vocal-recording'||!programmeSlotAllowed(m,body.date,body.start,body.end,Number(body.duration)))return NextResponse.json({error:'Choose a session within your active programme dates, eligible times and two-hour minimum.'},{status:403});
+      programme=m;
+      body.email=ctx.customer.email;body.fullName=ctx.customer.full_name;body.artistName=ctx.customer.artist_name||m.artist_name;
+      body.preferredEngineerUserId=m.engineer_user_id;
+    }
     const service = SERVICES[body.service];
     const duration = Number(body.duration);
     if (!service || !service.durations.includes(duration)) throw new Error("Invalid service or duration");
@@ -69,15 +82,17 @@ export async function POST(request) {
     }
     const commercial=await getStudioSettings();
     const listPricePence = service.slug==="vocal-recording"?Math.round(duration/60*commercial.studioHourlyPricePence):service.slug==="full-day"?commercial.fullDayPricePence:priceFor(service,duration);
-    let promotion=service.slug==='system-test'?null:await getPromotionFor(service.slug,duration);
+    let promotion=programme||service.slug==='system-test'?null:await getPromotionFor(service.slug,duration);
     if(promotion?.usage_limit_per_customer){
       const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).eq('promotion_id',promotion.id).in('status',['pending','confirmed','completed']);
       if(Number(count||0)>=Number(promotion.usage_limit_per_customer)) promotion=null;
     }
-    const rewardApplied=!promotion&&rewardAvailableBefore&&service.slug!=='system-test';
-    const amountPence = promotion?Number(promotion.offer_price_pence):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
+    const rewardApplied=!programme&&!promotion&&rewardAvailableBefore&&service.slug!=='system-test';
+    const amountPence = programme?Math.round(duration/60*PROGRAMME_RATE):promotion?Number(promotion.offer_price_pence):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
     const holdExpires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const { data: reservedId, error: bookingError } = await db.rpc("reserve_booking", {
+    const { data: reservedId, error: bookingError } = await db.rpc(programme?"reserve_supported_booking":"reserve_booking", programme?{
+      p_membership_id:programme.id,p_customer_id:customer.id,p_booking_date:body.date,p_start_time:body.start,p_end_time:body.end,p_duration_minutes:duration,p_genre:body.genre?.trim()||null,p_notes:developmentContext||null,p_harmful_music_policy_accepted:true
+    }:{
       p_customer_id: customer.id,
       p_service_slug: service.slug,
       p_service_name: service.name,
@@ -93,6 +108,7 @@ export async function POST(request) {
     });
     if (bookingError) {
       if (bookingError.message?.includes("slot_unavailable")) return NextResponse.json({ error: "That time has just become unavailable. Please choose another slot." }, { status: 409 });
+      if(programme)return NextResponse.json({error:bookingError.message||"Programme booking unavailable."},{status:409});
       throw bookingError;
     }
     bookingId = reservedId;
@@ -122,15 +138,15 @@ export async function POST(request) {
     const stripe = getStripe();
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const session = await stripe.checkout.sessions.create({
-      allow_promotion_codes: true,
+      allow_promotion_codes: !programme,
       mode: "payment",
       invoice_creation: { enabled: true },
       customer_email: email,
       client_reference_id: booking.id,
-      metadata: { booking_id: booking.id, service_slug: service.slug, promotion_code:promotion?.code||'', email_signup_discount_applied:rewardApplied?'true':'false' },
-      line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${service.name}${promotion?` · ${promotion.name}`:(rewardApplied?' · 5% email reward':'')}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay${promotion?` · ${promotion.name}`:(rewardApplied?' · 5% email-list reward applied':'')}` } } }],
+      metadata: { booking_id: booking.id, service_slug: service.slug, promotion_code:promotion?.code||'', supported_artist_id:programme?.id||'', email_signup_discount_applied:rewardApplied?'true':'false' },
+      line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${programme?"Supported Artist · Studio session":service.name}${promotion?` · ${promotion.name}`:(rewardApplied?' · 5% email reward':'')}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay${promotion?` · ${promotion.name}`:(rewardApplied?' · 5% email-list reward applied':'')}` } } }],
       success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/booking?cancelled=1`,
+      cancel_url: programme?`${baseUrl}/account/supported-artists?cancelled=1`:`${baseUrl}/booking?cancelled=1`,
       expires_at: Math.floor(Date.now()/1000) + 30*60,
     });
     await db.from("bookings").update({ stripe_checkout_session_id: session.id }).eq("id", booking.id);

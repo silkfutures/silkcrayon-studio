@@ -65,6 +65,8 @@ export default async function Home(){
       <Reveal><div className="callCta"><div><span>NOT SURE WHAT YOU NEED?</span><h3>Talk it through with us.</h3><p>Tell us about the project and we’ll give you a call.</p></div><Link className="softPill" href="/request-a-call">Request a call <span>↗</span></Link></div></Reveal><Reveal><div className="serviceCta"><div><span>Not sure what to book?</span><p>Most artists start with a vocal recording session.</p></div><Link className="softPill" href="/booking?service=vocal-recording">Start here <span>↗</span></Link></div></Reveal>
     </div></section>
 
+    <section className="section"><div className="container"><div className="sectionHeading"><div><p className="eyebrow">Silkcrayon Supported Artists</p><h2>Your next project.<br/>A little more support.</h2></div><div><p>Apply for three months of studio sessions at £30/hour with Nathan or Billy. For selected artists with strong ideas and the commitment to see them through.</p><Link className="button primary" href="/supported-artists">Explore the programme →</Link></div></div></div></section>
+
     <MeetEngineers/>
 
     <section className="section sessionJourney"><div className="container">

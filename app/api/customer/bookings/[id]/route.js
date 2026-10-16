@@ -20,6 +20,7 @@ export async function PATCH(req,{params}){
   if(booking.status!=='confirmed')return NextResponse.json({error:'Only confirmed bookings can be changed.'},{status:409});
 
   if(b.action==='change_request'){
+    if(booking.supported_artist_id)return NextResponse.json({error:'Please contact the studio to change a supported artist session. We need to check your programme dates and remaining allowance.'},{status:409});
     if(hoursUntil(booking)<cutoffHours())return NextResponse.json({error:`Session change requests close ${cutoffHours()} hours before your session. Please contact the studio.`},{status:409});
     if(booking.change_request_status==='pending')return NextResponse.json({error:'You already have a change request awaiting confirmation.'},{status:409});
     if(!/^\d{4}-\d{2}-\d{2}$/.test(b.date||'')||!/^\d{2}:\d{2}$/.test(b.start||''))return NextResponse.json({error:'Choose a valid date and time.'},{status:400});
