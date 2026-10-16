@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MeetEngineers from "../components/MeetEngineers";
 import SiteHeader from "../components/SiteHeader";
 import Reveal from "../components/Reveal";
 import EmailSignup from "../components/EmailSignup";
@@ -63,6 +64,8 @@ export default async function Home(){
       <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
       <Reveal><div className="callCta"><div><span>NOT SURE WHAT YOU NEED?</span><h3>Talk it through with us.</h3><p>Tell us about the project and we’ll give you a call.</p></div><Link className="softPill" href="/request-a-call">Request a call <span>↗</span></Link></div></Reveal><Reveal><div className="serviceCta"><div><span>Not sure what to book?</span><p>Most artists start with a vocal recording session.</p></div><Link className="softPill" href="/booking?service=vocal-recording">Start here <span>↗</span></Link></div></Reveal>
     </div></section>
+
+    <MeetEngineers/>
 
     <section className="section sessionJourney"><div className="container">
       <Reveal><p className="eyebrow">Your session</p><h2>Simple from booking to bounce.</h2></Reveal>

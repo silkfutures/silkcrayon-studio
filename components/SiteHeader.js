@@ -52,6 +52,7 @@ export default function SiteHeader(){
     <nav className="desktopNav">
       <Link href="/services">Services</Link>
       <a href="/#space">The Studio</a>
+      <a href="/#engineers">Engineers</a>
       <a href="/#work">Listen</a>
       <Link href="/contact">Visit &amp; Contact</Link>
       <Link href="/account/login">My Studio</Link>
@@ -65,6 +66,7 @@ export default function SiteHeader(){
     {open&&<div id="site-navigation" ref={menuRef} className="mobileMenu" role="dialog" aria-modal="true" aria-label="Site navigation">
       <Link href="/services" onClick={close}>Services</Link>
       <a href="/#space" onClick={close}>The Studio</a>
+      <a href="/#engineers" onClick={close}>Engineers</a>
       <a href="/#work" onClick={close}>Listen</a>
       <Link href="/contact" onClick={close}>Visit &amp; Contact</Link>
       <Link href="/account/login" onClick={close}>My Studio</Link>

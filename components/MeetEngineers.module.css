@@ -1,0 +1,31 @@
+.section { background: #09070c; scroll-margin-top: 100px; }
+.profiles { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 48px; }
+.profile { min-width: 0; }
+.portrait { position: relative; overflow: hidden; background: #18131e; }
+.portrait img { display: block; width: 100%; height: auto; aspect-ratio: 1.15; object-fit: cover; object-position: center 30%; }
+.portrait span { position: absolute; bottom: 16px; left: 16px; padding: 7px 12px; background: #09070ce8; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
+.bio { padding: 30px 0 0; }
+.bio > :global(.eyebrow) { font-size: 10px; letter-spacing: .16em; margin-bottom: 12px; }
+.bio h3 { margin: 0; font-size: clamp(32px,3.5vw,46px); line-height: 1.1; letter-spacing: -.04em; }
+.bio p { color: var(--muted); font-size: 15px; line-height: 1.8; }
+.bio .statement { color: var(--text); font-size: 20px; line-height: 1.4; margin: 16px 0 22px; }
+.tags { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
+.tags li { padding: 6px 10px; border: 1px solid var(--line); font-size: 11px; color: #d6cbdc; }
+.bio a { display: inline-block; color: var(--accent); font-size: 14px; padding: 8px 0; }
+.testimonials { margin-top: 60px; padding-top: 36px; border-top: 1px solid var(--line); }
+.quotes { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+.quotes figure { margin: 0; padding: 24px; background: #100c15; border: 1px solid var(--line); display: flex; flex-direction: column; }
+.quotes blockquote { margin: 0 0 24px; color: #ddd5e3; font-size: 14px; line-height: 1.8; }
+.quotes figcaption { margin-top: auto; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+.cta { margin-top: 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.cta h3 { margin: 0 0 6px; font-size: 24px; letter-spacing: -.02em; }
+.cta p { margin: 0; color: var(--muted); font-size: 14px; }
+.cta a { flex-shrink: 0; }
+@media(max-width: 760px) {
+  .profiles { grid-template-columns: 1fr; gap: 44px; }
+  .quotes { grid-template-columns: 1fr; gap: 12px; }
+  .portrait img { aspect-ratio: 1.1; }
+  .bio { padding-top: 24px; }
+  .testimonials { margin-top: 40px; }
+  .cta { align-items: stretch; flex-direction: column; }
+}
