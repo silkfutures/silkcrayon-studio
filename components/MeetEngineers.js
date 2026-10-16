@@ -20,10 +20,10 @@ export default function MeetEngineers() {
           <div className={styles.bio}>
             <p className="eyebrow">Founder · Engineer · Artist development</p>
             <h3 id="nathan-name">Nathan Misra</h3>
-            <p className={styles.statement}>Find your voice. Make it count.</p>
+            <p className={styles.statement}>Pop · R&amp;B · Hip-hop · Rap</p>
             <p>Nathan brings an artist’s perspective to the studio. After seven years pursuing music in London and time working alongside engineer Harry Chaplin in Los Angeles, he built Silkcrayon into a creative home for artists in Cardiff Bay.</p>
-            <p>His work brings together vocal recording, production and creative direction, helping artists shape their sound, build confidence and take a song from an idea to a finished record.</p>
-            <ul className={styles.tags} aria-label="Nathan’s focus"><li>Rap &amp; hip-hop</li><li>Vocal recording</li><li>Production</li><li>Artist development</li></ul>
+            <p>With a focus on pop, R&amp;B, hip-hop and rap, his work brings together vocal recording, production and creative direction, helping artists shape their sound, build confidence and take a song from an idea to a finished record.</p>
+            <ul className={styles.tags} aria-label="Nathan’s focus"><li>Vocal recording</li><li>Production</li><li>Artist development</li></ul>
             <Link className="textLink" href="/artist-development">Explore Nathan’s approach →</Link>
           </div>
         </article>
@@ -32,11 +32,11 @@ export default function MeetEngineers() {
           <div className={styles.bio}>
             <p className="eyebrow">Audio engineer · Producer</p>
             <h3 id="billy-name">Billy Tucker</h3>
-            <p className={styles.statement}>Live energy. Character intact.</p>
+            <p className={styles.statement}>Indie · Pop · Rock · Folk · Neo-soul</p>
             <p>Based in Cardiff, Billy studied Creative Music Technology at Falmouth University and has been recording and producing music for over six years.</p>
-            <p>He predominantly works with noise rock, post-punk and punk rock bands, and loves exploring hip-hop, pop, indie rock, drum and bass and psychedelic rock too.</p>
+            <p>Billy works with artists across indie, pop, rock, folk and neo-soul. His experience also spans noise rock, post-punk and punk rock, alongside hip-hop, drum and bass and psychedelic rock.</p>
             <p>Capturing a live essence comes first. His productions leave room for rough edges, flaws and character, favouring the feeling of a performance over perfection in every tiny detail. He’s happy to work across genres when the creative visions align.</p>
-            <ul className={styles.tags} aria-label="Billy’s focus"><li>Noise rock &amp; punk</li><li>Recording &amp; production</li><li>Mixing &amp; mastering</li></ul>
+            <ul className={styles.tags} aria-label="Billy’s focus"><li>Recording &amp; production</li><li>Mixing &amp; mastering</li></ul>
             <Link className="textLink" href="/enquire">Talk to us about working with Billy →</Link>
           </div>
         </article>
