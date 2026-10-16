@@ -11,11 +11,11 @@ This is a cumulative patch against the uploaded Silkcrayon project. It includes 
 
 ## How it works
 
-- Public programme and application: `/supported-artists`, also linked from the homepage.
+- Unlisted invitation application: `/supported-artists`. Send https://silkcrayon.com/supported-artists directly to selected artists. It is not linked from the homepage, public booking page or sitemap, and carries noindex/nofollow metadata. This is an unlisted link, not an access-controlled invitation token: anyone it is forwarded to can apply, but only owner-approved accounts can book at £30.
 - Application asks for name, artist/band, account email, genre, music/social links and project goals. Existing signed-token/honeypot/spam/rate-limit protection is reused. It does not subscribe artists to marketing.
-- Owner review: `/admin/supported-artists`. Choose Nathan, Billy or another active engineer; set dates and eligible UK-time days/hours. Three months and weekdays 10:00–17:00 are defaults; set them to fit your diary. Five places is an initial recommendation, not a hard-coded limit.
+- Owner review: `/admin/supported-artists`. Use Copy application link to invite an artist, or Preview application to inspect the form. Choose Nathan, Billy or another active engineer; set dates and eligible UK-time days/hours. Three months and weekdays 10:00–17:00 are defaults; set them to fit your diary. Five places is an initial recommendation, not a hard-coded limit.
 - Approval creates/links a customer record using the application email. It grants £30/hour access with a two-hour minimum and eight hours per calendar month. This is not a free credit balance or transferable code.
-- The artist receives an approval email and signs in to My Studio using that same email. Choose Supported artist sessions (`/account/supported-artists`) to see their engineer, dates, allowance and eligible slots, then pay through Stripe. Standard bookings and prepaid credit purchases remain at their existing prices.
+- The artist receives an approval email and signs in to My Studio using that same email. Approved artists see Your £30 supported artist sessions in My Studio (`/account/supported-artists`) to see their engineer, dates, allowance and eligible slots, then pay through Stripe. Standard bookings and prepaid credit purchases remain at their existing prices.
 - The assigned engineer can be changed for future bookings by saving the approval again. Previously booked sessions retain their assigned engineer.
 - The rate expires automatically by date. Pause blocks new programme bookings immediately; it does not cancel existing paid bookings. Approval emails and retries use the existing email/activity logging; successful Stripe payments use existing booking confirmations, assigned-engineer notifications and reminders.
 - Failed decision emails show a warning and can be retried with Resend decision email. A saved approval remains saved if email delivery fails.
