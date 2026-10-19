@@ -1,12 +1,12 @@
 .section { background: #09070c; scroll-margin-top: 100px; }
-.profiles { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 48px; }
+.profiles { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 28px; }
 .profile { min-width: 0; }
-.portrait { position: relative; overflow: hidden; background: #18131e; }
-.portrait img { display: block; width: 100%; height: auto; aspect-ratio: 1.15; object-fit: cover; object-position: center 30%; }
+.portrait { display: block; position: relative; overflow: hidden; background: #18131e; }
+.portrait img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; object-position: center 30%; }
 .portrait span { position: absolute; bottom: 16px; left: 16px; padding: 7px 12px; background: #09070ce8; color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; }
 .bio { padding: 30px 0 0; }
 .bio > :global(.eyebrow) { font-size: 10px; letter-spacing: .16em; margin-bottom: 12px; }
-.bio h3 { margin: 0; font-size: clamp(32px,3.5vw,46px); line-height: 1.1; letter-spacing: -.04em; }
+.bio h3 { margin: 0; font-size: clamp(26px,2.6vw,38px); line-height: 1.1; letter-spacing: -.04em; }
 .bio p { color: var(--muted); font-size: 15px; line-height: 1.8; }
 .bio .statement { color: var(--text); font-size: 20px; line-height: 1.4; margin: 16px 0 22px; }
 .tags { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0; }
@@ -29,3 +29,11 @@
   .testimonials { margin-top: 40px; }
   .cta { align-items: stretch; flex-direction: column; }
 }
+
+.profilePage { padding-top: 140px; padding-bottom: 80px; min-height: 100vh; background: #09070c; }
+.profileLayout { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.2fr); gap: 60px; margin-top: 36px; align-items: start; }
+.profileLayout h1 { font-size: clamp(40px,6vw,72px); line-height: 1.05; margin: 12px 0; }
+.profileLayout .bio { padding-top: 0; }
+.profileLayout .portrait img { aspect-ratio: 4/5; }
+.profileLinks { display:flex; flex-wrap:wrap; gap:24px; margin-top:40px; }
+@media(max-width:760px) { .profileLayout { grid-template-columns: 1fr; gap:32px; } .profilePage { padding-top:110px; } .profileLayout .portrait img { aspect-ratio:1.1; } }
