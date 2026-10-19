@@ -18,7 +18,7 @@ export default async function EngineerProfile({ params }) {
     <Link className="textLink" href="/#engineers">← Meet the engineers</Link>
     <div className={styles.profileLayout}><div className={styles.portrait}><img src={person.image} width={person.width} height={person.height} alt={`${person.name} at work in the studio`}/></div>
     <div className={styles.bio}><p className="eyebrow">{person.role}</p><h1>{person.name}</h1><p className={styles.statement}>{person.genres}</p>{person.bio.map(p => <p key={p}>{p}</p>)}
-    <Link className="button primary" href="/booking">Book a session ↗</Link>
+    <Link className="button primary" href="/booking">Book a session <span aria-hidden="true">↗</span></Link>
     <p><Link className="textLink" href={`/enquire?engineer=${person.slug}`}>Ask about working with {person.short} →</Link></p>
     {person.slug === 'nathan-misra' && <Link className="textLink" href="/artist-development">Explore artist development →</Link>}</div></div>
     {person.slug === 'billy-tucker' && <div className={styles.testimonials}><p className="eyebrow">Artists on working with Billy</p><div className={styles.quotes}>{testimonials.map(({name,quote}) => <figure key={name}><blockquote>“{quote}”</blockquote><figcaption>{name}</figcaption></figure>)}</div></div>}
