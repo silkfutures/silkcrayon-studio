@@ -33,7 +33,7 @@ export default function MeetEngineers() {
             <p className="eyebrow">Audio engineer · Producer</p>
             <h3 id="billy-name">Billy Tucker</h3>
             <p className={styles.statement}>Indie · Pop · Rock · Folk · Neo-soul</p>
-            <p>Based in Cardiff, Billy studied Creative Music Technology at Falmouth University and has been recording and producing music for over six years.</p>
+            <p>Based in Cardiff, Billy studied Creative Music Technology at Falmouth University and has been recording and producing music since 2016.</p>
             <p>Billy works with artists across indie, pop, rock, folk and neo-soul. His experience also spans noise rock, post-punk and punk rock, alongside hip-hop, drum and bass and psychedelic rock.</p>
             <p>Capturing a live essence comes first. His productions leave room for rough edges, flaws and character, favouring the feeling of a performance over perfection in every tiny detail. He’s happy to work across genres when the creative visions align.</p>
             <ul className={styles.tags} aria-label="Billy’s focus"><li>Recording &amp; production</li><li>Mixing &amp; mastering</li></ul>

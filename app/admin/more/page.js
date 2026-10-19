@@ -19,12 +19,13 @@ export default async function More(){
   ['/admin/mixes','Mixes','Payment-gated mix, master & revision pipeline','〽'],
   ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
   ['/admin/marketing','Marketing','Email campaigns & audience','✦'],
-  ['/admin/supported-artists','Supported artists','Applications, approvals & £30 studio access','♫'],
+  ['/admin/supported-artists','Supported artists','Applications, approvals & agreed studio rates','♫'],
   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
   ['/admin/sessions','Session reports','Complete and review session reports','✓'],
   ['/admin/settings','Settings','Studio pricing and preferences','⚙'],
   ['/admin/staff','Staff','People, roles & access','◌']
  ]:[
+  ['/admin/engineer/supported-artists','Supported artists','Your programmes, sessions & spend','♫'],
   ['/admin/calendar','Calendar','Your visual schedule','▦'],
   ['/admin/sessions','Session reports','Complete & review your reports','✓']
  ];

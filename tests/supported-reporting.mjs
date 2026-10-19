@@ -1,0 +1,22 @@
+import assert from 'node:assert/strict';
+import vm from 'node:vm';
+import {readFileSync} from 'node:fs';
+import * as reporting from '../lib/supportedArtistReporting.js';
+const {supportedNetSpend:net,supportedProgrammeState:state,supportedUsage:usage,permittedEngineer}=reporting;
+assert.equal(net({amount_pence:10000,payment_status:'unpaid'}),0);
+assert.equal(net({amount_pence:10000,amount_paid_pence:3000,payment_status:'unpaid'}),3000);
+assert.equal(net({amount_pence:10000,amount_paid_pence:10000,refunded_amount_pence:2500,payment_status:'part_refunded'}),7500);
+assert.equal(net({amount_pence:10000,amount_paid_pence:10000,payment_status:'refunded'}),0);
+assert.equal(net({amount_pence:10000,payment_status:'paid',payment_method:'credits'}),0);
+assert.equal(net({amount_pence:10000,payment_status:'paid'}),10000);
+const m={status:'approved',starts_on:'2026-10-01',ends_on:'2026-12-31'};
+assert.equal(state(m,'2026-09-30'),'upcoming');assert.equal(state(m,'2026-10-19'),'active');assert.equal(state(m,'2027-01-01'),'expired');assert.equal(state({...m,status:'paused'},'2026-10-19'),'paused');
+const b={booking_date:'2026-10-20',duration_minutes:120};
+assert.equal(usage([{...b,status:'completed'},{...b,status:'pending',hold_expires_at:'2026-10-19T17:00:00Z'},{...b,status:'cancelled'},{...b,status:'pending',hold_expires_at:'2026-10-18T17:00:00Z'},{...b,status:'confirmed',booking_date:'2026-11-01'}],'2026-10','2026-10-19T16:00:00Z'),240);
+const engineer={user:{id:'engineer-a'},profile:{role:'engineer'}},owner={user:{id:'owner'},profile:{role:'owner'}};
+assert.equal(permittedEngineer(engineer,'engineer-a'),'engineer-a');assert.equal(permittedEngineer(owner,'engineer-b'),'engineer-b');assert.throws(()=>permittedEngineer(engineer,'engineer-b'),/only view/);assert.throws(()=>permittedEngineer(null,'engineer-a'),/access required/);
+// A forged profile target must be rejected before the service-role database is opened.
+const context=vm.createContext({console,Date,Intl,Map}),source=readFileSync(new URL('../lib/engineerSupportedData.js',import.meta.url),'utf8'),module=new vm.SourceTextModule(source,{context});
+await module.link(async name=>{const exports=name==='./supabase'?{getAdminDb:()=>{throw Error('DATABASE SHOULD NOT OPEN')}}:reporting;return new vm.SyntheticModule(Object.keys(exports),function(){for(const [k,v]of Object.entries(exports))this.setExport(k,v)},{context});});await module.evaluate();
+await assert.rejects(module.namespace.loadEngineerSupportedData(engineer,'engineer-b'),/only view/);
+console.log('Programme net-spend, refunds, partial payments, usage, lifecycle and engineer data-isolation checks passed.');

@@ -1,5 +1,5 @@
 import {getCustomerContext} from '../../../lib/customerAuth';
-import {programmeSlotAllowed,PROGRAMME_RATE} from '../../../lib/supportedArtists';
+import {programmeSlotAllowed,programmeRate} from '../../../lib/supportedArtists';
 import {publicFormGuard} from "../../../lib/publicFormGuard";
 import { NextResponse } from "next/server";
 import { SERVICES, priceFor } from "../../../lib/services";
@@ -26,7 +26,7 @@ export async function POST(request) {
       if(!ctx)return NextResponse.json({error:'Sign in to book at your supported rate.'},{status:401});
       const {data:m,error}=await getAdminDb().from('supported_artists').select('*').eq('customer_id',ctx.customer.id).maybeSingle();
       if(error)throw error;
-      if(body.service!=='vocal-recording'||!programmeSlotAllowed(m,body.date,body.start,body.end,Number(body.duration)))return NextResponse.json({error:'Choose a session within your active programme dates, eligible times and two-hour minimum.'},{status:403});
+      if(body.service!=='vocal-recording'||!programmeSlotAllowed(m,body.date,body.start,body.end,Number(body.duration)))return NextResponse.json({error:'Choose a session within your active programme dates, eligible times and agreed minimum duration.'},{status:403});
       programme=m;
       body.email=ctx.customer.email;body.fullName=ctx.customer.full_name;body.artistName=ctx.customer.artist_name||m.artist_name;
       body.preferredEngineerUserId=m.engineer_user_id;
@@ -88,10 +88,10 @@ export async function POST(request) {
       if(Number(count||0)>=Number(promotion.usage_limit_per_customer)) promotion=null;
     }
     const rewardApplied=!programme&&!promotion&&rewardAvailableBefore&&service.slug!=='system-test';
-    const amountPence = programme?Math.round(duration/60*PROGRAMME_RATE):promotion?Number(promotion.offer_price_pence):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
+    let amountPence = programme?Math.round(duration/60*programmeRate(programme)):promotion?Number(promotion.offer_price_pence):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
     const holdExpires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
-    const { data: reservedId, error: bookingError } = await db.rpc(programme?"reserve_supported_booking":"reserve_booking", programme?{
-      p_membership_id:programme.id,p_customer_id:customer.id,p_booking_date:body.date,p_start_time:body.start,p_end_time:body.end,p_duration_minutes:duration,p_genre:body.genre?.trim()||null,p_notes:developmentContext||null,p_harmful_music_policy_accepted:true
+    const { data: reservedId, error: bookingError } = await db.rpc(programme?"reserve_supported_booking_v2":"reserve_booking", programme?{
+      p_expected_rate_pence:programmeRate(programme),p_membership_id:programme.id,p_customer_id:customer.id,p_booking_date:body.date,p_start_time:body.start,p_end_time:body.end,p_duration_minutes:duration,p_genre:body.genre?.trim()||null,p_notes:developmentContext||null,p_harmful_music_policy_accepted:true
     }:{
       p_customer_id: customer.id,
       p_service_slug: service.slug,
@@ -112,6 +112,11 @@ export async function POST(request) {
       throw bookingError;
     }
     bookingId = reservedId;
+    if(programme){
+      const {data:reserved,error:priceError}=await db.from('bookings').select('amount_pence').eq('id',reservedId).single();
+      if(priceError||!reserved||!Number.isInteger(reserved.amount_pence)||reserved.amount_pence<100)throw new Error('Could not verify programme price. Please retry.');
+      amountPence=reserved.amount_pence;
+    }
     const policyVersion = "2026-08-14";
     const forwarded = request.headers.get("x-forwarded-for") || "";
     await db.from("bookings").update({
