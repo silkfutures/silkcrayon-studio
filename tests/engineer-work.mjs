@@ -52,6 +52,21 @@ assert.equal(substitutionNeedsApproval({supported_artist_id:'sa'},'benny'),true)
  assert.equal(line.status,'needs_approval');
  assert.equal(planPayouts({bookedMinutes:120,actualHours:2.1,hourlyPence:2000}).length,1,'tiny overruns are ignored');
 }
+// ---------- custom offer pricing + dry hire open & close ----------
+{
+ const {offerTerms}=rules,eng={engineer_pay_hourly_pence:2000};
+ assert.deepEqual(offerTerms({engineer:eng,booking:{duration_minutes:480},customHourlyPence:1750}),{pay_hourly_pence:1750,fee_pence:14000,fee_is_flat:false},'full day at £17.50/h = £140');
+ assert.deepEqual(offerTerms({engineer:eng,booking:{duration_minutes:480},customFeePence:12000}),{pay_hourly_pence:null,fee_pence:12000,fee_is_flat:true});
+ assert.deepEqual(offerTerms({engineer:eng,booking:{service_slug:'dry-hire',duration_minutes:360}}),{pay_hourly_pence:null,fee_pence:2000,fee_is_flat:true},'dry hire defaults to £20 open & close');
+ assert.equal(offerTerms({engineer:eng,booking:{service_slug:'dry-hire'},settings:normaliseOfferSettings({engineer_dry_hire_access_fee_pence:'2500'})}).fee_pence,2500);
+ assert.deepEqual(offerTerms({engineer:eng,booking:{duration_minutes:180}}),{pay_hourly_pence:2000,fee_pence:6000,fee_is_flat:false});
+ const flat=planPayouts({bookedMinutes:360,actualHours:7,hourlyPence:null,agreedFeePence:2000,flatFee:true});
+ assert.equal(flat.length,1,'flat fees never add extra-time lines');assert.equal(flat[0].amount_pence,2000);assert.equal(flat[0].status,'pending');
+ assert.equal(planPayouts({bookedMinutes:360,actualHours:2,agreedFeePence:2000,flatFee:true})[0].status,'pending','hours do not change a fixed fee');
+ assert.equal(planPayouts({bookedMinutes:360,actualHours:6,agreedFeePence:2000,flatFee:true,issuesFlagged:true})[0].status,'needs_approval');
+ const custom=planPayouts({bookedMinutes:480,actualHours:9,hourlyPence:1750,agreedFeePence:14000});
+ assert.equal(custom[0].amount_pence,14000);assert.equal(custom[1].amount_pence,1750,'extra time uses the offered rate');
+}
 assert.equal(retryDelayMinutes(1),15);assert.equal(retryDelayMinutes(3),240);assert.equal(retryDelayMinutes(rules.PAYOUT_MAX_ATTEMPTS),null);
 assert.match(friendlyStripeError({code:'balance_insufficient',message:'x'}),/balance is too low/);
 
@@ -148,6 +163,10 @@ const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetup
  const first=await m.createPayoutsForReport(db,{bookingBefore:booking,engineerUserId:'eng3',report:{id:'r9'},actualHours:3});
  const again=await m.createPayoutsForReport(db,{bookingBefore:booking,engineerUserId:'eng3',report:{id:'r9'},actualHours:3});
  assert.equal(first.created,1);assert.equal(first.total,6000);assert.equal(again.created,0,'re-submitting a report never doubles the payout');
+ const dry={id:'dh1',service_slug:'dry-hire',booking_date:'2026-10-19',start_time:'10:00:00',end_time:'16:00:00',duration_minutes:360,engineer_user_id:'eng3',engineer_fee_pence:2000,engineer_fee_flat:true};
+ const dryPay=await m.createPayoutsForReport(db,{bookingBefore:dry,engineerUserId:'eng3',report:{id:'rd'},actualHours:6});
+ assert.equal(dryPay.total,2000,'dry hire opener gets the flat £20');
+ assert.equal((await m.createPayoutsForReport(db,{bookingBefore:{...dry,id:'dh2',engineer_user_id:null,engineer_fee_pence:null},engineerUserId:'eng3',report:{id:'rd2'},actualHours:6})).skipped,'dry_hire','no open & close job accepted → nothing paid');
  db.tables.staff_profiles.push({user_id:'own',role:'owner',active:true});
  assert.equal((await m.createPayoutsForReport(db,{bookingBefore:{...booking,id:'b10'},engineerUserId:'own',report:{id:'r10'},actualHours:3})).skipped,'owner');
 }
@@ -168,6 +187,8 @@ const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetup
  const clash=await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['billy','benny']});
  assert.equal(clash.ok,false);assert.match(clash.error,/Benny already has a session/);
  db.tables.bookings.pop();
+ const bad=await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['billy'],feePence:1000,hourlyPence:1750});
+ assert.equal(bad.ok,false);
  const r=await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['billy','benny','nathan']});
  assert.equal(r.ok,true);assert.equal(r.state,'awaiting');
  const offers=db.tables.engineer_session_offers;
@@ -206,5 +227,31 @@ const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetup
  db.tables.bookings[0].status='cancelled';
  await m.advanceOfferQueue(db,'bk');
  assert.equal(offers.filter(o=>['sent','queued'].includes(o.status)).length,0);
+}
+{
+ const db=fakeDb({bookings:[{id:'dry',status:'confirmed',service_slug:'dry-hire',booking_date:'2099-06-02',start_time:'10:00:00',end_time:'18:00:00',duration_minutes:480,customers:{artist_name:'Hirer'}},{id:'day',status:'confirmed',service_slug:'vocal-recording',booking_date:'2099-06-03',start_time:'10:00:00',end_time:'18:00:00',duration_minutes:480,customers:{artist_name:'Artist'}}],staff_profiles:[{user_id:'billy',engineer_name:'Billy',role:'engineer',active:true,email:'b@x',engineer_pay_hourly_pence:2000}],engineer_session_offers:[],studio_settings:[]});
+ const m=await load('../lib/engineerOffers.js',{'./customerAuth':{newToken:()=>`tok-${Math.random()}`.padEnd(30,'x'),tokenHash:t=>`h:${t}`},'./notifications':notifications,'./sms':{sendSms:async()=>({ok:true})},'./bookingEvents':{recordBookingEvent:async()=>{}},'./engineerWorkEmails':emailTemplates,'./engineerWorkRules.js':rules});
+ assert.equal((await m.createOfferRound(db,{bookingId:'dry',engineerUserIds:['billy']})).ok,true,'dry hires can be offered');
+ assert.deepEqual([db.tables.engineer_session_offers[0].fee_pence,db.tables.engineer_session_offers[0].fee_is_flat],[2000,true]);
+ await m.createOfferRound(db,{bookingId:'day',engineerUserIds:['billy'],hourlyPence:1750});
+ const o=db.tables.engineer_session_offers.find(x=>x.booking_id==='day');
+ assert.deepEqual([o.pay_hourly_pence,o.fee_pence,o.fee_is_flat],[1750,14000,false]);
+}
+// ---------- everyone at once: first to accept wins ----------
+{
+ emails.length=0;
+ const db=fakeDb({bookings:[{id:'bc',status:'confirmed',service_slug:'vocal-recording',booking_date:'2099-07-01',start_time:'12:00:00',end_time:'15:00:00',duration_minutes:180,preferred_engineer_user_id:'billy',customers:{artist_name:'A'}}],staff_profiles:['billy','benny','eng3'].map(u=>({user_id:u,engineer_name:u,role:'engineer',active:true,email:`${u}@x`,engineer_pay_hourly_pence:2000})),engineer_session_offers:[],studio_settings:[]});
+ const m=await load('../lib/engineerOffers.js',{'./customerAuth':{newToken:()=>`tok-${Math.random()}`.padEnd(30,'x'),tokenHash:t=>`h:${t}`},'./notifications':notifications,'./sms':{sendSms:async()=>({ok:true})},'./bookingEvents':{recordBookingEvent:async()=>{}},'./engineerWorkEmails':emailTemplates,'./engineerWorkRules.js':rules});
+ const r=await m.createOfferRound(db,{bookingId:'bc',engineerUserIds:['billy','benny','eng3'],mode:'broadcast'});
+ const offers=db.tables.engineer_session_offers;
+ assert.equal(r.broadcast,true);assert.deepEqual(offers.map(o=>o.status),['sent','sent','sent'],'everyone gets it at once');
+ assert.equal(offers.every(o=>!o.requires_owner_approval),true);assert.equal(new Set(offers.map(o=>o.expires_at)).size,1,'same deadline');
+ assert.equal(emails.filter(e=>e.source==='engineer_session_offer').length,3);
+ await m.respondToOffer(db,{offer:{...offers[0]},decision:'decline'});
+ assert.equal(db.tables.bookings[0].engineer_offer_status,'awaiting','others still open after one decline');
+ db.rpcs.accept_engineer_offer=({p_offer_id})=>{const o=offers.find(x=>x.id===p_offer_id);if(o.status!=='sent')return {data:{ok:false,reason:'closed',status:o.status},error:null};o.status='accepted';for(const x of offers)if(x!==o&&['sent','queued'].includes(x.status))x.status='cancelled';Object.assign(db.tables.bookings[0],{engineer_user_id:o.engineer_user_id,engineer_offer_status:'accepted'});return {data:{ok:true},error:null};};
+ const [first,second]=await Promise.all([m.respondToOffer(db,{offer:{...offers[1]},decision:'accept'}),m.respondToOffer(db,{offer:{...offers[2]},decision:'accept'})]);
+ assert.equal(first.ok,true);assert.equal(second.ok,false);assert.match(second.error,/accepted it first/);
+ assert.equal(db.tables.bookings[0].engineer_user_id,'benny');
 }
 console.log('Engineer offers & payouts tests passed');

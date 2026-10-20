@@ -11,7 +11,7 @@ export async function POST(req,{params}){
  try{
   const {ctx,res}=await owner(req);if(res)return res;
   const {id}=await params,b=await req.json().catch(()=>({}));
-  const r=await createOfferRound(getAdminDb(),{bookingId:id,engineerUserIds:Array.isArray(b.engineerUserIds)?b.engineerUserIds:[],windowHours:b.windowHours,ctx});
+  const r=await createOfferRound(getAdminDb(),{bookingId:id,engineerUserIds:Array.isArray(b.engineerUserIds)?b.engineerUserIds:[],windowHours:b.windowHours,feePence:b.fee===undefined||b.fee===null||String(b.fee).trim()===''?null:Math.round(Number(b.fee)*100),mode:b.mode==='broadcast'?'broadcast':'sequential',hourlyPence:b.hourly===undefined||b.hourly===null||String(b.hourly).trim()===''?null:Math.round(Number(b.hourly)*100),ctx});
   if(!r.ok)return NextResponse.json({error:r.error},{status:r.status||400});
   return NextResponse.json(r);
  }catch(e){console.error('Offer round failed',e);return NextResponse.json({error:'Could not send the offer. Check that the v20.12.42 migration has been applied.'},{status:500});}

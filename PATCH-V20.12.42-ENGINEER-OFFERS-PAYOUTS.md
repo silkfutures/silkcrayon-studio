@@ -1,6 +1,16 @@
 # v20.12.42 — Engineer session offers + automatic engineer payouts
 
 ## What it does
+**Adjust the deal before you send it (v20.12.43)**
+- **What you're offering:**
+  - **Their usual rate:** from their staff profile.
+  - **Custom hourly rate:** e.g. £17.50/h for a full day = £140. Approved extra time is paid at £17.50 too.
+  - **Fixed fee for the job:** paid exactly that amount, however long the session runs.
+- **Who should get it:**
+  - **One at a time:** backups in order.
+  - **Everyone at once:** all ticked engineers get it with the same deadline. The first to accept takes it and everyone else's offer closes ("another engineer accepted it first"). If two press Accept at the same moment, the database lets only one win.
+- **Dry hire, open & close:** dry hires can be offered too, as a flat **£20** fee by default (change it in Settings, or on each offer). The email and page say "open & close only, no engineering". The opener confirms with Finish & save session and gets the flat fee automatically. Hours never change a fixed fee.
+
 **Session offers**
 - On a booking (Session view → **Engineer**), tick the engineer you want, then any backups, in order. Each line shows that engineer's fee for this session.
 - The first choice gets an email (and a text if Twilio is set up and they have a phone number) showing the session, the artist, **their fee** and **Accept / Decline** buttons. They can also answer from **Today** in Studio OS.
@@ -32,7 +42,7 @@
 - You (owner role) are never paid by the system.
 
 ## Setup — do these in order
-1. **Supabase → SQL editor:** run `supabase/v20-12-42-engineer-offers-payouts.sql` **before** deploying.
+1. **Supabase → SQL editor:** run `supabase/v20-12-42-engineer-offers-payouts.sql`, **then** `supabase/v20-12-43-offer-fees-dry-hire-access.sql`, **before** deploying.
 2. **Stripe → Connect:** turn on Connect for your Stripe account (Dashboard → Connect → Get started). Use **Express** accounts, platform country **United Kingdom**.
 3. **Stripe → Developers → Webhooks (recommended):** add an endpoint for **Events on connected accounts**:
    - URL: `https://silkcrayon.com/api/stripe/webhook`
