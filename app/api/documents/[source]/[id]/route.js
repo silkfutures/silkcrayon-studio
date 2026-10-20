@@ -1,3 +1,4 @@
+import {documentEmail} from '../../../../../lib/documentEmail';
 import {NextResponse} from 'next/server';
 import {getStaffContext} from '../../../../../lib/auth';
 import {getCustomerContext} from '../../../../../lib/customerAuth';
@@ -35,6 +36,6 @@ export async function POST(req,{params}){try{
  if(x.source==='project')return NextResponse.json({error:'Use Send quote in the quote editor to email the reviewed version.'},{status:400});
  if(!x.customer?.email)return NextResponse.json({error:'No customer email recorded.'},{status:400});
  const doc=await ensureDocument(x.db,x.source,x.record,x.customer),bytes=await renderDocumentPdf(doc);
- const result=await sendEmail({to:x.customer.email,subject:`Your Silkcrayon document ${doc.number}`,html:`<p>Your studio document is attached as a PDF.</p><p>Reference: ${doc.number}</p><p>You can also download it from My Studio.</p>`,attachments:[{filename:`${doc.number}.pdf`,content:bytes.toString('base64'),content_type:'application/pdf'}],source:`PDF ${doc.snapshot.kind} · ${doc.number}`,actor:{id:x.staff.user.id,name:x.staff.profile.full_name,role:x.staff.profile.role}});
+ const result=await sendEmail({to:x.customer.email,...documentEmail(doc),attachments:[{filename:`${doc.number}.pdf`,content:bytes.toString('base64'),content_type:'application/pdf'}],source:`PDF ${doc.snapshot.kind} · ${doc.number}`,actor:{id:x.staff.user.id,name:x.staff.profile.full_name,role:x.staff.profile.role}});
  return NextResponse.json(result.ok?{ok:true,message:'PDF emailed to the customer.'}:{error:'Email failed. Check Automations and retry.'},{status:result.ok?200:502});
  }catch(e){console.error('PDF email failed',e);return NextResponse.json({error:'Could not email PDF. Check the PDF migration and email settings.'},{status:500});}}
