@@ -5,7 +5,7 @@ import {getAdminDb} from '../../../lib/supabase';
 import {formatGBP} from '../../../lib/services';
 import {formatUkDate} from '../../../lib/dates';
 import {payoutLabel} from '../../../lib/engineerWorkRules';
-import {balanceCheck} from '../../../lib/engineerPayouts';
+import StripeBalanceBox from '../../../components/StripeBalanceBox';
 import EngineerPayoutActions from '../../../components/EngineerPayoutActions';
 import s from '../../../components/EngineerWork.module.css';
 export const dynamic='force-dynamic';
@@ -18,7 +18,6 @@ export default async function EngineerPay({searchParams}){
   db.from('engineer_payouts').select('*,bookings(id,booking_date,start_time,end_time,duration_minutes,service_name,payment_method,payment_status,customers(artist_name,full_name)),session_reports(actual_hours,issues_flagged,issues_note)').order('created_at',{ascending:false}).limit(showAll?500:150),
   db.from('staff_profiles').select('user_id,full_name,engineer_name,role,active,engineer_pay_hourly_pence,engineer_supported_pay_hourly_pence,stripe_connect_account_id,stripe_transfers_active').eq('role','engineer').order('full_name')
  ]);
- const bal=await balanceCheck(db);
  const rows=(payouts||[]).filter(p=>showAll||p.status!=='cancelled').sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||String(b.created_at).localeCompare(String(a.created_at)));
  const attention=rows.filter(p=>['needs_approval','failed','on_hold'].includes(p.status));
  const month=new Date().toISOString().slice(0,7);
@@ -26,7 +25,7 @@ export default async function EngineerPay({searchParams}){
  const scheduled=rows.filter(p=>['pending','processing'].includes(p.status)).reduce((n,p)=>n+p.amount_pence,0);
  return <main className="adminPage"><header className="adminHeader"><div><p className="eyebrow">Silkcrayon OS</p><h1>Engineer pay</h1><p className="muted">Routine sessions pay themselves. Only exceptions land here for you.</p></div><AdminNav profile={ctx.profile}/></header>
   <section className="adminSection"><div className={s.stats}><div><small>Needs you</small><b>{attention.length}</b></div><div><small>Scheduled</small><b data-sensitive="financial">{formatGBP(scheduled)}</b></div><div><small>Paid this month</small><b data-sensitive="financial">{formatGBP(paidMonth)}</b></div><div><small>Engineers set up</small><b>{(staff||[]).filter(x=>x.active&&x.stripe_transfers_active).length}/{(staff||[]).filter(x=>x.active).length}</b></div></div>
-   <div className={s.feeBox} style={{marginBottom:12}}><div><small>Stripe balance · available now</small><b data-sensitive="financial">{bal.available==null?'Unavailable':formatGBP(bal.available)}</b>{bal.pending?<small data-sensitive="financial">+ {formatGBP(bal.pending)} on its way from card payments</small>:null}</div><div style={{textAlign:'right'}}><small>Approved to send from balance</small><b data-sensitive="financial">{formatGBP(bal.needed)}</b>{bal.short?<small style={{color:'#ff8f8f'}} data-sensitive="financial">{formatGBP(bal.short)} short — top up or mark as paid outside Stripe</small>:null}</div></div>
+   <StripeBalanceBox/>
    <p className="muted">Card bookings pay the engineer automatically out of that booking’s own card payment. Cash, bank-transfer and prepaid-hours sessions <b>never</b> pay automatically: they wait here for you to choose <b>Pay via Stripe</b> (from your Stripe balance) or <b>Mark as paid outside Stripe</b> (you paid them yourself — Stripe will never send it).</p></section>
   <section className="adminSection"><div className="adminSectionHead"><div><p className="eyebrow">Payouts</p><h2>{attention.length?'Needs your attention first':'All payouts'}</h2></div><Link className="button outline" href={showAll?'/admin/engineer-pay':'/admin/engineer-pay?view=all'}>{showAll?'Hide cancelled':'Show everything'}</Link></div>
    <div className={s.tableWrap}><table className={s.table}><thead><tr><th>Engineer</th><th>Session</th><th>Amount</th><th>Status</th><th></th></tr></thead><tbody>
