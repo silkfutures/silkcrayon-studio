@@ -8,6 +8,7 @@ import { getStudioSettings } from "../../../../lib/studioSettings";
 import { ensureDryHireIdRequest } from "../../../../lib/dryHireId";
 import { ensureCallPrep } from "../../../../lib/callPrep";
 import { syncConnectAccount, processDuePayouts } from "../../../../lib/engineerPayouts";
+import { onStudioPaymentPaid } from "../../../../lib/projectInvoices";
 
 function canonicalBase(){
  const configured=String(process.env.NEXT_PUBLIC_SITE_URL||'').trim().replace(/\/$/,'');
@@ -70,6 +71,7 @@ export async function POST(request) {
             updated_at:new Date().toISOString(),...inv
           }).eq('id',studioPaymentId);
           if(updateError) throw updateError;
+          if(isPaid){try{await onStudioPaymentPaid(db,{paymentId:payment.id,session});}catch(invoiceError){console.error('Project invoice update failed',invoiceError?.message||invoiceError);}}
           if(isPaid&&payment.booking_id){
             const {error:bookingPayError}=await db.from('bookings').update({
               status:'confirmed',payment_status:'paid',payment_method:'stripe',amount_paid_pence:payment.amount_pence,
