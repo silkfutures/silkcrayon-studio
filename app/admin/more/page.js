@@ -22,12 +22,14 @@ export default async function More(){
   ['/admin/supported-artists','Supported artists','Applications, approvals & agreed studio rates','♫'],
   ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
   ['/admin/sessions','Session reports','Complete and review session reports','✓'],
+  ['/admin/engineer-pay','Engineer pay','Automatic payouts, exceptions & rates','£'],
   ['/admin/settings','Settings','Studio pricing and preferences','⚙'],
   ['/admin/staff','Staff','People, roles & access','◌']
  ]:[
   ['/admin/engineer/supported-artists','Supported artists','Your programmes, sessions & spend','♫'],
   ['/admin/calendar','Calendar','Your visual schedule','▦'],
-  ['/admin/sessions','Session reports','Complete & review your reports','✓']
+  ['/admin/sessions','Session reports','Complete & review your reports','✓'],
+  ['/admin/engineer/payouts','My earnings','Payout setup & payment history','£']
  ];
  return <main className={owner?'engineerApp':'engApp'}>
   {owner?<header className="mobileTop"><div><p className="eyebrow">Studio OS</p><h1>Menu.</h1><p className="muted">Everything beyond today’s workflow.</p></div><AdminNav profile={ctx.profile}/></header>:<EngineerHeader profile={ctx.profile} eyebrow="Menu"/>}

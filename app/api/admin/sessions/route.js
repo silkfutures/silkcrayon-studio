@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, after } from 'next/server';
 import { getAdminDb } from '../../../../lib/supabase';
 import { getStaffContext } from '../../../../lib/auth';
 import { sessionFollowupEmail, sendLoggedNotification } from '../../../../lib/notifications';
 import { recordBookingEvent } from '../../../../lib/bookingEvents';
 import { getStudioSettings } from '../../../../lib/studioSettings';
 import { recalcProjectRecordingHours } from '../../../../lib/projectSessions';
+import { createPayoutsForReport, processDuePayouts } from '../../../../lib/engineerPayouts';
 
 export async function POST(req){
  try{
@@ -33,9 +34,11 @@ export async function POST(req){
 
   if(!engineer||!b.artistName||!b.sessionDate||!b.actualHours)return NextResponse.json({error:'Engineer, artist, date and hours are required.'},{status:400});
 
-  let customerId=null,projectId=null;
+  let customerId=null,projectId=null,bookingBefore=null;
+  const issuesFlagged=b.issuesFlagged==='yes',issuesNote=issuesFlagged?String(b.issuesNote||'').trim().slice(0,1000):null;
+  if(issuesFlagged&&!issuesNote)return NextResponse.json({error:'Describe the issue so the owner can review the payment.'},{status:400});
   if(b.bookingId){
-   const {data:booking,error:be}=await db.from('bookings').select('customer_id,engineer_user_id,project_id').eq('id',b.bookingId).single();
+   const {data:booking,error:be}=await db.from('bookings').select('*').eq('id',b.bookingId).single();bookingBefore=booking;
    if(be)throw be;
    if(ctx.profile.role==='engineer'&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This booking is not assigned to you.'},{status:403});
    customerId=booking.customer_id||null;projectId=booking.project_id||null;
@@ -68,9 +71,9 @@ export async function POST(req){
    manualSessionPayment={amount,method};
   }
 
-  const {data:report,error}=await db.from('session_reports').insert({booking_id:b.bookingId||null,customer_id:customerId,engineer,artist_name:b.artistName,session_date:b.sessionDate,start_time:b.startTime||null,actual_hours:Number(b.actualHours),payment_method:manualSessionPayment?.method||b.paymentMethod||null,engineer_fee_pence:0,studio_fee_pence:manualSessionPayment?.amount||Math.round(Number(b.studioFee||0)*100),work_completed:b.workCompleted||null,files_status:b.filesStatus||null,follow_up:b.projectStatus||null,project_status:b.projectStatus||null,notes:b.notes||null,submitted_by_user_id:ctx.user.id,submitted_by_name:ctx.profile.full_name}).select('id').single();
+  const {data:report,error}=await db.from('session_reports').insert({booking_id:b.bookingId||null,customer_id:customerId,engineer,artist_name:b.artistName,session_date:b.sessionDate,start_time:b.startTime||null,actual_hours:Number(b.actualHours),payment_method:manualSessionPayment?.method||b.paymentMethod||null,engineer_fee_pence:0,studio_fee_pence:manualSessionPayment?.amount||Math.round(Number(b.studioFee||0)*100),work_completed:b.workCompleted||null,files_status:b.filesStatus||null,follow_up:b.projectStatus||null,project_status:b.projectStatus||null,notes:b.notes||null,issues_flagged:issuesFlagged,issues_note:issuesNote,submitted_by_user_id:ctx.user.id,submitted_by_name:ctx.profile.full_name}).select('id').single();
   if(error)throw error;
-  let extraPaymentRecorded=false,manualSessionPaymentRecorded=false;
+  let extraPaymentRecorded=false,manualSessionPaymentRecorded=false,payout=null;
   if(manualSessionPayment){
    const now=new Date().toISOString();
    const {error:manualPayError}=await db.from('studio_payments').insert({customer_id:customerId,booking_id:null,session_report_id:report.id,created_by_user_id:ctx.user.id,created_by_name:ctx.profile.full_name,kind:'session',description:`Studio session · ${Number(b.actualHours)}h`,amount_pence:manualSessionPayment.amount,list_amount_pence:manualSessionPayment.amount,hours_credit:0,session_hours:Number(b.actualHours),status:'paid',paid_at:now,payment_method:manualSessionPayment.method,payment_category:'session',discount_code:'none',discount_percent:0,discount_amount_pence:0});
@@ -89,12 +92,16 @@ export async function POST(req){
    await db.from('bookings').update(bookingPatch).eq('id',b.bookingId);
    const {data:done}=await db.from('bookings').select('*,customers(*)').eq('id',b.bookingId).maybeSingle();
    if(done){await recordBookingEvent({db,booking:done,eventType:'completed',note:b.workCompleted||null,ctx});}
+   if(bookingBefore&&!['completed','cancelled','no_show'].includes(bookingBefore.status)){
+    payout=await createPayoutsForReport(db,{bookingBefore,engineerUserId,report,actualHours:Number(b.actualHours),issuesFlagged,issuesNote});
+    if(payout.created)after(()=>processDuePayouts(getAdminDb(),{limit:5}).catch(e=>console.error('Payout runner failed',e?.message||e)));
+   }
    if(projectId){await recalcProjectRecordingHours(db,projectId);const {data:project}=await db.from('studio_projects').select('status').eq('id',projectId).maybeSingle();if(project&&['accepted','deposit_due','scheduled'].includes(project.status))await db.from('studio_projects').update({status:'recording',updated_at:new Date().toISOString()}).eq('id',projectId);}
    if(done?.customers?.email){
     const pricing=await getStudioSettings();const msg=sessionFollowupEmail(done,done.customers,pricing);
     await sendLoggedNotification({booking:done,customer:done.customers,type:'session_followup',...msg});
    }
   }
-  return NextResponse.json({ok:true,extraPaymentRecorded,manualSessionPaymentRecorded});
+  return NextResponse.json({ok:true,extraPaymentRecorded,manualSessionPaymentRecorded,payout});
  }catch(e){return NextResponse.json({error:e.message},{status:500})}
 }

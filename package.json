@@ -1,6 +1,6 @@
 {
   "name": "silkcrayon-studio-os",
-  "version": "20.12.17",
+  "version": "20.12.42",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,10 +9,11 @@
     "check:imports": "node scripts/check-imports.mjs",
     "prebuild": "npm run check:imports && npm test",
     "test:contracts": "node tests/contracts.mjs",
-    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs && node tests/google-ads.mjs && node tests/public-forms.mjs && npm run test:engineer && npm run test:supported-artists && npm run test:documents",
+    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs && node tests/google-ads.mjs && node tests/public-forms.mjs && npm run test:engineer && npm run test:supported-artists && npm run test:documents && npm run test:engineer-work",
     "test:engineer": "node --experimental-vm-modules tests/engineer-analytics.mjs",
     "test:supported-artists": "node --experimental-vm-modules tests/supported-artists.mjs && node --experimental-vm-modules tests/supported-reporting.mjs",
-    "test:documents": "node tests/documents.mjs && node --experimental-vm-modules tests/document-access.mjs"
+    "test:documents": "node tests/documents.mjs && node --experimental-vm-modules tests/document-access.mjs",
+    "test:engineer-work": "node --experimental-vm-modules tests/engineer-work.mjs"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",

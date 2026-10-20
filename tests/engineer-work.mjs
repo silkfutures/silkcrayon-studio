@@ -1,0 +1,210 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+import * as rules from '../lib/engineerWorkRules.js';
+const {offerDeadline,normaliseOfferSettings,engineerRateFor,feeFor,planPayouts,retryDelayMinutes,sessionEndUtc,sessionStartUtc,substitutionNeedsApproval,friendlyStripeError,OFFER_DEFAULTS}=rules;
+const H=3600000;
+
+// ---------- offer deadlines ----------
+{
+ const now=new Date('2026-10-20T09:00:00Z'),s=OFFER_DEFAULTS;
+ const far=offerDeadline({now,sessionStart:new Date(now.getTime()+5*24*H),settings:s});
+ assert.equal(far.ok,true);assert.equal(far.urgent,false);assert.equal(far.expiresAt.getTime(),now.getTime()+12*H);
+ const soon=offerDeadline({now,sessionStart:new Date(now.getTime()+20*H),settings:s});
+ assert.equal(soon.urgent,true);assert.equal(soon.expiresAt.getTime(),now.getTime()+2*H);
+ const capped=offerDeadline({now,sessionStart:new Date(now.getTime()+3*H),settings:s});
+ assert.equal(capped.ok,true);assert.equal(capped.expiresAt.getTime(),now.getTime()+1*H,'never later than cutoff before the session');assert.equal(capped.cappedByCutoff,true);
+ assert.equal(offerDeadline({now,sessionStart:new Date(now.getTime()+2*H),settings:s}).reason,'too_late');
+ assert.equal(offerDeadline({now,sessionStart:new Date(now.getTime()-H),settings:s}).reason,'session_started');
+ const override=offerDeadline({now,sessionStart:new Date(now.getTime()+5*24*H),settings:s,overrideHours:24});
+ assert.equal(override.expiresAt.getTime(),now.getTime()+24*H);
+ const cfg=normaliseOfferSettings({engineer_offer_window_hours:'6',engineer_auto_payouts:'false',engineer_offer_cutoff_hours:'nonsense'});
+ assert.equal(cfg.windowHours,6);assert.equal(cfg.autoPayouts,false);assert.equal(cfg.cutoffHours,OFFER_DEFAULTS.cutoffHours);
+}
+// ---------- session times (London, overnight) ----------
+assert.equal(sessionStartUtc({booking_date:'2026-08-15',start_time:'18:00:00'}).toISOString(),'2026-08-15T17:00:00.000Z');
+assert.equal(sessionEndUtc({booking_date:'2026-12-15',start_time:'22:00:00',end_time:'02:00:00'}).toISOString(),'2026-12-16T02:00:00.000Z');
+// ---------- pay is separate from customer pricing ----------
+const billy={engineer_pay_hourly_pence:2000,engineer_supported_pay_hourly_pence:1500};
+assert.equal(engineerRateFor(billy,{}),2000);
+assert.equal(engineerRateFor(billy,{supported_artist_id:'sa-1'}),1500);
+assert.equal(engineerRateFor({engineer_pay_hourly_pence:2000,engineer_supported_pay_hourly_pence:null},{supported_artist_id:'sa-1'}),2000);
+assert.equal(engineerRateFor({engineer_pay_hourly_pence:null},{}),null);
+assert.equal(feeFor(2000,180),6000,'Billy: £20/h × 3h = £60');
+// ---------- substitution rules ----------
+assert.equal(substitutionNeedsApproval({},'x'),false);
+assert.equal(substitutionNeedsApproval({preferred_engineer_user_id:'billy'},'benny'),true);
+assert.equal(substitutionNeedsApproval({preferred_engineer_user_id:'billy'},'billy'),false);
+assert.equal(substitutionNeedsApproval({supported_artist_id:'sa'},'benny'),true);
+// ---------- payout planning ----------
+{
+ let [line,...rest]=planPayouts({bookedMinutes:180,actualHours:3,hourlyPence:2000,agreedFeePence:6000});
+ assert.equal(line.status,'pending');assert.equal(line.amount_pence,6000);assert.equal(rest.length,0);
+ [line,...rest]=planPayouts({bookedMinutes:180,actualHours:4,hourlyPence:2000,agreedFeePence:6000});
+ assert.equal(line.status,'pending','booked fee still pays automatically');assert.equal(rest[0].kind,'extra_time');assert.equal(rest[0].status,'needs_approval');assert.equal(rest[0].amount_pence,2000);
+ [line]=planPayouts({bookedMinutes:180,actualHours:2,hourlyPence:2000,agreedFeePence:6000});
+ assert.equal(line.status,'needs_approval','short sessions are an exception');
+ [line]=planPayouts({bookedMinutes:180,actualHours:3,hourlyPence:2000,issuesFlagged:true});
+ assert.equal(line.status,'needs_approval');
+ [line]=planPayouts({bookedMinutes:120,actualHours:2,hourlyPence:null});
+ assert.equal(line.status,'needs_approval');assert.equal(line.amount_pence,0);
+ [line]=planPayouts({bookedMinutes:120,actualHours:2,hourlyPence:2000,autoPayouts:false});
+ assert.equal(line.status,'needs_approval');
+ assert.equal(planPayouts({bookedMinutes:120,actualHours:2.1,hourlyPence:2000}).length,1,'tiny overruns are ignored');
+}
+assert.equal(retryDelayMinutes(1),15);assert.equal(retryDelayMinutes(3),240);assert.equal(retryDelayMinutes(rules.PAYOUT_MAX_ATTEMPTS),null);
+assert.match(friendlyStripeError({code:'balance_insufficient',message:'x'}),/balance is too low/);
+
+// ---------- in-memory Supabase stand-in ----------
+function fakeDb(tables){
+ let seq=0;const id=()=>`id-${++seq}`;
+ const rpcs={};
+ function query(table){
+  const filters=[];let mode='select',patch=null,insertRows=null,orders=[],lim=null,returning=false;
+  const rows=()=>tables[table]||(tables[table]=[]);
+  const match=r=>filters.every(f=>f(r));
+  const api={
+   select(){if(mode!=='select')returning=true;return api;},
+   update(p){mode='update';patch=p;return api;},
+   insert(r){mode='insert';insertRows=Array.isArray(r)?r:[r];return api;},
+   eq(k,v){filters.push(r=>r[k]===v);return api;},neq(k,v){filters.push(r=>r[k]!==v);return api;},
+   in(k,v){filters.push(r=>v.includes(r[k]));return api;},is(k,v){filters.push(r=>(r[k]??null)===v);return api;},
+   lte(k,v){filters.push(r=>r[k]!=null&&r[k]<=v);return api;},lt(k,v){filters.push(r=>r[k]!=null&&r[k]<v);return api;},
+   gt(k,v){filters.push(r=>r[k]!=null&&r[k]>v);return api;},gte(k,v){filters.push(r=>r[k]!=null&&r[k]>=v);return api;},like(){return api;},
+   order(k){orders.push(k);return api;},limit(n){lim=n;return api;},
+   run(){
+    if(mode==='insert'){const out=insertRows.map(r=>({id:id(),attempts:0,created_at:new Date().toISOString(),...r}));
+     if(table==='engineer_payouts')for(const r of out)if(rows().some(x=>x.booking_id===r.booking_id&&x.kind===r.kind&&x.status!=='cancelled'))return {data:null,error:{code:'23505'}};
+     rows().push(...out);return {data:out,error:null};}
+    let hit=rows().filter(match);
+    if(mode==='update'){for(const r of hit)Object.assign(r,patch);return {data:returning?hit.map(r=>({...r})):null,error:null};}
+    for(const k of orders.reverse())hit=[...hit].sort((a,b)=>a[k]>b[k]?1:a[k]<b[k]?-1:0);
+    if(lim!=null)hit=hit.slice(0,lim);return {data:hit.map(r=>({...r})),error:null};
+   },
+   maybeSingle(){const r=api.run();return Promise.resolve({data:Array.isArray(r.data)?r.data[0]||null:r.data,error:r.error});},
+   single(){return api.maybeSingle();},
+   then(res,rej){return Promise.resolve(api.run()).then(res,rej);}
+  };
+  return api;
+ }
+ return {from:query,rpc:(n,a)=>Promise.resolve(rpcs[n](a)),rpcs,tables};
+}
+async function load(path,modules){
+ const source=readFileSync(new URL(path,import.meta.url),'utf8');
+ const context=vm.createContext({console,Date,process,URL,setTimeout});
+ const mod=new vm.SourceTextModule(source,{context});
+ await mod.link(async name=>{const exp=modules[name];assert.ok(exp,`Unexpected import ${name}`);return new vm.SyntheticModule(Object.keys(exp),function(){for(const [k,v] of Object.entries(exp))this.setExport(k,v);},{context});});
+ await mod.evaluate();return mod.namespace;
+}
+const emails=[];
+const notifications={sendEmail:async m=>{emails.push(m);return {ok:true};},ownerEmails:async()=>['owner@silkcrayon.com'],staffEmail:async()=>'eng@example.com',notifyAssignedEngineer:async()=>({ok:true})};
+const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetupNudgeEmail:()=>({subject:'setup',html:''}),payoutFailedOwnerEmail:()=>({subject:'failed',html:''}),offerEmail:()=>({subject:'offer',html:''}),ownerOfferAlertEmail:({kind})=>({subject:`alert:${kind}`,html:''}),siteUrl:()=>'https://silkcrayon.com',prettyDeadline:v=>String(v)};
+
+// ---------- payouts: idempotent, funded, held when not set up ----------
+{
+ const past=new Date(Date.now()-H).toISOString();
+ const db=fakeDb({
+  staff_profiles:[{user_id:'billy',engineer_name:'Billy',role:'engineer',active:true,email:'billy@example.com',stripe_connect_account_id:'acct_billy',stripe_transfers_active:true},{user_id:'benny',engineer_name:'Benny',role:'engineer',active:true,email:'benny@example.com'}],
+  bookings:[{id:'b1',booking_date:'2026-10-19',start_time:'10:00:00',end_time:'13:00:00',stripe_payment_intent_id:'pi_1'}],
+  engineer_payouts:[
+   {id:'p1',booking_id:'b1',engineer_user_id:'billy',kind:'session',amount_pence:6000,status:'pending',attempts:0,release_after:past,created_at:past},
+   {id:'p2',booking_id:'b2',engineer_user_id:'benny',kind:'session',amount_pence:4000,status:'pending',attempts:0,release_after:past,created_at:past},
+   {id:'p3',booking_id:'b3',engineer_user_id:'billy',kind:'session',amount_pence:5000,status:'pending',attempts:0,release_after:new Date(Date.now()+H).toISOString(),created_at:past}
+  ]});
+ const transfers=[];let failNext=null;
+ const stripe={
+  transfers:{list:async({transfer_group})=>({data:transfers.filter(t=>t.transfer_group===transfer_group)}),create:async(p,o)=>{if(failNext){const e=failNext;failNext=null;throw e;}const t={id:`tr_${transfers.length+1}`,...p,reversed:false,key:o.idempotencyKey};transfers.push(t);return t;}},
+  paymentIntents:{retrieve:async()=>({latest_charge:'ch_1',currency:'gbp',amount_received:15000})}
+ };
+ const m=await load('../lib/engineerPayouts.js',{'./stripe':{getStripe:()=>stripe},'./notifications':notifications,'./bookingEvents':{recordBookingEvent:async()=>{}},'./engineerWorkEmails':emailTemplates,'./engineerWorkRules.js':rules,'./engineerOffers':{getEngineerWorkSettings:async()=>normaliseOfferSettings({})}});
+ const [a,b]=await Promise.all([m.executePayout(db,'p1',{stripe}),m.executePayout(db,'p1',{stripe})]);
+ assert.equal([a,b].filter(x=>x.status==='paid').length,1,'concurrent runners pay once');
+ assert.equal(transfers.length,1);assert.equal(transfers[0].source_transaction,'ch_1','card bookings fund the transfer from their own charge');assert.equal(transfers[0].destination,'acct_billy');
+ assert.equal(db.tables.engineer_payouts[0].status,'paid');
+ assert.equal((await m.executePayout(db,'p1',{stripe})).skipped,true,'paid payouts are never resent');
+ // A previous attempt succeeded at Stripe but the result was lost → record it, don't pay again.
+ db.tables.engineer_payouts[0].status='failed';db.tables.engineer_payouts[0].next_attempt_at=past;
+ assert.equal((await m.executePayout(db,'p1',{stripe})).status,'paid');assert.equal(transfers.length,1,'transfer_group check prevents a duplicate');
+ // Not set up → on hold, one nudge.
+ assert.equal((await m.executePayout(db,'p2',{stripe})).status,'on_hold');
+ assert.equal(emails.filter(e=>e.source==='engineer_payout_setup').length,1);
+ assert.equal((await m.executePayout(db,'p3',{stripe})).skipped,'not_due','nothing is paid before the session ends');
+ // Setup completes → held payouts resume.
+ await m.syncConnectAccount(db,{id:'acct_benny_missing',capabilities:{transfers:'active'}});
+ db.tables.staff_profiles[1].stripe_connect_account_id='acct_benny';
+ await m.syncConnectAccount(db,{id:'acct_benny',capabilities:{transfers:'active'},payouts_enabled:true,details_submitted:true});
+ assert.equal(db.tables.engineer_payouts[1].status,'pending');
+ // Low Stripe balance → friendly failure, retry scheduled, owner told once.
+ failNext=Object.assign(new Error('Insufficient funds'),{code:'balance_insufficient'});
+ const res=await m.executePayout(db,'p2',{stripe});
+ assert.equal(res.status,'failed');assert.match(res.error,/balance is too low/);assert.ok(db.tables.engineer_payouts[1].next_attempt_at);
+ assert.equal(emails.filter(e=>e.source==='engineer_payout_failed').length,1);
+ const retry=await m.approvePayout(db,{id:'p2',amountPence:null,ctx:{user:{id:'owner'}}});
+ assert.equal(retry.ok,true);assert.equal(retry.result.status,'paid');assert.equal(transfers.length,2);
+ assert.notEqual(transfers[1].key,undefined);
+ // Creating payouts from a report: unique per booking+kind.
+ db.tables.staff_profiles.push({user_id:'eng3',engineer_name:'Eng3',role:'engineer',active:true,engineer_pay_hourly_pence:2000});
+ const booking={id:'b9',service_slug:'vocal-recording',booking_date:'2026-10-19',start_time:'10:00:00',end_time:'13:00:00',duration_minutes:180,engineer_user_id:'eng3',engineer_fee_pence:6000,engineer_pay_hourly_pence:2000};
+ const first=await m.createPayoutsForReport(db,{bookingBefore:booking,engineerUserId:'eng3',report:{id:'r9'},actualHours:3});
+ const again=await m.createPayoutsForReport(db,{bookingBefore:booking,engineerUserId:'eng3',report:{id:'r9'},actualHours:3});
+ assert.equal(first.created,1);assert.equal(first.total,6000);assert.equal(again.created,0,'re-submitting a report never doubles the payout');
+ db.tables.staff_profiles.push({user_id:'own',role:'owner',active:true});
+ assert.equal((await m.createPayoutsForReport(db,{bookingBefore:{...booking,id:'b10'},engineerUserId:'own',report:{id:'r10'},actualHours:3})).skipped,'owner');
+}
+
+// ---------- offers: decline → backup, approval gate, unfilled alert ----------
+{
+ emails.length=0;
+ const future='2099-06-01';
+ const db=fakeDb({
+  bookings:[{id:'bk',status:'confirmed',service_slug:'vocal-recording',booking_date:future,start_time:'12:00:00',end_time:'15:00:00',duration_minutes:180,preferred_engineer_user_id:'billy',customers:{artist_name:'Artist'}}],
+  staff_profiles:[{user_id:'billy',engineer_name:'Billy',role:'engineer',active:true,email:'b@x',engineer_pay_hourly_pence:2000},{user_id:'benny',engineer_name:'Benny',role:'engineer',active:true,email:'n@x',engineer_pay_hourly_pence:2500},{user_id:'nathan',engineer_name:'Nathan',role:'owner',active:true,email:'o@x'}],
+  engineer_session_offers:[],studio_settings:[]
+ });
+ const events=[];
+ const m=await load('../lib/engineerOffers.js',{'./customerAuth':{newToken:()=>`tok-${Math.random()}`.padEnd(30,'x'),tokenHash:t=>`h:${t}`},'./notifications':notifications,'./sms':{sendSms:async()=>({ok:true})},'./bookingEvents':{recordBookingEvent:async e=>events.push(e.eventType)},'./engineerWorkEmails':emailTemplates,'./engineerWorkRules.js':rules});
+ // A clash blocks the offer.
+ db.tables.bookings.push({id:'other',status:'confirmed',engineer_user_id:'benny',booking_date:future,start_time:'14:00:00',end_time:'16:00:00'});
+ const clash=await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['billy','benny']});
+ assert.equal(clash.ok,false);assert.match(clash.error,/Benny already has a session/);
+ db.tables.bookings.pop();
+ const r=await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['billy','benny','nathan']});
+ assert.equal(r.ok,true);assert.equal(r.state,'awaiting');
+ const offers=db.tables.engineer_session_offers;
+ assert.deepEqual(offers.map(o=>o.status),['sent','queued','queued']);
+ assert.equal(offers[0].fee_pence,6000);assert.equal(offers[1].fee_pence,7500);
+ assert.equal(offers[1].requires_owner_approval,true,'artist chose Billy, so substitutes need approval');
+ assert.equal(emails.filter(e=>e.source==='engineer_session_offer').length,1,'only the first choice is emailed');
+ // Billy declines → artist chose him, so the owner must approve Benny first.
+ const d=await m.respondToOffer(db,{offer:{...offers[0]},decision:'decline',reason:'busy'});
+ assert.equal(d.ok,true);assert.equal(offers[0].status,'declined');assert.equal(offers[1].status,'queued');
+ assert.equal(db.tables.bookings[0].engineer_offer_status,'needs_owner');
+ assert.equal(emails.filter(e=>e.subject==='alert:needs_owner').length,1);
+ assert.equal((await m.respondToOffer(db,{offer:{...offers[0]},decision:'decline'})).ok,false,'a closed offer cannot be answered twice');
+ await m.approveNextBackup(db,{bookingId:'bk'});
+ assert.equal(offers[1].status,'sent');assert.equal(db.tables.bookings[0].engineer_offer_status,'awaiting');
+ // Benny doesn't answer in time → expires → Nathan needs approval too.
+ offers[1].expires_at=new Date(Date.now()-1000).toISOString();
+ const due=await m.processDueOffers(db);
+ assert.equal(due.offersAdvanced>=1,true);assert.equal(offers[1].status,'expired');assert.equal(db.tables.bookings[0].engineer_offer_status,'needs_owner');
+ await m.approveNextBackup(db,{bookingId:'bk'});
+ assert.equal(offers[2].status,'sent');
+ // Accept goes through the atomic RPC.
+ db.rpcs.accept_engineer_offer=({p_offer_id})=>{const o=offers.find(x=>x.id===p_offer_id);if(o.status!=='sent')return {data:{ok:false,reason:'closed'},error:null};o.status='accepted';Object.assign(db.tables.bookings[0],{engineer_user_id:o.engineer_user_id,engineer_offer_status:'accepted',engineer_fee_pence:o.fee_pence});return {data:{ok:true},error:null};};
+ const acc=await m.respondToOffer(db,{offer:{...offers[2]},decision:'accept'});
+ assert.equal(acc.ok,true);assert.equal(db.tables.bookings[0].engineer_user_id,'nathan');assert.ok(events.includes('engineer_accepted'));
+ // New round where everyone declines → unfilled + owner alert.
+ db.tables.bookings[0]={...db.tables.bookings[0],engineer_user_id:null,engineer_offer_status:null,preferred_engineer_user_id:null,engineer_offer_alert_sent_at:null};
+ await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['benny']});
+ const live=offers.find(o=>o.status==='sent');
+ await m.respondToOffer(db,{offer:{...live},decision:'decline'});
+ assert.equal(db.tables.bookings[0].engineer_offer_status,'unfilled');
+ assert.equal(emails.filter(e=>e.subject==='alert:unfilled').length,1);
+ // Cancelled booking closes open offers.
+ db.tables.bookings[0].engineer_offer_alert_sent_at=null;
+ await m.createOfferRound(db,{bookingId:'bk',engineerUserIds:['billy']});
+ db.tables.bookings[0].status='cancelled';
+ await m.advanceOfferQueue(db,'bk');
+ assert.equal(offers.filter(o=>['sent','queued'].includes(o.status)).length,0);
+}
+console.log('Engineer offers & payouts tests passed');

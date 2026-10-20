@@ -63,9 +63,9 @@ export async function GET(request){
   let working=b,staff=null;
   if(b.service_slug==='dry-hire'&&b.dry_hire_id_required!==false&&!c.dry_hire_id_verified_at){try{await ensureDryHireIdRequest({booking:b,customer:c,resend:true,source:'day_before_reminder'});}catch(e){console.error('Dry Hire ID reminder failed',e?.message||e)}}
   if(b.engineer_user_id){const {data}=await db.from('staff_profiles').select('user_id,full_name,engineer_name,phone,photo_url,email').eq('user_id',b.engineer_user_id).maybeSingle();staff=data||null;}
-  else if(b.service_slug!=='dry-hire'&&defaultEngineer){
+  else if(b.service_slug!=='dry-hire'&&defaultEngineer&&!['awaiting','needs_owner'].includes(b.engineer_offer_status)){
    const assignedName=defaultEngineer.engineer_name||defaultEngineer.full_name;
-   const {data:updated}=await db.from('bookings').update({engineer_user_id:defaultEngineer.user_id,assigned_engineer:assignedName,updated_at:new Date().toISOString()}).eq('id',b.id).is('engineer_user_id',null).select('*,customers(*)').maybeSingle();
+   const {data:updated}=await db.from('bookings').update({engineer_user_id:defaultEngineer.user_id,assigned_engineer:assignedName,engineer_offer_status:'assigned',updated_at:new Date().toISOString()}).eq('id',b.id).is('engineer_user_id',null).select('*,customers(*)').maybeSingle();
    if(updated){working=updated;staff=defaultEngineer;await notifyAssignedEngineer(updated);}
   }
   const {count:priorCount}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',c.id).lt('booking_date',working.booking_date).in('status',['confirmed','completed']);

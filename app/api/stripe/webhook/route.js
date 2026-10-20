@@ -7,6 +7,7 @@ import { sendLoggedSms } from "../../../../lib/sms";
 import { getStudioSettings } from "../../../../lib/studioSettings";
 import { ensureDryHireIdRequest } from "../../../../lib/dryHireId";
 import { ensureCallPrep } from "../../../../lib/callPrep";
+import { syncConnectAccount, processDuePayouts } from "../../../../lib/engineerPayouts";
 
 function canonicalBase(){
  const configured=String(process.env.NEXT_PUBLIC_SITE_URL||'').trim().replace(/\/$/,'');
@@ -21,7 +22,10 @@ export async function POST(request) {
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!signature || !secret) return new NextResponse("Webhook not configured", { status: 400 });
     const raw = await request.text();
-    const event = stripe.webhooks.constructEvent(raw, signature, secret);
+    // Connected-account events (engineer payout setup) may arrive on a separate Connect endpoint with its own secret.
+    let event;
+    try { event = stripe.webhooks.constructEvent(raw, signature, secret); }
+    catch (err) { if (!process.env.STRIPE_CONNECT_WEBHOOK_SECRET) throw err; event = stripe.webhooks.constructEvent(raw, signature, process.env.STRIPE_CONNECT_WEBHOOK_SECRET); }
     const db = getAdminDb();
     async function invoiceFields(session){
       if(!session.invoice) return {};
@@ -111,6 +115,11 @@ export async function POST(request) {
           }
         }
       }
+    }
+
+    if (event.type === "account.updated") {
+      const staff = await syncConnectAccount(db, event.data.object);
+      if (staff && event.data.object?.capabilities?.transfers === 'active') after(() => processDuePayouts(getAdminDb(), { limit: 10 }).catch(e => console.error('Payout runner failed', e?.message || e)));
     }
 
     if (event.type === "checkout.session.expired") {
