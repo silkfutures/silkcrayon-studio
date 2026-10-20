@@ -11,7 +11,7 @@ export default async function More(){
   ['/admin/calendar','Calendar','Visual studio schedule','▦'],
   ['/admin','Owner overview','Bookings, change requests & Stripe sync','⌂'],
   ['/admin/accounting','Accounting','Invoices, refunds & exports','£'],
-  ['/admin/accounting/quickbooks','QuickBooks archive','Past invoices & receipts, invoice numbering','▤'],
+  ['/admin/invoicing','Invoicing','Create & email invoices, what’s owed, past invoices','▤'],
   ['/admin/activity','Activity log','Cancellations, no-shows & deletions','↻'],
   ['/admin/analytics','Analytics','Revenue, visitors & retention','↗'],
   ['/admin/automation','Automations','Email delivery & reminders','✦'],

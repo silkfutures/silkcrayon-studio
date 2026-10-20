@@ -9,6 +9,7 @@ import { ensureDryHireIdRequest } from "../../../../lib/dryHireId";
 import { ensureCallPrep } from "../../../../lib/callPrep";
 import { syncConnectAccount, processDuePayouts } from "../../../../lib/engineerPayouts";
 import { onStudioPaymentPaid } from "../../../../lib/projectInvoices";
+import { onInvoiceCheckoutPaid } from "../../../../lib/invoices";
 
 function canonicalBase(){
  const configured=String(process.env.NEXT_PUBLIC_SITE_URL||'').trim().replace(/\/$/,'');
@@ -38,6 +39,11 @@ export async function POST(request) {
 
     if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
       const session = event.data.object;
+      // General invoices (Invoicing) are handled on their own and never touch booking checkout logic.
+      if (session.metadata?.invoice_id) {
+        if (session.payment_status === 'paid') await onInvoiceCheckoutPaid(db, session);
+        return NextResponse.json({ received: true });
+      }
       const mixJobId = session.metadata?.mix_job_id;
       if(mixJobId&&session.payment_status==='paid'){
         const {data:mix}=await db.from('mix_jobs').select('*,customers(*)').eq('id',mixJobId).maybeSingle();
