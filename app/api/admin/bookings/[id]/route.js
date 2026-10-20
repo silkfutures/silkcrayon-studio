@@ -1,3 +1,4 @@
+import {sendLoggedNotification} from '../../../../../lib/notifications';
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '../../../../../lib/supabase';
 import { getStaffContext } from '../../../../../lib/auth';
@@ -50,7 +51,8 @@ export async function PATCH(request,{params}){try{const ctx=await getStaffContex
        if(balanceError)throw balanceError;
      }
      await recordBookingEvent({db,booking:updated,eventType:'payment_marked_paid',reasonCode:method,note:alreadyPaid>0?`Remaining balance recorded · £${(remaining/100).toFixed(2)} · total £${(total/100).toFixed(2)} paid`:`Manually marked paid · £${(total/100).toFixed(2)}`,ctx,snapshot:current});
-     return NextResponse.json({ok:true,booking:updated});
+     const documentEmail=await sendLoggedNotification({booking:updated,customer:updated.customers,type:'booking_payment_receipt',subject:'Your Silkcrayon payment receipt',html:'<p>Your session payment has been recorded. Your invoice / receipt is attached.</p>'});
+     return NextResponse.json({ok:true,booking:updated,documentEmail});
    }
    if(body.manualPaymentStatus==='unpaid'){
      if(current.payment_status!=='paid')return NextResponse.json({error:'This booking is not currently marked paid.'},{status:409});

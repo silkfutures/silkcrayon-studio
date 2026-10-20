@@ -1,3 +1,5 @@
+import {renderDocumentPdf} from '../../../../../../lib/documentPdf';
+import {ensureDocument} from '../../../../../../lib/documents';
 import {NextResponse} from 'next/server';
 import {getStaffContext} from '../../../../../../lib/auth';
 import {getAdminDb} from '../../../../../../lib/supabase';
@@ -19,8 +21,8 @@ export async function POST(req,{params}){try{
   if(previous.status==='sending')return NextResponse.json({error:'This quote is already sending. Check delivery before trying again.'},{status:409});
   const {data:claimed,error:claimError}=await db.from('project_quote_emails').update({status:'sending',error:null}).eq('id',previous.id).eq('status','failed').select('id').maybeSingle();if(claimError)throw claimError;if(!claimed)return NextResponse.json({error:'Another send is already running.'},{status:409});log=claimed;
  }
- const result=await sendEmail({to:p.email,...projectQuoteEmail(p),source:'Customer quote · version '+p.quote_revision,actor:{id:ctx.user.id,name:ctx.profile.full_name,role:ctx.profile.role}});
- const {error:logError}=await db.from('project_quote_emails').update({status:result.ok?'sent':'failed',provider_id:result.id||null,error:result.error||null,sent_at:result.ok?new Date().toISOString():null}).eq('id',log.id);
+ let result,pdfDocumentId=null;try{const doc=await ensureDocument(db,'project',p);pdfDocumentId=doc.id;const attachments=[{filename:`${doc.number}.pdf`,content:(await renderDocumentPdf(doc)).toString('base64'),content_type:'application/pdf'}];result=await sendEmail({attachments,to:p.email,...projectQuoteEmail(p),source:'Customer quote · version '+p.quote_revision,actor:{id:ctx.user.id,name:ctx.profile.full_name,role:ctx.profile.role}});}catch(error){result={ok:false,error:error.message||'PDF generation failed'};}
+ const {error:logError}=await db.from('project_quote_emails').update({pdf_document_id:pdfDocumentId,status:result.ok?'sent':'failed',provider_id:result.id||null,error:result.error||null,sent_at:result.ok?new Date().toISOString():null}).eq('id',log.id);
  if(logError)return NextResponse.json({ok:result.ok,error:'Delivery status could not be saved. Check the email provider before resending.'},{status:502});
  return NextResponse.json(result.ok?{ok:true,message:`Quote emailed to ${p.email}.`}:{error:'Quote saved, but email failed. Check email settings and retry.'},{status:result.ok?200:502});
  }catch(error){return NextResponse.json({error:error.message||'Could not send quote.'},{status:500});}}

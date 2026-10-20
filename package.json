@@ -9,15 +9,18 @@
     "check:imports": "node scripts/check-imports.mjs",
     "prebuild": "npm run check:imports && npm test",
     "test:contracts": "node tests/contracts.mjs",
-    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs && node tests/google-ads.mjs && node tests/public-forms.mjs && npm run test:engineer && npm run test:supported-artists",
+    "test": "node tests/contracts.mjs && node tests/mix-payment.mjs && node tests/mix-accounting.mjs && node tests/bank-checkout.mjs && node tests/audit-patch.mjs && node tests/google-ads.mjs && node tests/public-forms.mjs && npm run test:engineer && npm run test:supported-artists && npm run test:documents",
     "test:engineer": "node --experimental-vm-modules tests/engineer-analytics.mjs",
-    "test:supported-artists": "node --experimental-vm-modules tests/supported-artists.mjs && node --experimental-vm-modules tests/supported-reporting.mjs"
+    "test:supported-artists": "node --experimental-vm-modules tests/supported-artists.mjs && node --experimental-vm-modules tests/supported-reporting.mjs",
+    "test:documents": "node tests/documents.mjs && node --experimental-vm-modules tests/document-access.mjs"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.56.0",
     "next": "^16.0.0",
     "node-ical": "^0.27.1",
+    "pdf-lib": "^1.17.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "stripe": "^18.5.0"
