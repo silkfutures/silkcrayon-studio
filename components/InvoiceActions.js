@@ -2,6 +2,7 @@
 import {useState} from 'react';
 import {useRouter} from 'next/navigation';
 import s from './EngineerWork.module.css';
+import DuplicateInvoiceButton from './DuplicateInvoiceButton';
 const money=p=>`£${(Number(p||0)/100).toFixed(2)}`;
 export default function InvoiceActions({invoice}){
  const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[paying,setPaying]=useState(false),[method,setMethod]=useState('bank_transfer'),[note,setNote]=useState('');
@@ -14,6 +15,7 @@ export default function InvoiceActions({invoice}){
  }
  return <div className={s.panel}>
   <div className={s.row}>
+   {invoice.status!=='draft'&&<DuplicateInvoiceButton fromInvoiceId={invoice.id}/>}
    {(invoice.document_id||invoice.receipt_document_id)&&<a className={s.secondary} href={`/api/documents/invoice/${invoice.id}`}>Download PDF</a>}
    {invoice.status==='draft'&&<><button className={s.primary} disabled={busy} onClick={()=>act({action:'send'},'Invoice emailed ✓',`Email this invoice for ${money(invoice.total_pence)} to ${invoice.bill_to_email||'(no email)'}?`)}>Email invoice</button><button className={s.danger} disabled={busy} onClick={()=>act(null,'Deleted.','Delete this draft?')}>Delete draft</button></>}
    {invoice.status==='sent'&&<><button className={s.primary} disabled={busy} onClick={()=>setPaying(v=>!v)}>Mark as paid</button><button className={s.secondary} disabled={busy} onClick={()=>act({action:'resend'},'Invoice re-sent ✓ (the old payment link no longer works)')}>Resend</button><button className={s.danger} disabled={busy} onClick={()=>act({action:'void'},'Invoice cancelled.','Cancel this invoice? Its payment link stops working and any sessions on it become available to invoice again.')}>Cancel invoice</button></>}

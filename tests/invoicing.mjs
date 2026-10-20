@@ -126,4 +126,20 @@ const org=await m.saveDraft(db,{input:{billToName:'ACT Training',billToEmail:'fi
  assert.equal(db.tables.bookings[0].payment_status,'paid','artist’s session marked paid when the company pays');
  assert.equal((await m.saveDraft(db,{input:{...input,billingContactId:'gone'},ctx})).ok,false);
 }
+// ---------- duplicate ----------
+{
+ const db=fresh();
+ const src=await m.saveDraft(db,{input,ctx});await m.sendInvoice(db,{id:src.invoice.id});await m.markInvoicePaid(db,{id:src.invoice.id,method:'cash',ctx,stripe});
+ const dup=await m.duplicateInvoice(db,{fromInvoiceId:src.invoice.id,ctx});
+ assert.equal(dup.ok,true);assert.equal(dup.invoice.status,'draft');assert.equal(dup.invoice.total_pence,29000,'same total');
+ assert.equal(dup.invoice.lines.every(l=>l.type==='custom'),true,'copied lines are not tied to the old sessions');
+ assert.equal(db.tables.bookings[0].invoice_id,src.invoice.id,'the paid session stays on the original invoice');
+ assert.equal(dup.invoice.invoice_number??null,null,'a copy gets its own number only when sent');
+ db.tables.billing_contacts=[{id:'co9',name:'Toni Silkfutures',name_key:'toni silkfutures',email:'toni@silkfutures.org',address:'Cardiff',archived:false}];
+ db.tables.quickbooks_customers=[];
+ db.tables.quickbooks_invoices=[{id:'q1',qb_number:'1154',customer_name:'Toni Silkfutures',amount_pence:40000,memo:null,lines:[{description:'Mentoring September',account:'Services',amount_pence:40000}]}];
+ const qd=await m.duplicateInvoice(db,{fromQuickbooksId:'q1',ctx});
+ assert.equal(qd.ok,true);assert.equal(qd.invoice.billing_contact_id,'co9','QuickBooks customer matched to the saved company');assert.equal(qd.invoice.bill_to_email,'toni@silkfutures.org');
+ assert.equal(qd.invoice.lines[0].description,'Mentoring September');assert.equal(qd.invoice.total_pence,40000);
+}
 console.log('Invoicing: past sessions + custom lines, locking, numbering, bank/card payment counted once in Accounting, cancel/delete release passed');

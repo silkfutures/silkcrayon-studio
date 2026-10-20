@@ -2,6 +2,7 @@ import Link from 'next/link';
 import {formatGBP} from '../lib/services';
 import {formatUkDate} from '../lib/dates';
 import {QbStatus} from '../components/QuickbooksControls';
+import DuplicateInvoiceButton from './DuplicateInvoiceButton';
 import s from '../components/EngineerWork.module.css';
 const PAGE=50;
 const LABEL={paid:'Paid',unpaid:'Unpaid',unrecorded:'Payment not recorded',void:'Void'};
@@ -34,7 +35,7 @@ export default async function PastInvoices({db,sp}){
    <div className={s.tableWrap}><table className={s.table}><thead><tr><th>No.</th><th>Date</th><th>Customer</th><th>What for</th><th>Amount</th><th>{type==='Invoice'?'Payment':''}</th></tr></thead><tbody>
     {(rows||[]).map(r=><tr key={r.id}><td><b>{r.qb_number}</b></td><td>{r.invoice_date?formatUkDate(r.invoice_date):'—'}</td><td>{r.customer_id?<Link className="textLink" href={`/admin/artists/${r.customer_id}`}>{r.customer_name}</Link>:r.customer_name||'—'}</td>
      <td>{(r.lines||[]).length?<details><summary>{(r.lines||[]).filter(l=>l.description).map(l=>l.description).join(', ').slice(0,70)||`${r.lines.length} line${r.lines.length===1?'':'s'}`}</summary>{r.lines.map((l,i)=><small key={i} data-sensitive="financial">{l.description||l.account} · {formatGBP(l.amount_pence)}</small>)}</details>:r.memo||'—'}</td>
-     <td data-sensitive="financial"><b>{formatGBP(r.amount_pence)}</b></td><td>{type==='Invoice'?<QbStatus id={r.id} status={r.status}/>:<span className={`${s.pill} ${s.paid}`}>Paid</span>}</td></tr>)}
+     <td data-sensitive="financial"><b>{formatGBP(r.amount_pence)}</b></td><td>{type==='Invoice'?<QbStatus id={r.id} status={r.status}/>:<span className={`${s.pill} ${s.paid}`}>Paid</span>}<div style={{marginTop:6}}><DuplicateInvoiceButton fromQuickbooksId={r.id} label="Duplicate as new" small/></div></td></tr>)}
     {!(rows||[]).length&&<tr><td colSpan="6">Nothing found.</td></tr>}
    </tbody></table></div>
    <div className={s.row} style={{marginTop:14}}>{page>0&&<Link className={s.secondary} href={link({page:String(page-1)})}>← Newer</Link>}<span className={s.muted}>{count?`${page*PAGE+1}–${Math.min(count,(page+1)*PAGE)} of ${count}`:''}</span>{(page+1)*PAGE<count&&<Link className={s.secondary} href={link({page:String(page+1)})}>Older →</Link>}</div>

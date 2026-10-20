@@ -1,5 +1,5 @@
 'use client';
-import {useEffect,useMemo,useState} from 'react';
+import {useEffect,useMemo,useRef,useState} from 'react';
 import {useRouter} from 'next/navigation';
 import ArtistSearchSelect from './ArtistSearchSelect';
 import s from './EngineerWork.module.css';
@@ -24,6 +24,29 @@ export default function InvoiceEditor({customers=[],companies:companyList=[],ini
  const [lines,setLines]=useState(()=>initial?.lines?.length?initial.lines.map(l=>({key:Math.random().toString(36).slice(2),...l,qty:String(l.qty),rate:(l.rate_pence/100).toFixed(2)})):[blank()]);
  const [due,setDue]=useState(initial?.due_date||addDays(termsDays)),[notes,setNotes]=useState(initial?.notes||''),[title,setTitle]=useState(initial?.title||'');
  const [billable,setBillable]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
+
+ // ---- Autosave to this device, so clicking away never loses an invoice ----
+ const draftKey=`sc-invoice-draft:${initial?.id||'new'}`;
+ const [restorable,setRestorable]=useState(null),[dirty,setDirty]=useState(false);
+ const firstRun=useRef(true),leaving=useRef(false);
+ useEffect(()=>{try{const raw=localStorage.getItem(draftKey);if(!raw)return;const d=JSON.parse(raw);const fresh=Date.now()-Number(d.savedAt||0)<30*86400000;const newer=!initial?.updated_at||Number(d.savedAt)>new Date(initial.updated_at).getTime();if(fresh&&newer&&(d.lines||[]).some(l=>l.service||l.description||l.rate))setRestorable(d);else localStorage.removeItem(draftKey);}catch{}},[draftKey]);// eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{
+  if(firstRun.current){firstRun.current=false;return;}
+  if(restorable)return; // don't overwrite the unsaved invoice until you choose Restore or Discard
+  setDirty(true);
+  const t=setTimeout(()=>{try{localStorage.setItem(draftKey,JSON.stringify({savedAt:Date.now(),mode,customerId,companyId,billTo,lines,due,notes,title}));}catch{}},400);
+  return ()=>clearTimeout(t);
+ },[mode,customerId,companyId,billTo,lines,due,notes,title,restorable]);// eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{
+  if(!dirty)return;
+  const onUnload=e=>{if(leaving.current)return;e.preventDefault();e.returnValue='';};
+  const onClick=e=>{if(leaving.current)return;const a=e.target.closest?.('a[href]');if(!a||a.target==='_blank'||a.getAttribute('href').startsWith('#'))return;if(!confirm('You haven’t saved this invoice. Leave anyway?\n\n(It stays on this device — open New invoice again to restore it.)')){e.preventDefault();e.stopPropagation();}};
+  window.addEventListener('beforeunload',onUnload);document.addEventListener('click',onClick,true);
+  return ()=>{window.removeEventListener('beforeunload',onUnload);document.removeEventListener('click',onClick,true);};
+ },[dirty]);
+ function restore(){const d=restorable;if(!d)return;setMode(d.mode||'artist');setCustomerId(d.customerId||'');setCompanyId(d.companyId||'');setBillTo(d.billTo||{name:'',email:'',address:''});setLines((d.lines||[]).length?d.lines:[blank()]);if(d.due)setDue(d.due);setNotes(d.notes||'');setTitle(d.title||'');setRestorable(null);}
+ function discardSaved(){try{localStorage.removeItem(draftKey);}catch{}setRestorable(null);}
+ function clearAutosave(){leaving.current=true;try{localStorage.removeItem(draftKey);}catch{}setDirty(false);}
 
  const chosen=customers.find(c=>String(c.id)===String(customerId));
  useEffect(()=>{
@@ -54,12 +77,13 @@ export default function InvoiceEditor({customers=[],companies:companyList=[],ini
    const r=initial?await fetch(`/api/admin/invoices/${initial.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({action:send?'save_send':'save',invoice:body})}):await fetch('/api/admin/invoices',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,send})});
    const j=await r.json().catch(()=>({}));
    if(!r.ok||j.ok===false){setMsg(j.error||'Could not save.');setBusy(false);return;}
-   const id=initial?.id||j.id;router.push(`/admin/invoicing/${id}${send?`?sent=${j.emailed===false?'failed':'1'}`:''}`);router.refresh();
+   clearAutosave();const id=initial?.id||j.id;router.push(`/admin/invoicing/${id}${send?`?sent=${j.emailed===false?'failed':'1'}`:''}`);router.refresh();
   }catch{setMsg('Network problem — please retry.');setBusy(false);}
  }
 
  const pending=billable&&billable!=='loading'&&!billable.error?[...(billable.bookings||[]).map(b=>({kind:'booking',item:b})),...(billable.sessions||[]).map(r=>({kind:'session',item:r}))]:[];
  return <div className={s.panel}>
+  {restorable&&<section className="adminSection"><div className={s.offerCard}><h3>Restore unsaved invoice?</h3><p>You were working on an invoice{restorable.billTo?.name?` for ${restorable.billTo.name}`:''} that wasn’t saved ({new Date(restorable.savedAt).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}).</p><div className={s.row}><button type="button" className={s.primary} onClick={restore}>Restore it</button><button type="button" className={s.secondary} onClick={discardSaved}>Discard</button></div></div></section>}
   <section className="adminSection"><p className="eyebrow">Bill to</p>
    <div className={s.row} style={{marginBottom:12}}>{[['artist','An artist'],['company','A company'],['oneoff','Someone else (one-off)']].map(([k,l])=><label key={k} className={s.check}><input type="radio" checked={mode===k} onChange={()=>{setMode(k);if(k==='company'){const co=companies.find(c=>c.id===companyId);if(co)setBillTo(fromCompany(co));}if(k==='artist'&&chosen)setBillTo({name:chosen.full_name||chosen.artist_name||'',email:chosen.email||'',address:''});}}/><span>{l}</span></label>)}</div>
    {mode==='artist'&&<ArtistSearchSelect customers={customers} value={customerId} onChange={setCustomerId} label="artist"/>}

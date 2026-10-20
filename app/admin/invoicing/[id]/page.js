@@ -24,7 +24,7 @@ export default async function InvoicePage({params,searchParams}){
  if(inv.status==='draft'){
   const [{data:customers=[]},pricing,bank]=await Promise.all([db.from('customers').select('id,full_name,artist_name,email,phone').order('artist_name').limit(5000),getStudioSettings(),getInvoiceBank(db).catch(()=>({complete:false,termsDays:7}))]);
  const companies=await listCompanies(db);
-  return <main className="adminPage">{head}<section className="adminSection"><InvoiceActions invoice={inv}/></section><InvoiceEditor customers={customers||[]} companies={companies} initial={inv} hourlyPence={pricing.studioHourlyPricePence} termsDays={bank.termsDays??7} bankComplete={bank.complete}/></main>;
+  return <main className="adminPage">{head}{sp?.copied==='1'&&<section className="adminSection"><p className={s.message}>✓ Copied into a new draft dated today. Check the details, then Save & email.</p></section>}<section className="adminSection"><InvoiceActions invoice={inv}/></section><InvoiceEditor customers={customers||[]} companies={companies} initial={inv} hourlyPence={pricing.studioHourlyPricePence} termsDays={bank.termsDays??7} bankComplete={bank.complete}/></main>;
  }
  const [label,cls]=STATUS[inv.status];
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London'}).format(new Date());
