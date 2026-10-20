@@ -26,9 +26,9 @@ assert.equal(validateBank({name:'X',sortCode:'12-34-5',accountNumber:'12345678'}
 assert.equal(validateBank({name:'',sortCode:'',accountNumber:''}).empty,true);
 const inv={id:'abcdef12-0000-0000-0000-000000000000',amount_pence:40000,description:'Deposit (50%) — EP',status:'sent',quote_total_pence:80000,quote_revision:2,due_date:'2026-10-27'};
 const model=projectInvoiceDocumentModel(project,inv,{bank,paymentUrl:'https://silkcrayon.com/pay/x'});
-assert.equal(model.kind,'invoice');assert.equal(model.due,40000);assert.match(model.sections[0].text,/Sort code: 12-34-56/);assert.match(model.sections[0].text,/SC-P-ABCDEF12/);
+assert.equal(model.kind,'invoice');assert.equal(model.due,40000);assert.equal(model.payTo.sortCode,'12-34-56');assert.equal(model.payTo.reference,'SC-P-ABCDEF12');assert.equal(model.rows[0].amount,40000);assert.equal(projectInvoiceDocumentModel(project,{...inv,created_at:'2026-10-20T09:00:00Z'},{bank}).terms,'7 days');assert.equal(projectInvoiceDocumentModel(project,{...inv,created_at:'2026-10-27T09:00:00Z'},{bank}).terms,'Due on receipt');
 const paidModel=projectInvoiceDocumentModel(project,{...inv,status:'paid',paid_via:'bank_transfer',paid_at:'2026-10-21T10:00:00Z'},{bank});
-assert.equal(paidModel.kind,'receipt');assert.equal(paidModel.due,0);assert.equal(paidModel.paymentUrl,null);assert.doesNotMatch(paidModel.sections[0].text,/Sort code/);
+assert.equal(paidModel.kind,'receipt');assert.equal(paidModel.due,0);assert.equal(paidModel.paymentUrl,null);assert.equal(paidModel.payTo,null);assert.match(paidModel.sections[0].text,/Paid on 21 October 2026 by bank transfer/);
 
 // ---------- service: fake Supabase + Stripe ----------
 function fakeDb(tables){
