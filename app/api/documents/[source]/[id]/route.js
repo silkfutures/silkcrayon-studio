@@ -7,6 +7,7 @@ import {canAccessDocumentSource} from '../../../../../lib/documentModel';
 import {ensureDocument} from '../../../../../lib/documents';
 import {renderDocumentPdf} from '../../../../../lib/documentPdf';
 import {sendEmail} from '../../../../../lib/notifications';
+import {documentNumber,documentFilename} from '../../../../../lib/documentNumber';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 async function load(params){
@@ -28,10 +29,10 @@ export async function GET(req,{params}){try{
  const allowedIds=x.sentSnapshots?await Promise.all(x.sentSnapshots.map(async sent=>sent.pdf_document_id||(await ensureDocument(x.db,'project',sent.snapshot)).id)):null;
  if(search.get('history')==='1'){const {data,error}=await x.db.from('studio_documents').select('id,kind,created_at').eq('source_type',x.source).eq('source_id',x.record.id).order('id',{ascending:false});if(error)throw error;return NextResponse.json({documents:allowedIds?data.filter(d=>allowedIds.some(id=>String(id)===String(d.id))):data},{headers:{'Cache-Control':'private, no-store'}});}
  let doc;
- if(search.has('version')||allowedIds){const version=search.get('version')||String(allowedIds[0]);if(!/^\d+$/.test(version))return NextResponse.json({error:'Not found.'},{status:404});const {data,error}=await x.db.from('studio_documents').select('*').eq('id',version).eq('source_type',x.source).eq('source_id',x.record.id).maybeSingle();if(error)throw error;if(!data||(allowedIds&&!allowedIds.some(id=>String(id)===String(data.id))))return NextResponse.json({error:'Not found.'},{status:404});doc={...data,number:`SC-${{quote:'Q',invoice:'I',receipt:'R',statement:'S'}[data.kind]}-${String(data.id).padStart(6,'0')}`};}
+ if(search.has('version')||allowedIds){const version=search.get('version')||String(allowedIds[0]);if(!/^\d+$/.test(version))return NextResponse.json({error:'Not found.'},{status:404});const {data,error}=await x.db.from('studio_documents').select('*').eq('id',version).eq('source_type',x.source).eq('source_id',x.record.id).maybeSingle();if(error)throw error;if(!data||(allowedIds&&!allowedIds.some(id=>String(id)===String(data.id))))return NextResponse.json({error:'Not found.'},{status:404});doc={...data,number:documentNumber(data)};}
  else doc=await ensureDocument(x.db,x.source,x.record,x.customer);
  const bytes=await renderDocumentPdf(doc);
- return new Response(bytes,{headers:{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="${doc.number}.pdf"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
+ return new Response(bytes,{headers:{'Content-Type':'application/pdf','Content-Disposition':`attachment; filename="${documentFilename(doc)}"`,'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'}});
  }catch(e){console.error('PDF download failed',e);return NextResponse.json({error:'Could not generate PDF. Check the PDF migration and try again.'},{status:500});}}
 export async function POST(req,{params}){try{
  const origin=req.headers.get('origin');if(!origin||origin!==new URL(req.url).origin)return NextResponse.json({error:'Invalid request origin.'},{status:403});
@@ -40,6 +41,6 @@ export async function POST(req,{params}){try{
  if(x.source==='project')return NextResponse.json({error:'Use Send quote in the quote editor to email the reviewed version.'},{status:400});
  if(!x.customer?.email)return NextResponse.json({error:'No customer email recorded.'},{status:400});
  const doc=await ensureDocument(x.db,x.source,x.record,x.customer),bytes=await renderDocumentPdf(doc);
- const result=await sendEmail({to:x.customer.email,...documentEmail(doc),attachments:[{filename:`${doc.number}.pdf`,content:bytes.toString('base64'),content_type:'application/pdf'}],source:`PDF ${doc.snapshot.kind} · ${doc.number}`,actor:{id:x.staff.user.id,name:x.staff.profile.full_name,role:x.staff.profile.role}});
+ const result=await sendEmail({to:x.customer.email,...documentEmail(doc),attachments:[{filename:documentFilename(doc),content:bytes.toString('base64'),content_type:'application/pdf'}],source:`PDF ${doc.snapshot.kind} · ${doc.number}`,actor:{id:x.staff.user.id,name:x.staff.profile.full_name,role:x.staff.profile.role}});
  return NextResponse.json(result.ok?{ok:true,message:'PDF emailed to the customer.'}:{error:'Email failed. Check Automations and retry.'},{status:result.ok?200:502});
  }catch(e){console.error('PDF email failed',e);return NextResponse.json({error:'Could not email PDF. Check the PDF migration and email settings.'},{status:500});}}

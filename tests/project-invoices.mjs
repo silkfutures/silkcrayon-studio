@@ -62,7 +62,7 @@ const stripe={checkout:{sessions:{
 const source=readFileSync(new URL('../lib/projectInvoices.js',import.meta.url),'utf8');
 const context=vm.createContext({console,Date,process,URL,Buffer});
 const mod=new vm.SourceTextModule(source,{context});
-const bindings={'node:crypto':{createHash:crypto.createHash},'./customerAuth':{newToken:()=>crypto.randomBytes(24).toString('base64url'),tokenHash:t=>crypto.createHash('sha256').update(t).digest('hex')},'./stripe':{getStripe:()=>stripe},'./notifications':{sendEmail:async m=>{emails.push(m);return {ok:true};},ownerEmails:async()=>['owner@x']},'./documentPdf':{renderDocumentPdf:async()=>Buffer.from('%PDF')},'./projectInvoiceEmails':{projectInvoiceEmail:({payUrl})=>({subject:'invoice',html:payUrl}),projectInvoiceReceiptEmail:()=>({subject:'receipt',html:''}),ownerInvoicePaidEmail:({warning})=>({subject:warning?'warn':'paid',html:''})},'./projectInvoiceRules.js':rules};
+const bindings={'node:crypto':{createHash:crypto.createHash},'./customerAuth':{newToken:()=>crypto.randomBytes(24).toString('base64url'),tokenHash:t=>crypto.createHash('sha256').update(t).digest('hex')},'./stripe':{getStripe:()=>stripe},'./notifications':{sendEmail:async m=>{emails.push(m);return {ok:true};},ownerEmails:async()=>['owner@x']},'./documentPdf':{renderDocumentPdf:async()=>Buffer.from('%PDF')},'./projectInvoiceEmails':{projectInvoiceEmail:({payUrl})=>({subject:'invoice',html:payUrl}),projectInvoiceReceiptEmail:()=>({subject:'receipt',html:''}),ownerInvoicePaidEmail:({warning})=>({subject:warning?'warn':'paid',html:''})},'./projectInvoiceRules.js':rules,'./documentNumber.js':await import('../lib/documentNumber.js')};
 await mod.link(async name=>{const e=bindings[name];assert.ok(e,`Unexpected import ${name}`);return new vm.SyntheticModule(Object.keys(e),function(){for(const [k,v] of Object.entries(e))this.setExport(k,v);},{context});});
 await mod.evaluate();const m=mod.namespace;
 const db=fakeDb({studio_projects:[{...project}],project_invoices:[],studio_payments:[],studio_documents:[],studio_settings:[{key:'invoice_bank_account_name',value:'Silkcrayon Ltd'},{key:'invoice_bank_sort_code',value:'123456'},{key:'invoice_bank_account_number',value:'12345678'}]});
@@ -102,4 +102,19 @@ await m.startCardPayment(db,{token:token3,stripe});
 assert.equal((await m.voidProjectInvoice(db,{invoiceId:v.id,stripe})).ok,true);assert.equal(v.status,'void');assert.equal(v.pay_token_hash,null);
 assert.equal((await m.onStudioPaymentPaid(db,{paymentId:v.studio_payment_id})).warning,'void');assert.ok(emails.some(e=>e.subject==='warn'));
 assert.equal(await m.invoiceByToken(db,token3),null,'cancelled invoice link stops working');
+// ---------- continued QuickBooks numbering ----------
+{
+ const {documentNumber,documentFilename}=await import('../lib/documentNumber.js');
+ assert.equal(documentNumber({id:4,kind:'invoice'}),'SC-I-000004');assert.equal(documentNumber({id:4,kind:'invoice',display_number:'1155'}),'1155');
+ assert.equal(documentFilename({kind:'invoice',display_number:'1155'}),'Invoice_1155.pdf');assert.equal(documentFilename({kind:'receipt',display_number:'1155'}),'Receipt_1155.pdf');
+ let n=1154;
+ const db2=fakeDb({studio_projects:[{...project,id:'p2'}],project_invoices:[],studio_payments:[],studio_documents:[],studio_settings:[{key:'invoice_numbering_mode',value:'sequential'}]});
+ db2.rpc=async name=>{assert.equal(name,'next_invoice_number');return {data:++n,error:null};};
+ const r=await m.createProjectInvoice(db2,{projectId:'p2',stage:'full',ctx});
+ const inv2=db2.tables.project_invoices[0];
+ assert.equal(inv2.invoice_number,'1155');assert.equal(r.number,'1155');assert.equal(db2.tables.studio_documents[0].display_number,'1155');
+ await m.markProjectInvoicePaid(db2,{invoiceId:inv2.id,method:'cash',ctx,stripe});
+ assert.equal(db2.tables.studio_documents.find(d=>d.kind==='receipt').display_number,'1155','receipt keeps the invoice number');
+ assert.equal(n,1155,'no numbers wasted');
+}
 console.log('Project invoices: deposit/balance/full planning, bank details, card checkout reuse, no double payment, cancel safety passed');
