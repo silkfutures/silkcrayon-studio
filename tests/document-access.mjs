@@ -11,10 +11,11 @@ await mod.link(async spec=>{const values=bindings[spec]||bindings[spec.split('/'
 const req=(query='',origin='https://studio.test')=>({url:'https://studio.test/api/documents/booking/'+record.id+query,headers:new Headers({origin})});
 const params=source=>({params:Promise.resolve({source,id:record.id})});
 assert.equal((await mod.namespace.GET(req(),params('booking'))).status,401);assert.equal(generated,0);
-staff={user:{id:'e2'},profile:{role:'engineer'}};assert.equal((await mod.namespace.GET(req(),params('booking'))).status,404);assert.equal(generated,0);
+staff={user:{id:'e2'},profile:{role:'engineer'}};assert.equal((await mod.namespace.GET(req(),params('booking'))).status,403);assert.equal(generated,0);
+staff={user:{id:'e1'},profile:{role:'engineer'}};assert.equal((await mod.namespace.GET(req(),params('booking'))).status,403,'assigned engineers cannot download invoices');assert.equal((await mod.namespace.POST(req(),params('booking'))).status,403,'engineers cannot email PDFs');assert.equal(generated,0);
 staff=null;customer={id:'c2',email:'wrong@example.com'};assert.equal((await mod.namespace.GET(req(),params('booking'))).status,404);
 customer={id:'c1',email:'real@example.com'};const response=await mod.namespace.GET(req(),params('booking'));assert.equal(response.status,200);assert.match(response.headers.get('cache-control'),/no-store/);assert.equal((await mod.namespace.POST(req(),params('booking'))).status,403);
-staff={user:{id:'e1'},profile:{role:'engineer'}};customer=null;assert.equal((await mod.namespace.POST(req('','https://evil.test'),params('booking'))).status,403);assert.equal(sends.length,0);assert.equal((await mod.namespace.POST(req(),params('booking'))).status,200);assert.equal(sends[0].to,'real@example.com');assert.equal(sends[0].attachments.length,1);
+staff={user:{id:'o1'},profile:{role:'owner'}};customer=null;assert.equal((await mod.namespace.POST(req('','https://evil.test'),params('booking'))).status,403);assert.equal(sends.length,0);assert.equal((await mod.namespace.POST(req(),params('booking'))).status,200);assert.equal(sends[0].to,'real@example.com');assert.equal(sends[0].attachments.length,1);
 staff=null;customer={id:'c1',email:'real@example.com'};record={...record,email:'real@example.com'};
 assert.equal((await mod.namespace.GET(req(),params('project'))).status,404); // Unsent owner draft is not a customer quote.
 sent=[{pdf_document_id:1,snapshot:record,revision:1}];assert.equal((await mod.namespace.GET(req('?version=2'),params('project'))).status,404);

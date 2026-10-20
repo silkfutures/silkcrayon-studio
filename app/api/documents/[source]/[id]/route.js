@@ -11,7 +11,11 @@ export const runtime='nodejs';
 export const dynamic='force-dynamic';
 async function load(params){
  const {source,id}=await params;if(!['booking','project'].includes(source)||!/^[0-9a-f-]{36}$/i.test(id))return {error:'Not found.',status:404};
- const [staff,customerContext]=await Promise.all([getStaffContext(),getCustomerContext()]);if(!staff&&!customerContext)return {error:'Sign in to access documents.',status:401};
+ const [staffContext,customerContext]=await Promise.all([getStaffContext(),getCustomerContext()]);
+ // Invoices, receipts and quotes are owner/customer documents. Engineers never download or send them.
+ const staff=staffContext?.profile?.role==='owner'?staffContext:null;
+ if(staffContext&&!staff&&!customerContext)return {error:'Only the studio owner can access invoices and receipts.',status:403};
+ if(!staff&&!customerContext)return {error:'Sign in to access documents.',status:401};
  const db=getAdminDb();let {data:record,error}=await db.from(source==='booking'?'bookings':'studio_projects').select(source==='booking'?'*,customers(*)':'*').eq('id',id).maybeSingle();
  if(error)throw error;if(!record||!canAccessDocumentSource(source,record,staff,customerContext?.customer))return {error:'Document not found.',status:404};
  let sentSnapshots=null;
