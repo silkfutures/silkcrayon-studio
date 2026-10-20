@@ -113,4 +113,17 @@ assert.equal(db.tables.studio_payments.length,0);
 const d5=await m.saveDraft(db,{input,ctx});assert.equal((await m.deleteDraft(db,{id:d5.invoice.id})).ok,true);assert.equal(db.tables.bookings[0].invoice_id,null);
 assert.equal((await m.saveDraft(db,{input:{...input,customerId:null},ctx})).ok,false);
 const org=await m.saveDraft(db,{input:{billToName:'ACT Training',billToEmail:'finance@act.org',lines:[{service:'Mentoring',description:'6 × 1.5h sessions',qty:1,rate_pence:90000}]},ctx});assert.equal(org.ok,true);
+// ---------- companies ----------
+{
+ const co=await import('../lib/companies.js');
+ assert.equal(co.cleanCompany({name:''}).ok,false);assert.equal(co.cleanCompany({name:'ACT',email:'bad'}).ok,false);
+ assert.deepEqual(co.billToFromCompany({name:'ACT Training',contact_name:'Finance team',email:'f@act.org',address:'Ocean Park House\nCardiff CF24 5ET'}),{name:'ACT Training',email:'f@act.org',address:'FAO Finance team\nOcean Park House\nCardiff CF24 5ET'});
+ const db=fresh();db.tables.billing_contacts=[{id:'co1',name:'Silkfutures',email:'pay@silkfutures.org',address:'Cardiff'}];
+ const r=await m.saveDraft(db,{input:{...input,billingContactId:'co1',billToName:'Silkfutures',billToEmail:'pay@silkfutures.org'},ctx});
+ assert.equal(r.ok,true);assert.equal(r.invoice.billing_contact_id,'co1');assert.equal(r.invoice.customer_id,'c1','company pays for the artist’s sessions');
+ assert.equal(db.tables.bookings[0].invoice_id,r.invoice.id);
+ await m.sendInvoice(db,{id:r.invoice.id});await m.markInvoicePaid(db,{id:r.invoice.id,method:'bank_transfer',ctx,stripe});
+ assert.equal(db.tables.bookings[0].payment_status,'paid','artist’s session marked paid when the company pays');
+ assert.equal((await m.saveDraft(db,{input:{...input,billingContactId:'gone'},ctx})).ok,false);
+}
 console.log('Invoicing: past sessions + custom lines, locking, numbering, bank/card payment counted once in Accounting, cancel/delete release passed');

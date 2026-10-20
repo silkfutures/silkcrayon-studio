@@ -7,6 +7,7 @@ import {requireOwner} from '../../../../lib/auth';
 import {getAdminDb} from '../../../../lib/supabase';
 import {getStudioSettings} from '../../../../lib/studioSettings';
 import {getInvoiceBank} from '../../../../lib/projectInvoices';
+import {listCompanies} from '../../../../lib/companies';
 import {invoiceRefGeneral} from '../../../../lib/invoiceRules';
 import {formatGBP} from '../../../../lib/services';
 import {formatUkDate} from '../../../../lib/dates';
@@ -22,7 +23,8 @@ export default async function InvoicePage({params,searchParams}){
  const head=<header className="adminHeader"><div><Link href="/admin/invoicing" className="backLink">← Invoicing</Link><p className="eyebrow">Invoice</p><h1>{inv.status==='draft'?'Draft invoice':`Invoice ${invoiceRefGeneral(inv)}`}</h1><p className="muted">{inv.bill_to_name}{inv.bill_to_email?` · ${inv.bill_to_email}`:''}</p></div><AdminNav profile={ctx.profile}/></header>;
  if(inv.status==='draft'){
   const [{data:customers=[]},pricing,bank]=await Promise.all([db.from('customers').select('id,full_name,artist_name,email,phone').order('artist_name').limit(5000),getStudioSettings(),getInvoiceBank(db).catch(()=>({complete:false,termsDays:7}))]);
-  return <main className="adminPage">{head}<section className="adminSection"><InvoiceActions invoice={inv}/></section><InvoiceEditor customers={customers||[]} initial={inv} hourlyPence={pricing.studioHourlyPricePence} termsDays={bank.termsDays??7} bankComplete={bank.complete}/></main>;
+ const companies=await listCompanies(db);
+  return <main className="adminPage">{head}<section className="adminSection"><InvoiceActions invoice={inv}/></section><InvoiceEditor customers={customers||[]} companies={companies} initial={inv} hourlyPence={pricing.studioHourlyPricePence} termsDays={bank.termsDays??7} bankComplete={bank.complete}/></main>;
  }
  const [label,cls]=STATUS[inv.status];
  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London'}).format(new Date());

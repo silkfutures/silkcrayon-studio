@@ -8,14 +8,19 @@ const money=p=>`£${(Number(p||0)/100).toFixed(2)}`;
 const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/London'}).format(new Date());
 const addDays=n=>new Date(Date.now()+n*86400000).toISOString().slice(0,10);
 const uk=v=>{try{return new Intl.DateTimeFormat('en-GB',{day:'2-digit',month:'short',year:'numeric',timeZone:'Europe/London'}).format(new Date(`${v}T12:00:00Z`));}catch{return v;}};
+const fromCompany=c=>({name:c.name,email:c.email||'',address:[c.contact_name?`FAO ${c.contact_name}`:null,c.address].filter(Boolean).join('\n')});
 const blank=()=>({key:Math.random().toString(36).slice(2),type:'custom',date:today(),service:'',description:'',qty:'1',rate:''});
 
 /** Create or edit a draft invoice. */
-export default function InvoiceEditor({customers=[],initial=null,hourlyPence=5000,termsDays=7,bankComplete=false,preselect=''}){
+export default function InvoiceEditor({customers=[],companies:companyList=[],initial=null,hourlyPence=5000,termsDays=7,bankComplete=false,preselect='',preselectCompany=''}){
  const router=useRouter();
  const [customerId,setCustomerId]=useState(initial?.customer_id||preselect||'');
- const [manual,setManual]=useState(Boolean(initial&&!initial.customer_id));
- const [billTo,setBillTo]=useState({name:initial?.bill_to_name||'',email:initial?.bill_to_email||'',address:initial?.bill_to_address||''});
+ const [mode,setMode]=useState(initial?.billing_contact_id||preselectCompany?'company':initial&&!initial.customer_id?'oneoff':'artist');
+ const [companies,setCompanies]=useState(companyList);
+ const [companyId,setCompanyId]=useState(initial?.billing_contact_id||preselectCompany||'');
+ const [saveCompany,setSaveCompany]=useState(false);
+ const [newCo,setNewCo]=useState(null),[coQuery,setCoQuery]=useState('');
+ const [billTo,setBillTo]=useState(()=>{if(initial)return {name:initial.bill_to_name||'',email:initial.bill_to_email||'',address:initial.bill_to_address||''};const co=companyList.find(c=>c.id===preselectCompany);return co?fromCompany(co):{name:'',email:'',address:''};});
  const [lines,setLines]=useState(()=>initial?.lines?.length?initial.lines.map(l=>({key:Math.random().toString(36).slice(2),...l,qty:String(l.qty),rate:(l.rate_pence/100).toFixed(2)})):[blank()]);
  const [due,setDue]=useState(initial?.due_date||addDays(termsDays)),[notes,setNotes]=useState(initial?.notes||''),[title,setTitle]=useState(initial?.title||'');
  const [billable,setBillable]=useState(null),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
@@ -23,7 +28,7 @@ export default function InvoiceEditor({customers=[],initial=null,hourlyPence=500
  const chosen=customers.find(c=>String(c.id)===String(customerId));
  useEffect(()=>{
   if(!customerId){setBillable(null);return;}
-  if(chosen&&!initial)setBillTo(b=>({...b,name:chosen.artist_name&&chosen.full_name&&chosen.artist_name!==chosen.full_name?`${chosen.full_name} (${chosen.artist_name})`:chosen.full_name||chosen.artist_name||'',email:chosen.email||''}));
+  if(chosen&&!initial&&mode==='artist')setBillTo(b=>({...b,name:chosen.artist_name&&chosen.full_name&&chosen.artist_name!==chosen.full_name?`${chosen.full_name} (${chosen.artist_name})`:chosen.full_name||chosen.artist_name||'',email:chosen.email||''}));
   let live=true;setBillable('loading');
   fetch(`/api/admin/invoices?customerId=${customerId}`).then(r=>r.json()).then(j=>{if(live)setBillable(j.error?{error:j.error}:j);}).catch(()=>live&&setBillable({error:'Could not load sessions.'}));
   return ()=>{live=false;};
@@ -35,14 +40,18 @@ export default function InvoiceEditor({customers=[],initial=null,hourlyPence=500
  const set=(key,field)=>e=>setLines(ls=>ls.map(l=>l.key===key?{...l,[field]:e.target.value}:l));
  const total=useMemo(()=>lines.reduce((n,l)=>n+Math.round((Number(l.qty)||0)*Math.round((Number(l.rate)||0)*100)),0),[lines]);
 
- function payload(){return {customerId:manual?null:customerId||null,billToName:billTo.name,billToEmail:billTo.email,billToAddress:billTo.address,title,dueDate:due,notes,
+ function payload(){return {customerId:mode==='oneoff'?null:customerId||null,billingContactId:mode==='company'?companyId||null:null,billToName:billTo.name,billToEmail:billTo.email,billToAddress:billTo.address,title,dueDate:due,notes,
   lines:lines.filter(l=>l.service||l.description||l.rate).map(l=>({type:l.type,booking_id:l.booking_id,session_report_id:l.session_report_id,hours:l.hours,date:l.date,service:l.service,description:l.description,qty:Number(l.qty),rate_pence:Math.round((Number(l.rate)||0)*100)}))};}
  async function save(send){
   if(send&&!billTo.email){setMsg('Add an email address to send it.');return;}
   if(send&&!confirm(`Email this invoice for ${money(total)} to ${billTo.email}?`))return;
+  if(mode==='company'&&!companyId){setMsg('Choose the company (or add a new one).');return;}
   setBusy(true);setMsg(send?'Sending…':'Saving…');
   try{
-   const r=initial?await fetch(`/api/admin/invoices/${initial.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({action:send?'save_send':'save',invoice:payload()})}):await fetch('/api/admin/invoices',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...payload(),send})});
+   let coId=mode==='company'?companyId:null;
+   if(mode==='oneoff'&&saveCompany){const cr=await fetch('/api/admin/companies',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:billTo.name,email:billTo.email,address:billTo.address})});const cj=await cr.json().catch(()=>({}));if(!cr.ok){setMsg(cj.error||'Could not save the company.');setBusy(false);return;}coId=cj.company.id;}
+   const body=payload();if(coId)body.billingContactId=coId;
+   const r=initial?await fetch(`/api/admin/invoices/${initial.id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({action:send?'save_send':'save',invoice:body})}):await fetch('/api/admin/invoices',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({...body,send})});
    const j=await r.json().catch(()=>({}));
    if(!r.ok||j.ok===false){setMsg(j.error||'Could not save.');setBusy(false);return;}
    const id=initial?.id||j.id;router.push(`/admin/invoicing/${id}${send?`?sent=${j.emailed===false?'failed':'1'}`:''}`);router.refresh();
@@ -52,16 +61,33 @@ export default function InvoiceEditor({customers=[],initial=null,hourlyPence=500
  const pending=billable&&billable!=='loading'&&!billable.error?[...(billable.bookings||[]).map(b=>({kind:'booking',item:b})),...(billable.sessions||[]).map(r=>({kind:'session',item:r}))]:[];
  return <div className={s.panel}>
   <section className="adminSection"><p className="eyebrow">Bill to</p>
-   {!manual&&<ArtistSearchSelect customers={customers} value={customerId} onChange={setCustomerId} label="artist"/>}
-   <label className={s.check} style={{marginTop:10}}><input type="checkbox" checked={manual} onChange={e=>{setManual(e.target.checked);if(e.target.checked){setCustomerId('');}}}/><span>Invoice someone who isn’t in my artists (e.g. an organisation)</span></label>
+   <div className={s.row} style={{marginBottom:12}}>{[['artist','An artist'],['company','A company'],['oneoff','Someone else (one-off)']].map(([k,l])=><label key={k} className={s.check}><input type="radio" checked={mode===k} onChange={()=>{setMode(k);if(k==='company'){const co=companies.find(c=>c.id===companyId);if(co)setBillTo(fromCompany(co));}if(k==='artist'&&chosen)setBillTo({name:chosen.full_name||chosen.artist_name||'',email:chosen.email||'',address:''});}}/><span>{l}</span></label>)}</div>
+   {mode==='artist'&&<ArtistSearchSelect customers={customers} value={customerId} onChange={setCustomerId} label="artist"/>}
+   {mode==='company'&&<div className={s.panel}>
+    {companyId?<div className={s.feeBox}><div><small>Company</small><b>{companies.find(c=>c.id===companyId)?.name}</b></div><button type="button" className={s.secondary} onClick={()=>setCompanyId('')}>Change</button></div>:<>
+     <input className={s.select} placeholder="Search your companies…" value={coQuery} onChange={e=>setCoQuery(e.target.value)}/>
+     <div className={s.history}>{companies.filter(c=>!coQuery||`${c.name} ${c.contact_name||''} ${c.email||''}`.toLowerCase().includes(coQuery.toLowerCase())).slice(0,12).map(c=><div key={c.id} className={s.historyRow}><span className={s.position}>{c.name.slice(0,1).toUpperCase()}</span><div><b>{c.name}</b><small>{[c.contact_name,c.email].filter(Boolean).join(' · ')||'No email saved'}</small></div><button type="button" className={s.primary} onClick={()=>{setCompanyId(c.id);setBillTo(fromCompany(c));}}>Choose</button></div>)}{!companies.length&&<p className={s.muted}>No companies saved yet.</p>}</div>
+     {newCo?<div className={s.form}><b>New company</b><div className={s.settingsGrid}>
+      <label className={s.field}><span>Company name</span><input value={newCo.name} onChange={e=>setNewCo({...newCo,name:e.target.value})}/></label>
+      <label className={s.field}><span>Contact person (FAO)</span><input value={newCo.contactName} onChange={e=>setNewCo({...newCo,contactName:e.target.value})}/></label>
+      <label className={s.field}><span>Invoice email</span><input type="email" value={newCo.email} onChange={e=>setNewCo({...newCo,email:e.target.value})}/></label>
+      <label className={s.field}><span>Phone</span><input value={newCo.phone} onChange={e=>setNewCo({...newCo,phone:e.target.value})}/></label>
+      <label className={s.field} style={{gridColumn:'1/-1'}}><span>Billing address</span><textarea className={s.textarea} rows={3} value={newCo.address} onChange={e=>setNewCo({...newCo,address:e.target.value})}/></label>
+     </div><div className={s.row}><button type="button" className={s.primary} disabled={busy} onClick={async()=>{setBusy(true);setMsg('');const r=await fetch('/api/admin/companies',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(newCo)});const j=await r.json().catch(()=>({}));setBusy(false);if(!r.ok){setMsg(j.error||'Could not save.');return;}setCompanies(cs=>[...cs,j.company].sort((a,b)=>a.name.localeCompare(b.name)));setCompanyId(j.company.id);setBillTo(fromCompany(j.company));setNewCo(null);}}>Save company</button><button type="button" className={s.secondary} onClick={()=>setNewCo(null)}>Cancel</button></div></div>
+     :<button type="button" className={s.secondary} onClick={()=>setNewCo({name:coQuery,contactName:'',email:'',phone:'',address:''})}>+ Add a new company</button>}
+    </>}
+    <div><p className={s.muted} style={{margin:'10px 0 6px'}}>Paying for an artist’s sessions? Choose the artist to add their unpaid sessions (optional).</p><ArtistSearchSelect customers={customers} value={customerId} onChange={setCustomerId} label="artist (optional)"/></div>
+   </div>}
    <div className={s.settingsGrid} style={{marginTop:12}}>
     <label className={s.field}><span>Name on invoice</span><input value={billTo.name} onChange={e=>setBillTo({...billTo,name:e.target.value})} placeholder="e.g. Ms Lily Webbe"/></label>
     <label className={s.field}><span>Email (where it’s sent)</span><input type="email" value={billTo.email} onChange={e=>setBillTo({...billTo,email:e.target.value})}/></label>
     <label className={s.field} style={{gridColumn:'1/-1'}}><span>Address (optional)</span><textarea className={s.textarea} rows={3} value={billTo.address} onChange={e=>setBillTo({...billTo,address:e.target.value})} placeholder={'Wales Millennium Centre, Bute Pl\nCardiff\nCF10 5AL'}/></label>
    </div>
+   {mode==='company'&&companyId&&<p className={s.muted}>These details come from the company’s profile. Changes here only affect this invoice — edit the company in Invoicing → Companies to change them for good.</p>}
+   {mode==='oneoff'&&<label className={s.check}><input type="checkbox" checked={saveCompany} onChange={e=>setSaveCompany(e.target.checked)}/><span>Save as a company for next time</span></label>}
   </section>
 
-  {!manual&&customerId&&<section className="adminSection"><p className="eyebrow">Unpaid sessions</p><h2 style={{marginTop:0}}>Add past sessions</h2>
+  {mode!=='oneoff'&&customerId&&<section className="adminSection"><p className="eyebrow">Unpaid sessions</p><h2 style={{marginTop:0}}>Add past sessions</h2>
    {billable==='loading'?<p className={s.muted}>Loading sessions…</p>:billable?.error?<p className={s.message}>{billable.error}</p>:pending.length?<div className={s.history}>{pending.map(({kind,item})=>{const added=onInvoice(item.id);return <div className={s.historyRow} key={item.id}><span className={s.position}>{kind==='booking'?'B':'S'}</span><div><b>{uk(kind==='booking'?item.booking_date:item.session_date)} · {kind==='booking'?item.service_name:'Logged session'}</b><small>{kind==='booking'?`${String(item.start_time).slice(0,5)}–${String(item.end_time).slice(0,5)} · ${Number(item.duration_minutes)/60}h · ${money(item.due_pence)} unpaid`:`${Number(item.actual_hours)}h${item.engineer?` with ${item.engineer}`:''} · no payment recorded`}</small></div><button type="button" className={added?s.secondary:s.primary} disabled={added} onClick={()=>kind==='booking'?addBooking(item):addSession(item)}>{added?'Added ✓':'Add'}</button></div>;})}</div>:<p className={s.muted}>No unpaid sessions for this artist.</p>}
   </section>}
 
