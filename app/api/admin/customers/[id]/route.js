@@ -9,11 +9,15 @@ export async function PATCH(req,{params}){
   if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
   const {id}=await params,body=await req.json(),db=getAdminDb();
   const fullName=String(body.fullName||'').trim(),email=String(body.email||'').trim().toLowerCase();
+  if(req.headers.get('sec-fetch-site')==='cross-site')return NextResponse.json({error:'Invalid origin.'},{status:403});
   if(!fullName||!email)return NextResponse.json({error:'Name and email are required.'},{status:400});
-  if(fullName.length>120||email.length>254||String(body.phone||'').length>50||String(body.instagram||'').length>200)return NextResponse.json({error:'Some artist details are too long.'},{status:400});
-  const patch={full_name:fullName,email,artist_name:String(body.artistName||'').trim()||null,phone:String(body.phone||'').trim()||null,instagram:String(body.instagram||'').trim()||null,preferred_genre:String(body.preferredGenre||'').trim()||null,area:String(body.area||'').trim()||null,goals:String(body.goals||'').trim()||null,sms_service_consent:Boolean(String(body.phone||'').trim()),updated_at:new Date().toISOString()};
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return NextResponse.json({error:'Enter a valid email address.'},{status:400});
+  if(fullName.length>120||email.length>254||String(body.phone||'').length>50||String(body.instagram||'').length>200||String(body.artistName||'').length>120||String(body.postcode||'').length>12||String(body.goals||'').length>4000)return NextResponse.json({error:'Some artist details are too long.'},{status:400});
+  const {data:clash}=await db.from('customers').select('id,artist_name,full_name').eq('email',email).neq('id',id).maybeSingle();
+  if(clash)return NextResponse.json({error:`That email already belongs to another artist (${clash.artist_name||clash.full_name}).`},{status:409});
+  const patch={full_name:fullName,email,artist_name:String(body.artistName||'').trim()||null,phone:String(body.phone||'').trim()||null,instagram:String(body.instagram||'').trim()||null,preferred_genre:String(body.preferredGenre||'').trim()||null,area:String(body.area||'').trim()||null,...('postcode' in body?{postcode:String(body.postcode||'').trim().toUpperCase()||null}:{}),goals:String(body.goals||'').trim()||null,sms_service_consent:Boolean(String(body.phone||'').trim()),updated_at:new Date().toISOString()};
   const {data,error}=await db.from('customers').update(patch).eq('id',id).select().single();
-  if(error)throw error;
+  if(error){if(error.code==='23505')return NextResponse.json({error:'That email already belongs to another artist.'},{status:409});throw error;}
   await db.from('crm_contacts').update({full_name:data.full_name,email:data.email,phone:data.phone,updated_at:new Date().toISOString()}).eq('customer_id',id);
   return NextResponse.json({ok:true,customer:data});
  }catch(e){console.error('Update customer failed',e);return NextResponse.json({error:e.message||'Could not update artist.'},{status:500});}
