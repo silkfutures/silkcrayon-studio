@@ -82,12 +82,14 @@ function fakeDb(tables){
    select(){if(mode!=='select')returning=true;return api;},
    update(p){mode='update';patch=p;return api;},
    insert(r){mode='insert';insertRows=Array.isArray(r)?r:[r];return api;},
+   upsert(r){const list=Array.isArray(r)?r:[r];for(const x of list){const ex=rows().find(y=>y.key===x.key);if(ex)Object.assign(ex,x);else rows().push({...x});}mode='noop';return api;},
    eq(k,v){filters.push(r=>r[k]===v);return api;},neq(k,v){filters.push(r=>r[k]!==v);return api;},
-   in(k,v){filters.push(r=>v.includes(r[k]));return api;},is(k,v){filters.push(r=>(r[k]??null)===v);return api;},
+   in(k,v){filters.push(r=>v.includes(r[k]));return api;},not(k,op,v){filters.push(r=>op==='is'?(r[k]??null)!==v:r[k]!==v);return api;},is(k,v){filters.push(r=>(r[k]??null)===v);return api;},
    lte(k,v){filters.push(r=>r[k]!=null&&r[k]<=v);return api;},lt(k,v){filters.push(r=>r[k]!=null&&r[k]<v);return api;},
    gt(k,v){filters.push(r=>r[k]!=null&&r[k]>v);return api;},gte(k,v){filters.push(r=>r[k]!=null&&r[k]>=v);return api;},like(){return api;},
    order(k){orders.push(k);return api;},limit(n){lim=n;return api;},
    run(){
+    if(mode==='noop')return {data:null,error:null};
     if(mode==='insert'){const out=insertRows.map(r=>({id:id(),attempts:0,created_at:new Date().toISOString(),...r}));
      if(table==='engineer_payouts')for(const r of out)if(rows().some(x=>x.booking_id===r.booking_id&&x.kind===r.kind&&x.status!=='cancelled'))return {data:null,error:{code:'23505'}};
      rows().push(...out);return {data:out,error:null};}
@@ -113,7 +115,7 @@ async function load(path,modules){
 }
 const emails=[];
 const notifications={sendEmail:async m=>{emails.push(m);return {ok:true};},ownerEmails:async()=>['owner@silkcrayon.com'],staffEmail:async()=>'eng@example.com',notifyAssignedEngineer:async()=>({ok:true})};
-const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetupNudgeEmail:()=>({subject:'setup',html:''}),payoutFailedOwnerEmail:()=>({subject:'failed',html:''}),offerEmail:()=>({subject:'offer',html:''}),ownerOfferAlertEmail:({kind})=>({subject:`alert:${kind}`,html:''}),siteUrl:()=>'https://silkcrayon.com',prettyDeadline:v=>String(v)};
+const emailTemplates={lowBalanceEmail:()=>({subject:'low balance',html:''}),payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetupNudgeEmail:()=>({subject:'setup',html:''}),payoutFailedOwnerEmail:()=>({subject:'failed',html:''}),offerEmail:()=>({subject:'offer',html:''}),ownerOfferAlertEmail:({kind})=>({subject:`alert:${kind}`,html:''}),siteUrl:()=>'https://silkcrayon.com',prettyDeadline:v=>String(v)};
 
 // ---------- payouts: idempotent, funded, held when not set up ----------
 {
@@ -122,16 +124,18 @@ const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetup
   staff_profiles:[{user_id:'billy',engineer_name:'Billy',role:'engineer',active:true,email:'billy@example.com',stripe_connect_account_id:'acct_billy',stripe_transfers_active:true},{user_id:'benny',engineer_name:'Benny',role:'engineer',active:true,email:'benny@example.com'}],
   bookings:[{id:'b1',booking_date:'2026-10-19',start_time:'10:00:00',end_time:'13:00:00',stripe_payment_intent_id:'pi_1'}],
   engineer_payouts:[
-   {id:'p1',booking_id:'b1',engineer_user_id:'billy',kind:'session',amount_pence:6000,status:'pending',attempts:0,release_after:past,created_at:past},
-   {id:'p2',booking_id:'b2',engineer_user_id:'benny',kind:'session',amount_pence:4000,status:'pending',attempts:0,release_after:past,created_at:past},
-   {id:'p3',booking_id:'b3',engineer_user_id:'billy',kind:'session',amount_pence:5000,status:'pending',attempts:0,release_after:new Date(Date.now()+H).toISOString(),created_at:past}
+   {id:'p1',booking_id:'b1',engineer_user_id:'billy',kind:'session',funding_source:'card',amount_pence:6000,status:'pending',attempts:0,release_after:past,created_at:past},
+   {id:'p2',booking_id:'b2',engineer_user_id:'benny',kind:'session',funding_source:'off_stripe',approved_at:past,amount_pence:4000,status:'pending',attempts:0,release_after:past,created_at:past},
+   {id:'p3',booking_id:'b3',engineer_user_id:'billy',kind:'session',funding_source:'card',amount_pence:5000,status:'pending',attempts:0,release_after:new Date(Date.now()+H).toISOString(),created_at:past}
   ]});
- const transfers=[];let failNext=null;
+ const transfers=[];let failNext=null,stripeBalance=0;
  const stripe={
   transfers:{list:async({transfer_group})=>({data:transfers.filter(t=>t.transfer_group===transfer_group)}),create:async(p,o)=>{if(failNext){const e=failNext;failNext=null;throw e;}const t={id:`tr_${transfers.length+1}`,...p,reversed:false,key:o.idempotencyKey};transfers.push(t);return t;}},
-  paymentIntents:{retrieve:async()=>({latest_charge:'ch_1',currency:'gbp',amount_received:15000})}
+  paymentIntents:{retrieve:async()=>({latest_charge:'ch_1',currency:'gbp',amount_received:15000})},
+  balance:{retrieve:async()=>({available:[{currency:'gbp',amount:stripeBalance}],pending:[]})}
  };
  const m=await load('../lib/engineerPayouts.js',{'./stripe':{getStripe:()=>stripe},'./notifications':notifications,'./bookingEvents':{recordBookingEvent:async()=>{}},'./engineerWorkEmails':emailTemplates,'./engineerWorkRules.js':rules,'./engineerOffers':{getEngineerWorkSettings:async()=>normaliseOfferSettings({})}});
+ db.tables.studio_settings=[];
  const [a,b]=await Promise.all([m.executePayout(db,'p1',{stripe}),m.executePayout(db,'p1',{stripe})]);
  assert.equal([a,b].filter(x=>x.status==='paid').length,1,'concurrent runners pay once');
  assert.equal(transfers.length,1);assert.equal(transfers[0].source_transaction,'ch_1','card bookings fund the transfer from their own charge');assert.equal(transfers[0].destination,'acct_billy');
@@ -139,6 +143,8 @@ const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetup
  assert.equal((await m.executePayout(db,'p1',{stripe})).skipped,true,'paid payouts are never resent');
  // A previous attempt succeeded at Stripe but the result was lost → record it, don't pay again.
  db.tables.engineer_payouts[0].status='failed';db.tables.engineer_payouts[0].next_attempt_at=past;
+ assert.equal((await m.executePayout(db,'p1',{stripe})).skipped,'already_paid','a recorded transfer is never re-sent');
+ Object.assign(db.tables.engineer_payouts[0],{stripe_transfer_id:null,paid_via:null});
  assert.equal((await m.executePayout(db,'p1',{stripe})).status,'paid');assert.equal(transfers.length,1,'transfer_group check prevents a duplicate');
  // Not set up → on hold, one nudge.
  assert.equal((await m.executePayout(db,'p2',{stripe})).status,'on_hold');
@@ -167,6 +173,46 @@ const emailTemplates={payoutPaidEmail:()=>({subject:'paid',html:''}),payoutSetup
  const dryPay=await m.createPayoutsForReport(db,{bookingBefore:dry,engineerUserId:'eng3',report:{id:'rd'},actualHours:6});
  assert.equal(dryPay.total,2000,'dry hire opener gets the flat £20');
  assert.equal((await m.createPayoutsForReport(db,{bookingBefore:{...dry,id:'dh2',engineer_user_id:null,engineer_fee_pence:null},engineerUserId:'eng3',report:{id:'rd2'},actualHours:6})).skipped,'dry_hire','no open & close job accepted → nothing paid');
+ // ---- off-Stripe safety ----
+ assert.equal(db.tables.engineer_payouts.find(p=>p.booking_id==='b9').status,'needs_approval','a booking not paid by card never pays automatically');
+ assert.equal(db.tables.engineer_payouts.find(p=>p.booking_id==='b9').funding_source,'off_stripe');
+ const cardBooking={...booking,id:'bc1',stripe_payment_intent_id:'pi_c',payment_status:'paid',payment_method:'stripe'};
+ await m.createPayoutsForReport(db,{bookingBefore:cardBooking,engineerUserId:'eng3',report:{id:'rc1'},actualHours:3});
+ const cardPayout=db.tables.engineer_payouts.find(p=>p.booking_id==='bc1');
+ assert.equal(cardPayout.status,'pending');assert.equal(cardPayout.funding_source,'card');
+ for(const method of ['bank_transfer','manual','credits','cash']){
+  await m.createPayoutsForReport(db,{bookingBefore:{...booking,id:`bx-${method}`,payment_status:'paid',payment_method:method,stripe_payment_intent_id:method==='credits'?'pi_old':null},engineerUserId:'eng3',report:{id:`r-${method}`},actualHours:3});
+  assert.equal(db.tables.engineer_payouts.find(p=>p.booking_id===`bx-${method}`).status,'needs_approval',`${method} is held for the owner`);
+ }
+ // Even if something sets an unapproved off-Stripe payout to pending, the runner refuses to send it.
+ const offId=db.tables.engineer_payouts.find(p=>p.booking_id==='bx-bank_transfer').id;
+ db.tables.staff_profiles.find(x=>x.user_id==='eng3').stripe_connect_account_id='acct_eng3';db.tables.staff_profiles.find(x=>x.user_id==='eng3').stripe_transfers_active=true;
+ const off=db.tables.engineer_payouts.find(p=>p.id===offId);off.status='pending';
+ const before=transfers.length;
+ assert.equal((await m.executePayout(db,offId,{stripe})).status,'needs_approval');assert.equal(transfers.length,before,'no transfer without the owner choosing Pay via Stripe');
+ // Mark as paid outside Stripe → closed for good.
+ assert.equal((await m.markPaidOutsideStripe(db,{id:offId,note:'Monzo',ctx:{user:{id:'owner'}},stripe})).ok,true);
+ assert.equal(off.status,'paid');assert.equal(off.paid_via,'outside_stripe');
+ assert.equal((await m.approvePayout(db,{id:offId,amountPence:null,ctx:{user:{id:'owner'}}})).ok,false,'a payout paid by hand can never be sent by Stripe');
+ off.status='pending';off.approved_at=past;assert.equal((await m.executePayout(db,offId,{stripe})).skipped,'already_paid');assert.equal(transfers.length,before);off.status='paid';
+ // If Stripe secretly already paid it, marking it by hand is refused and it's recorded as paid via Stripe.
+ const lost=db.tables.engineer_payouts.find(p=>p.booking_id==='bx-manual');lost.status='failed';lost.attempts=1;lost.approved_at=past;
+ transfers.push({id:'tr_lost',transfer_group:`engineer_payout_${lost.id}`,destination:'acct_eng3',amount:6000,reversed:false});
+ const dup=await m.markPaidOutsideStripe(db,{id:lost.id,ctx:{user:{id:'owner'}},stripe});
+ assert.equal(dup.ok,false);assert.match(dup.error,/already paid/);assert.equal(lost.paid_via,'stripe');assert.equal(lost.stripe_transfer_id,'tr_lost');
+ const lostCancel=await m.cancelPayout(db,{id:lost.id,stripe});assert.equal(lostCancel.ok,false);
+ // Card payout whose card payment can't fund it is held, not moved onto the balance.
+ stripe.paymentIntents.retrieve=async()=>({latest_charge:'ch_x',currency:'gbp',amount_received:100});
+ const r1=await m.executePayout(db,cardPayout.id,{stripe});
+ assert.equal(r1.status,'needs_approval');assert.equal(cardPayout.funding_source,'off_stripe');assert.equal(transfers.length,before+1,'only the lost transfer exists');
+ // Low balance: approved off-Stripe payouts vs Stripe balance, one email a day.
+ emails.length=0;
+ const cash=db.tables.engineer_payouts.find(p=>p.booking_id==='bx-cash');cash.status='failed';cash.approved_at=past;cash.next_attempt_at=new Date(Date.now()+H).toISOString();
+ stripeBalance=2000;
+ const chk=await m.balanceCheck(db,{stripe});assert.equal(chk.needed,6000);assert.equal(chk.available,2000);assert.equal(chk.short,4000);
+ assert.equal((await m.lowBalanceAlert(db,{stripe})).alerted,true);assert.equal((await m.lowBalanceAlert(db,{stripe})).alerted,false,'max one alert a day');
+ assert.equal(emails.filter(e=>e.source==='engineer_low_balance').length,1);
+ stripeBalance=10000;assert.equal((await m.lowBalanceAlert(db,{stripe})).lowBalance,false);
  db.tables.staff_profiles.push({user_id:'own',role:'owner',active:true});
  assert.equal((await m.createPayoutsForReport(db,{bookingBefore:{...booking,id:'b10'},engineerUserId:'own',report:{id:'r10'},actualHours:3})).skipped,'owner');
 }
