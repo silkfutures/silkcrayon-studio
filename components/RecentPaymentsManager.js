@@ -7,9 +7,9 @@ function looksGenerated(value){const s=String(value||'').trim();return s.length>
 function displayName(payment){const n=payment.customers?.artist_name||payment.customers?.full_name||'';if(!n||looksGenerated(n))return payment.status==='pending'?'Checkout attempt':'Customer';return n}
 function ageHours(iso){return (Date.now()-new Date(iso).getTime())/36e5}
 
-export default function RecentPaymentsManager({payments=[]}){
+export default function RecentPaymentsManager({payments=[],bookings=[]}){
  const router=useRouter();
- const [busy,setBusy]=useState('');
+ const [links,setLinks]=useState({});const [busy,setBusy]=useState('');
  const [error,setError]=useState('');
  const [showAbandoned,setShowAbandoned]=useState(false);
  const {real,attempts}=useMemo(()=>{
@@ -19,7 +19,13 @@ export default function RecentPaymentsManager({payments=[]}){
    }
    return {real,attempts};
  },[payments]);
- async function removeOne(p){
+ async function reconcile(payment){
+  const bookingId=links[payment.id];if(!bookingId)return setError('Select the booking to reconcile.');
+  setBusy(payment.id);setError('');
+  try{const r=await fetch('/api/admin/payments/reconcile',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({paymentId:payment.id,bookingId})});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Reconciliation failed');router.refresh();}
+  catch(e){setError(e.message)}finally{setBusy('')}
+ }
+  async function removeOne(p){
    const label=displayName(p);
    if(!confirm(`Delete this ${p.status} payment record for ${label}? This cannot delete a completed Stripe payment.`))return;
    setBusy(p.id);setError('');
@@ -40,8 +46,9 @@ export default function RecentPaymentsManager({payments=[]}){
  }
  return <>
    <section className="engSection"><div className="engSectionHead"><div><h2>Recent payments</h2><p>Money that actually moved or was formally reversed.</p></div></div>
-     <div className="engArtistList">{real.length?real.slice(0,8).map(p=><div key={p.id} className="engArtistRow paymentRow"><div data-sensitive="financial" className="engAvatar">£</div><div><b>{displayName(p)}</b><small>{p.description} · {String(p.status).replaceAll('_',' ')}</small></div><span data-sensitive="financial">{gbp(p.amount_pence)}</span></div>):<div className="engEmptyState"><b>No completed payments yet.</b><p>Paid transactions will appear here.</p></div>}</div>
+     <div className="engArtistList">{real.length?real.slice(0,8).map(p=><div key={p.id} className="engArtistRow paymentRow"><div data-sensitive="financial" className="engAvatar">£</div><div><b>{displayName(p)}</b><small>{p.description} · {String(p.status).replaceAll('_',' ')}</small>{p.kind==='session'&&p.status==='paid'&&!p.booking_id&&<div className="paymentReconcile" style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:8}}><select aria-label="Booking to mark paid" value={links[p.id]||''} onChange={e=>setLinks(v=>({...v,[p.id]:e.target.value}))}><option value="">Match to session…</option>{bookings.filter(b=>b.customer_id===p.customer_id&&b.payment_status!=='paid'&&b.status!=='cancelled'&&Number(b.amount_pence||0)-Number(b.amount_paid_pence||0)===Number(p.amount_pence||0)).map(b=><option key={b.id} value={b.id}>{b.booking_date} · {String(b.start_time).slice(0,5)} · {b.service_name}</option>)}</select><button type="button" disabled={busy===p.id||!links[p.id]} onClick={()=>reconcile(p)}>{busy===p.id?'Checking Stripe…':'Verify & mark paid'}</button></div>}</div><span data-sensitive="financial">{gbp(p.amount_pence)}</span></div>):<div className="engEmptyState"><b>No completed payments yet.</b><p>Paid transactions will appear here.</p></div>}</div>
    </section>
+   {error&&<p role="alert" className="formError">{error}</p>}
    <section className="engSection paymentAttemptsSection">
     <button type="button" className="paymentAttemptsToggle" onClick={()=>setShowAbandoned(v=>!v)} aria-expanded={showAbandoned}>
       <span><b>Pending / abandoned checkouts</b><small data-sensitive="financial">{attempts.length} checkout attempt{attempts.length===1?'':'s'} · not counted as revenue</small></span><span>{showAbandoned?'−':'+'}</span>

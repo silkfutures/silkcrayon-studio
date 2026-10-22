@@ -44,14 +44,6 @@ export async function POST(request) {
         if (session.payment_status === 'paid') await onInvoiceCheckoutPaid(db, session);
         return NextResponse.json({ received: true });
       }
-      if(session.metadata?.mix_extra_revision_order_id&&session.payment_status==='paid'){
-        const {data:order}=await db.from('mix_extra_revision_orders').select('amount_pence').eq('id',session.metadata.mix_extra_revision_order_id).maybeSingle();
-        if(order&&Number(session.amount_total)===Number(order.amount_pence)){
-          const {error}=await db.rpc('fulfil_mix_extra_revision',{p_order_id:session.metadata.mix_extra_revision_order_id,p_session_id:session.id,p_amount:Number(session.amount_total)});
-          if(error)throw error;
-        }
-        return NextResponse.json({received:true});
-      }
       const mixJobId = session.metadata?.mix_job_id;
       if(mixJobId&&session.payment_status==='paid'){
         const {data:mix}=await db.from('mix_jobs').select('*,customers(*)').eq('id',mixJobId).maybeSingle();
@@ -87,8 +79,15 @@ export async function POST(request) {
           if(updateError) throw updateError;
           if(isPaid){try{await onStudioPaymentPaid(db,{paymentId:payment.id,session});}catch(invoiceError){console.error('Project invoice update failed',invoiceError?.message||invoiceError);}}
           if(isPaid&&payment.booking_id){
+            const {data:currentBooking,error:bookingLookupError}=await db.from('bookings').select('id,customer_id,status,payment_status,amount_pence,amount_paid_pence').eq('id',payment.booking_id).single();
+            if(bookingLookupError)throw bookingLookupError;
+            if(currentBooking.customer_id!==payment.customer_id)throw new Error('Booking/customer mismatch in Stripe payment');
+            // A linked checkout is only valid for the outstanding balance; do not overwrite unrelated payments.
+            const outstanding=Math.max(0,Number(currentBooking.amount_pence||0)-Number(currentBooking.amount_paid_pence||0));
+            if(currentBooking.payment_status==='paid')return NextResponse.json({received:true});
+            if(currentBooking.status==='cancelled'||outstanding!==Number(payment.amount_pence||0))throw new Error('Booking outstanding balance differs from checkout amount; manual reconciliation required');
             const {error:bookingPayError}=await db.from('bookings').update({
-              status:'confirmed',payment_status:'paid',payment_method:'stripe',amount_paid_pence:payment.amount_pence,
+              status:'confirmed',payment_status:'paid',payment_method:'stripe',amount_paid_pence:currentBooking.amount_pence,
               stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,
               stripe_checkout_session_id:session.id,hold_expires_at:null,updated_at:new Date().toISOString(),...inv
             }).eq('id',payment.booking_id);

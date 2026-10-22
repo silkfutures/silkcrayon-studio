@@ -1,26 +1,14 @@
-# Silkcrayon Studio OS — V20.2.6 Release Candidate
+# Silkcrayon OS — Stripe session payment reconciliation
 
-Next.js + Supabase + Stripe + Resend + optional Twilio system for the Silkcrayon website, bookings, My Studio customer portal, owner/engineer operations, CRM and lifecycle messaging.
+**Based on uploaded `silkcrayon-studio-main (10).zip` (21 October).** Copy the six file paths under `app/` and `components/` into the same paths in your GitHub project. Merge carefully with later mix patches. No SQL migration required.
 
-## V20.2.6 upgrade
-1. Run `supabase/v20-2-5-audit-hardening.sql` if not already run.
-2. Run `supabase/v20-2-6-release-hardening.sql`.
-3. Configure the variables in `.env.example`.
-4. Deploy to the Vercel preview domain.
-5. Run a real end-to-end test before changing DNS.
+## Existing paid booking
+Open **OS → Payments → Recent payments**. Find the successful unlinked Session payment. Use **Match to session…** then **Verify & mark paid**. The app checks Stripe Checkout payment status and exact amount, customer identity, and existing booking balance. Only the OS owner can perform reconciliation. Refresh Today to see Paid. If no matching booking appears, do not charge again; compare the amount/customer in Stripe and booking records.
 
-## Production rules
-- Keep `ENABLE_SYSTEM_TEST_BOOKING=false`.
-- Remove `ADMIN_USERNAME` / `ADMIN_PASSWORD` after the owner account exists.
-- Configure `CRON_SECRET` or automated reminders cannot run.
-- Essential booking SMS must remain service-only; promotional content belongs in separately consented marketing messages.
-- Studio Finish defaults: £60, within 7 days, 1 revision.
+## Future transactions
+When creating a Session payment from OS → Payments, select the specific booking. The payment and Stripe checkout will carry its ID, so the webhook updates booking payment status. Linked bookings require exact outstanding amount. For partial payments use a separate supported deposit workflow; do not pass a partial payment as fully paid.
 
-## QA commands
-- `npm run check:imports`
-- `npm run test:contracts`
-- `npm run build`
+## Checks before production
+Set and verify `STRIPE_WEBHOOK_SECRET` for the `/api/stripe/webhook` endpoint. Stripe Dashboard → Workbench → Webhooks → event `checkout.session.completed` or `checkout.session.async_payment_succeeded` must succeed (2xx). Preview-test completed card checkout and async Pay by Bank, including duplicate event delivery. This patch has not been tested against live Stripe or Supabase. Use Stripe test mode before deploying live.
 
-## External endpoints
-- Stripe webhook: `/api/stripe/webhook`
-- Twilio inbound/opt-out webhook: `/api/twilio/inbound`
+**Important**: Reconciliation verifies existing payment, and never creates a second charge or refund. If a single paid checkout covers multiple bookings, or payment value differs, manual review is required.
