@@ -44,6 +44,14 @@ export async function POST(request) {
         if (session.payment_status === 'paid') await onInvoiceCheckoutPaid(db, session);
         return NextResponse.json({ received: true });
       }
+      if(session.metadata?.mix_extra_revision_order_id&&session.payment_status==='paid'){
+        const {data:order}=await db.from('mix_extra_revision_orders').select('amount_pence').eq('id',session.metadata.mix_extra_revision_order_id).maybeSingle();
+        if(order&&Number(session.amount_total)===Number(order.amount_pence)){
+          const {error}=await db.rpc('fulfil_mix_extra_revision',{p_order_id:session.metadata.mix_extra_revision_order_id,p_session_id:session.id,p_amount:Number(session.amount_total)});
+          if(error)throw error;
+        }
+        return NextResponse.json({received:true});
+      }
       const mixJobId = session.metadata?.mix_job_id;
       if(mixJobId&&session.payment_status==='paid'){
         const {data:mix}=await db.from('mix_jobs').select('*,customers(*)').eq('id',mixJobId).maybeSingle();

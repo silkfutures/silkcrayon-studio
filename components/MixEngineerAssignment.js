@@ -1,0 +1,7 @@
+'use client';
+import {useState} from 'react';import {useRouter} from 'next/navigation';
+export default function MixEngineerAssignment({jobId,currentId,feePence,engineers=[]}){
+ const [uid,setUid]=useState(currentId||'');const [fee,setFee]=useState(String((feePence||0)/100));const [msg,setMsg]=useState('');const [busy,setBusy]=useState(false);const router=useRouter();
+ async function save(){setBusy(true);try{const r=await fetch(`/api/admin/mixes/${jobId}/engineer`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({engineerUserId:uid||null,feePence:Math.round(Number(fee)*100)})});const x=await r.json();if(!r.ok)throw Error(x.error);setMsg('Saved');router.refresh()}catch(e){setMsg(e.message)}finally{setBusy(false)}}
+ return <div style={{display:'grid',gap:12,maxWidth:540}}><h2>Engineer assignment & approval payout</h2><label>Assigned engineer<select value={uid} onChange={e=>setUid(e.target.value)}><option value="">Unassigned</option>{engineers.map(e=><option key={e.user_id} value={e.user_id}>{e.engineer_name||e.full_name}</option>)}</select></label><label>Agreed fee (£)<input type="number" min="0" step="0.01" value={fee} onChange={e=>setFee(e.target.value)}/></label><p className="muted">Stripe Connect transfer is released after client approval, when the original job was paid by card. Fee and assignment lock once the job is approved.</p><button className="button outline" disabled={busy} onClick={save}>Save engineer & fee</button><p role="status">{msg}</p></div>
+}

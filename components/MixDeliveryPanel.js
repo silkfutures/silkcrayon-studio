@@ -23,6 +23,7 @@ export default function MixDeliveryPanel({jobId,revisions=[]}){
   const [url,setUrl]=useState('');
   const [files,setFiles]=useState([]);
   const [revisionId,setRevisionId]=useState('');
+  const [engineerNotes,setEngineerNotes]=useState('');
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState('');
   const inputRef=useRef(null);
@@ -65,7 +66,7 @@ export default function MixDeliveryPanel({jobId,revisions=[]}){
   async function send(){
     try{
       setBusy(true);setMsg('');
-      let payload={revisionId:revisionId||null};
+      let payload={revisionId:revisionId||null,engineerNotes};
       if(mode==='upload'){
         if(!files.length)throw new Error('Choose at least one mix file first.');
         const client=browserClient(),uploaded=[];
@@ -84,7 +85,7 @@ export default function MixDeliveryPanel({jobId,revisions=[]}){
       const result=await response.json().catch(()=>({}));
       if(!response.ok)throw new Error(result.error||'Could not send the mix.');
       setMsg(`${result.fileCount>1?`${result.fileCount} files`:'Mix'} sent ✓${result.emailSent?' Email sent.':''}${result.smsSent?' Text sent.':''}`);
-      setUrl('');setFiles([]);
+      setUrl('');setFiles([]);setEngineerNotes('');
       router.push('/admin/mixes');
       router.refresh();
     }catch(error){
@@ -104,6 +105,7 @@ export default function MixDeliveryPanel({jobId,revisions=[]}){
       <button type="button" className={mode==='link'?styles.active:''} onClick={()=>{setMode('link');setMsg('')}}>Paste link</button>
     </div>
 
+    <label className={styles.field}><span>Engineer notes (included with delivery)</span><textarea value={engineerNotes} maxLength={2000} onChange={e=>setEngineerNotes(e.target.value)} rows={3} placeholder="What changed in this version?"/></label>
     <label className={styles.field}>
       <span>Version</span>
       <select value={revisionId} onChange={event=>setRevisionId(event.target.value)}>

@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {getCustomerContext} from '../../../../../lib/customerAuth';
 import {getAdminDb} from '../../../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../../../lib/notifications';
+import {notifyMixEngineer,releaseApprovedMixPayout} from '../../../../../lib/mixEngineer';
 
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 
@@ -22,7 +23,7 @@ export async function POST(req,{params}){
       await db.from('mix_activity').insert({mix_job_id:id,event_type:'client_approved',channel:'customer_portal',status:'recorded',detail:'Client approved the latest mix version.'});
     }else if(b.action==='revision'){
       const {count}=await db.from('mix_revisions').select('id',{count:'exact',head:true}).eq('mix_job_id',id);
-      if(!['first_mix_sent','revisions'].includes(j.status)||Number(count)>=Number(j.included_revisions))return NextResponse.json({error:'No revision rounds remain.'},{status:409});
+      if(!['first_mix_sent','revisions'].includes(j.status)||Number(count)>=Number(j.included_revisions)+Number(j.extra_revisions_paid||0))return NextResponse.json({error:'No revision rounds remain.'},{status:409});
       notes=String(b.notes||'').trim();
       if(!notes)return NextResponse.json({error:'Add your revision notes.'},{status:400});
       if(notes.length>3000)return NextResponse.json({error:'Please keep revision notes under 3,000 characters.'},{status:400});
@@ -41,6 +42,8 @@ export async function POST(req,{params}){
       ? `<p><b>${escapeHtml(artist)}</b> approved <b>${escapeHtml(j.track_title)}</b>. No further client changes are requested on this version.</p>`
       : `<p><b>${escapeHtml(artist)}</b> requested changes to <b>${escapeHtml(j.track_title)}</b>.</p><div style="margin:18px 0;padding:16px;border-left:3px solid #c394ff;background:#110c16;white-space:pre-wrap">${escapeHtml(notes)}</div>`;
     for(const email of await ownerEmails())await sendEmail({to:email,subject,html:`<div style="font-family:Arial;background:#070608;color:#fff;padding:28px"><div style="max-width:620px;margin:auto;border:1px solid #3a3043;padding:28px"><div style="color:#c394ff;letter-spacing:3px;font-size:11px">SILKCRAYON OS</div><h1>${approved?'Mix approved.':'Revision requested.'}</h1>${detail}<p><a href="${base}/admin/mixes/${id}" style="display:inline-block;background:#c394ff;color:#0d0911;padding:14px 18px;text-decoration:none;font-weight:900">OPEN MIX JOB →</a></p></div></div>`});
+    try{await notifyMixEngineer(db,j,approved?'approved':'revision',notes);}catch(e){console.error("Engineer notification failed",e)}
+    if(approved)await releaseApprovedMixPayout(db,id);
     return NextResponse.json({ok:true});
   }catch(e){return NextResponse.json({error:e.message||'Could not update mix.'},{status:500})}
 }

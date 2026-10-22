@@ -1,6 +1,7 @@
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../../lib/supabase';
 import {ownerEmails,sendEmail} from '../../../../lib/notifications';
+import {notifyMixEngineer,releaseApprovedMixPayout} from '../../../../lib/mixEngineer';
 
 const escapeHtml=value=>String(value||'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
 const baseUrl=request=>String(process.env.NEXT_PUBLIC_SITE_URL||new URL(request.url).origin).replace(/\/$/,'');
@@ -74,11 +75,13 @@ export async function POST(request,{params}){
       await db.from('mix_tracks').update({status:'approved'}).eq('mix_job_id',job.id);
       await db.from('mix_activity').insert({mix_job_id:job.id,event_type:'client_approved',channel:'review_link',status:'recorded',detail:'Client approved the latest mix version.'});
       await notifyOwners({request,job,customer:job.customers,action:'approve'});
+      try{await notifyMixEngineer(db,job,'approved');}catch(e){console.error("Engineer notification failed",e)}
+      await releaseApprovedMixPayout(db,job.id);
       return NextResponse.json({ok:true,status:'approved'});
     }
 
     if(body.action==='revision'){
-      if(revisionCount>=Number(job.included_revisions||0))return NextResponse.json({error:'The included revision allowance has already been used. Please contact the studio if you need anything else.'},{status:409});
+      if(revisionCount>=Number(job.included_revisions||0)+Number(job.extra_revisions_paid||0))return NextResponse.json({error:'The included revision allowance has already been used. Please contact the studio if you need anything else.'},{status:409});
       const notes=String(body.notes||'').trim();
       if(notes.length<3)return NextResponse.json({error:'Tell us the specific change you need.'},{status:400});
       if(notes.length>3000)return NextResponse.json({error:'Please keep revision notes under 3,000 characters.'},{status:400});
@@ -90,6 +93,7 @@ export async function POST(request,{params}){
       await db.from('mix_tracks').update({status:'revisions'}).eq('mix_job_id',job.id);
       await db.from('mix_activity').insert({mix_job_id:job.id,event_type:'revision_requested',channel:'review_link',status:'recorded',detail:`Client requested revision ${revisionNumber}: ${notes}`});
       await notifyOwners({request,job,customer:job.customers,action:'revision',notes});
+      await notifyMixEngineer(db,job,'revision',notes);
       return NextResponse.json({ok:true,status:'revisions',revisionNumber});
     }
 

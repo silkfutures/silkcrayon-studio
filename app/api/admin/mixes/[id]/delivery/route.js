@@ -41,10 +41,11 @@ function mixReviewEmail(job,customer,{href,expiresAt,fileCount=1}={}){
 export async function POST(req,{params}){
   try{
     const ctx=await getStaffContext();
-    if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
+    if(!ctx)return NextResponse.json({error:'Sign in required.'},{status:401});
     const {id}=await params,db=getAdminDb(),body=await req.json();
     const {data:job,error}=await db.from('mix_jobs').select('*,customers(*)').eq('id',id).single();
     if(error||!job)return NextResponse.json({error:'Mix job not found.'},{status:404});
+    if(ctx.profile.role!=='owner'&&(ctx.profile.role!=='engineer'||job.engineer_user_id!==ctx.user.id))return NextResponse.json({error:'Not assigned to this mix.'},{status:403});
     if(Number(job.paid_amount_pence)<Number(job.quoted_amount_pence))return NextResponse.json({error:'Payment gate: files cannot be delivered for an unpaid mix job.'},{status:409});
 
     if(body.action==='prepare_upload'){
@@ -86,7 +87,7 @@ export async function POST(req,{params}){
     const {data:delivery,error:deliveryError}=await db.from('session_deliveries').insert({
       booking_id:null,mix_job_id:id,mix_revision_id:revisionId,customer_id:job.customer_id,created_by_user_id:ctx.user.id,
       delivery_type:externalUrl?'link':'upload',external_url:externalUrl,storage_path:storagePath,file_name:fileName,
-      share_token:crypto.randomUUID(),expires_at:expiresAt
+      share_token:crypto.randomUUID(),expires_at:expiresAt,engineer_notes:String(body.engineerNotes||'').slice(0,2000)
     }).select().single();
     if(deliveryError)throw deliveryError;
 
