@@ -1,18 +1,18 @@
-# Silkcrayon OS — enquiry / invoice / booking reconciliation fix
+# Silkcrayon OS — navigation & organisation redesign
 
-## What this fixes
-An enquiry may have generated a **custom invoice** and a studio booking may have been created later. In that case, payment can be recorded in `studio_payments` without settling the new booking. This extends the earlier payment sync patch so **paid Stripe-backed invoice payments** (kind `other`, as well as `session`) can be manually matched to an existing booking by the OS owner.
+## Scope
+This is a **UI-only patch** designed to merge safely with newer mix-engineer and payment patches. It changes navigation, the Workspace menu, owner quick links, and responsive spacing. It does not replace Stripe, Supabase, mix management, or booking implementation files.
 
-## Apply
-Merge the included files into the corresponding paths of your **current** GitHub branch. They are based on `silkcrayon-studio-main (10).zip` and the earlier payment-sync patch: do **not** overwrite newer Stripe/mix changes blindly. No SQL migration is included.
+## Install
+Copy the `app`, `components`, and `lib` folders into the matching locations in the *latest* GitHub repository. Keep all other files. No migration required. Deploy to a Vercel preview and inspect owner and engineer roles.
 
-## Georgia Croft
-Open OS → Payments → Recent payments, select Georgia's £80 payment, choose her NHS Wales podcast booking, then Verify & mark paid. The control appears only on eligible Stripe Checkout payments, and only when the payment has not already been linked. The booking must belong to the same customer, have an exact £80 outstanding balance, and have no other paid transaction linked. The server verifies Stripe's paid session, amount, currency and original payment ID before changing records.
+## What changed
+- Owner navigation: Today, Bookings, Mixes, Clients, Money, Menu.
+- Engineer navigation: Menu, Today, Calendar, Mixes, Book.
+- Workspace menu grouped by Daily operations, People & team, Finance, and Growth & system.
+- Owner overview gains quick shortcuts to common work.
+- Consistent dark panels, spacing, focus/hover states, and more compact mobile treatment.
+- All existing URLs and underlying workflows are retained. Current Calendar acts as Bookings hub; artist/customer directory is labelled Clients.
 
-If no dropdown appears, Georgia may instead have paid a **general invoice** under `invoices`, or the project invoice record may not have an associated `studio_payments` Checkout session. Do not attempt to force-match it; the separate invoice record must be traced and verified first. This patch will not repair those cases automatically.
-
-## Accounting caution
-A previously recorded invoice payment may already count as revenue, and the booking can also count as revenue in some reports. Review Money reporting for duplicate income after reconciliation; do not treat this status-repair as a second payment. It does **not** create another Stripe charge or send any messages.
-
-## Validation
-Check build and database in Vercel Preview, verify customer/amount mismatches are rejected, test against Stripe test Checkout, and confirm Today reflects paid. A successful card charge alone is never proof that a given booking was funded. Production integration has not been tested here.
+## Safety & testing
+This is not a full screen-by-screen redesign and does not modify existing payment logic or job forms. Test mobile navigation against iPhone viewport and check engineer permission guards. If the Mixes engineer route isn't yet installed, install the engineer-mix workflow patch first or remove that navigation item.

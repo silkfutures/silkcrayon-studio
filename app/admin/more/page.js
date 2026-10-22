@@ -3,42 +3,47 @@ import {requireStaff} from '../../../lib/auth';
 import {EngineerHeader} from '../../../components/EngineerShell';
 import AdminNav from '../../../components/AdminNav';
 import {LogoutButton} from '../../../components/AuthForms';
-
 export const dynamic='force-dynamic';
+const ownerGroups=[
+ {title:'Daily operations',description:'Run the studio',items:[
+  ['/admin','Owner overview','Priorities, bookings and outstanding actions','⌂'],
+  ['/admin/calendar','Calendar & bookings','Schedule and availability','▦'],
+  ['/admin/bookings/new','New booking','Create a studio session','＋'],
+  ['/admin/leads','Enquiries','Respond to new requests','✉'],
+  ['/admin/projects','Projects & quotes','Manage larger client projects','◆'],
+  ['/admin/mixes','Mix & mastering','Job pipeline and deliveries','♫'],
+  ['/admin/sessions','Session reports','Review completed work','✓']]},
+ {title:'People & team',description:'Your clients and engineers',items:[
+  ['/admin/artists','Clients & artists','Profiles and booking history','◎'],
+  ['/admin/contacts','Contacts','Contact directory','◌'],
+  ['/admin/staff','Engineers & staff','Roles and access','♧'],
+  ['/admin/engineer-pay','Engineer payouts','Rates, payouts and exceptions','£'],
+  ['/admin/supported-artists','Supported artists','Artist rates and programmes','♫']]},
+ {title:'Finance',description:'All money in one place',items:[
+  ['/admin/payments','Payments','Transactions and reconciliation','£'],
+  ['/admin/invoicing','Invoices','Create, send and track invoices','▤'],
+  ['/admin/accounting','Accounting','Revenue, refunds and exports','↗']]},
+ {title:'Growth & system',description:'Use when you need them',items:[
+  ['/admin/analytics','Analytics','Performance and visitor reporting','▥'],
+  ['/admin/marketing','Marketing','Email campaigns and audience','✦'],
+  ['/admin/promotions','Promotions','Offers and campaigns','✺'],
+  ['/admin/automation','Automations','Reminders and notifications','⚡'],
+  ['/admin/activity','Activity log','Auditable history','↻'],
+  ['/admin/settings','Settings','Studio configuration','⚙']]}
+];
+const engineerGroups=[{title:'My workspace',description:'Your assigned work',items:[
+ ['/admin/engineer','Today','Upcoming studio sessions','⌂'],
+ ['/admin/engineer/mixes','My mixes','Offers and active mix work','♫'],
+ ['/admin/calendar','Calendar','Your schedule','▦'],
+ ['/admin/engineer/supported-artists','Supported artists','Artist programmes','◎'],
+ ['/admin/engineer/payouts','My earnings','Payouts and onboarding','£'],
+ ['/admin/sessions','Session reports','Your completed sessions','✓']]}];
 export default async function More(){
  const ctx=await requireStaff(),owner=ctx.profile.role==='owner';
- const links=owner?[
-  ['/admin/calendar','Calendar','Visual studio schedule','▦'],
-  ['/admin','Owner overview','Bookings, change requests & Stripe sync','⌂'],
-  ['/admin/accounting','Accounting','Invoices, refunds & exports','£'],
-  ['/admin/invoicing','Invoicing','Create & email invoices, what’s owed, past invoices','▤'],
-  ['/admin/activity','Activity log','Cancellations, no-shows & deletions','↻'],
-  ['/admin/analytics','Analytics','Revenue, visitors & retention','↗'],
-  ['/admin/automation','Automations','Email delivery & reminders','✦'],
-  ['/admin/leads','Enquiries','New leads & quote requests','✉'],
-  ['/admin/projects','Projects & quotes','Multi-session jobs from quote to delivery','◆'],
-  ['/admin/mixes','Mixes','Payment-gated mix, master & revision pipeline','〽'],
-  ['/admin/contacts','Contacts','Legacy contacts + marketing status','◎'],
-  ['/admin/marketing','Marketing','Email campaigns & audience','✦'],
-  ['/admin/supported-artists','Supported artists','Applications, approvals & agreed studio rates','♫'],
-  ['/admin/promotions','Promotions','Live offers, pricing & campaign visibility','✺'],
-  ['/admin/sessions','Session reports','Complete and review session reports','✓'],
-  ['/admin/engineer-pay','Engineer pay','Automatic payouts, exceptions & rates','£'],
-  ['/admin/settings','Settings','Studio pricing and preferences','⚙'],
-  ['/admin/staff','Staff','People, roles & access','◌']
- ]:[
-  ['/admin/engineer/supported-artists','Supported artists','Your programmes, sessions & spend','♫'],
-  ['/admin/calendar','Calendar','Your visual schedule','▦'],
-  ['/admin/sessions','Session reports','Complete & review your reports','✓'],
-  ['/admin/engineer/payouts','My earnings','Payout setup & payment history','£']
- ];
- return <main className={owner?'engineerApp':'engApp'}>
-  {owner?<header className="mobileTop"><div><p className="eyebrow">Studio OS</p><h1>Menu.</h1><p className="muted">Everything beyond today’s workflow.</p></div><AdminNav profile={ctx.profile}/></header>:<EngineerHeader profile={ctx.profile} eyebrow="Menu"/>}
-  <section className="engWelcome compact"><p className="eyebrow">{owner?'Owner tools':'Engineer tools'}</p><h1>Studio menu.</h1><p>Choose where you want to go.</p></section>
-  <section className="engSection"><div className="moreGrid">{links.map(([href,title,desc,icon])=><Link key={href} href={href} className="moreTile"><span>{icon}</span><div><b>{title}</b><small>{desc}</small></div><em>→</em></Link>)}</div></section>
-  <section className="engSection"><a className="moreTile" href="/"><span>↗</span><div><b>Public website</b><small>Open silkcrayon.com</small></div><em>→</em></a></section>
-  <section className="engSection mobileLogout"><LogoutButton/></section>
-  {!owner&&<div style={{height:80}}/>}
+ return <main className={owner?'adminPage osMenuPage':'engApp osMenuPage'}>
+  <header className={owner?'adminHeader':'mobileTop'}><div><p className="eyebrow">SILKCRAYON · STUDIO OS</p><h1>Workspace</h1><p className="muted">Everything organised by what you need to do.</p></div>{owner?<AdminNav profile={ctx.profile}/>:<EngineerHeader profile={ctx.profile} eyebrow="Workspace"/>}</header>
+  <div className="osMenuGroups">{(owner?ownerGroups:engineerGroups).map(group=><section className="osMenuGroup" key={group.title}><div className="osMenuGroupHeading"><h2>{group.title}</h2><p>{group.description}</p></div><div className="osMenuTiles">{group.items.map(([href,title,description,icon])=><Link className="osMenuTile" href={href} key={href}><span className="osMenuIcon" aria-hidden="true">{icon}</span><span className="osMenuTileText"><b>{title}</b><small>{description}</small></span><span className="osMenuArrow" aria-hidden="true">↗</span></Link>)}</div></section>)}</div>
+  <div className="osMenuFooter"><Link href="/">Open public website ↗</Link><LogoutButton/></div>
   {!owner&&<AdminNav profile={ctx.profile}/>}
  </main>;
 }
