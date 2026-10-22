@@ -1,14 +1,18 @@
-# Silkcrayon OS — Stripe session payment reconciliation
+# Silkcrayon OS — enquiry / invoice / booking reconciliation fix
 
-**Based on uploaded `silkcrayon-studio-main (10).zip` (21 October).** Copy the six file paths under `app/` and `components/` into the same paths in your GitHub project. Merge carefully with later mix patches. No SQL migration required.
+## What this fixes
+An enquiry may have generated a **custom invoice** and a studio booking may have been created later. In that case, payment can be recorded in `studio_payments` without settling the new booking. This extends the earlier payment sync patch so **paid Stripe-backed invoice payments** (kind `other`, as well as `session`) can be manually matched to an existing booking by the OS owner.
 
-## Existing paid booking
-Open **OS → Payments → Recent payments**. Find the successful unlinked Session payment. Use **Match to session…** then **Verify & mark paid**. The app checks Stripe Checkout payment status and exact amount, customer identity, and existing booking balance. Only the OS owner can perform reconciliation. Refresh Today to see Paid. If no matching booking appears, do not charge again; compare the amount/customer in Stripe and booking records.
+## Apply
+Merge the included files into the corresponding paths of your **current** GitHub branch. They are based on `silkcrayon-studio-main (10).zip` and the earlier payment-sync patch: do **not** overwrite newer Stripe/mix changes blindly. No SQL migration is included.
 
-## Future transactions
-When creating a Session payment from OS → Payments, select the specific booking. The payment and Stripe checkout will carry its ID, so the webhook updates booking payment status. Linked bookings require exact outstanding amount. For partial payments use a separate supported deposit workflow; do not pass a partial payment as fully paid.
+## Georgia Croft
+Open OS → Payments → Recent payments, select Georgia's £80 payment, choose her NHS Wales podcast booking, then Verify & mark paid. The control appears only on eligible Stripe Checkout payments, and only when the payment has not already been linked. The booking must belong to the same customer, have an exact £80 outstanding balance, and have no other paid transaction linked. The server verifies Stripe's paid session, amount, currency and original payment ID before changing records.
 
-## Checks before production
-Set and verify `STRIPE_WEBHOOK_SECRET` for the `/api/stripe/webhook` endpoint. Stripe Dashboard → Workbench → Webhooks → event `checkout.session.completed` or `checkout.session.async_payment_succeeded` must succeed (2xx). Preview-test completed card checkout and async Pay by Bank, including duplicate event delivery. This patch has not been tested against live Stripe or Supabase. Use Stripe test mode before deploying live.
+If no dropdown appears, Georgia may instead have paid a **general invoice** under `invoices`, or the project invoice record may not have an associated `studio_payments` Checkout session. Do not attempt to force-match it; the separate invoice record must be traced and verified first. This patch will not repair those cases automatically.
 
-**Important**: Reconciliation verifies existing payment, and never creates a second charge or refund. If a single paid checkout covers multiple bookings, or payment value differs, manual review is required.
+## Accounting caution
+A previously recorded invoice payment may already count as revenue, and the booking can also count as revenue in some reports. Review Money reporting for duplicate income after reconciliation; do not treat this status-repair as a second payment. It does **not** create another Stripe charge or send any messages.
+
+## Validation
+Check build and database in Vercel Preview, verify customer/amount mismatches are rejected, test against Stripe test Checkout, and confirm Today reflects paid. A successful card charge alone is never proof that a given booking was funded. Production integration has not been tested here.
