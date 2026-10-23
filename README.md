@@ -1,13 +1,11 @@
-# Silkcrayon OS navigation test build fix
+# Silkcrayon OS: fixed mobile navigation + mix tabs
 
-## What failed
-The OS reorganisation introduced six owner navigation entries, but `tests/audit-patch.mjs` asserted that both roles must have five.
+## Apply to latest repository
+Copy the 5 changed files into their matching paths:
+- `components/StaffBottomNav.js` — renders the bottom navigation in the document body, outside layout transforms that cause incorrect fixed positioning.
+- `components/MixTabs.js` — accessible horizontal tabs.
+- `app/admin/mixes/[id]/page.js` — replaces all six mix accordions with tabs, and adds a dedicated Engineer offer tab.
+- `app/admin/mixes/[id]/mix-layout.css` — tab styles and mobile overflow handling.
+- `app/admin/os-navigation-v2.css` — forces the portaled nav to the visible screen bottom.
 
-## Install
-Copy `tests/audit-patch.mjs` into your GitHub repository at the same path, replacing only that test file. Keep the recently deployed `lib/osNavigation.js` and all other application files unchanged.
-
-## What changed
-The regression assertion expects 6 destinations for owners, 5 for engineers. All other assertions are preserved.
-
-## Verification
-The `tests/audit-patch.mjs` test passed locally against the reorganisation patch's navigation module and source project's receipt modules. This does not guarantee all other build checks pass or that the full Next.js build succeeds.
+This patch assumes the earlier Clean OS & Mix Offers patch and OS Reorganisation patch were installed. If the project has subsequently changed the same files, merge rather than overwrite those changes. No database changes. Preview-test mobile Safari/Chrome and verify tabs contain the expected forms and controls. The previous navigation build test fix should remain in place.
