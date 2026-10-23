@@ -38,6 +38,6 @@ export default async function InvoicePage({params,searchParams}){
    {inv.notes&&<p className={s.muted}>Notes: {inv.notes}</p>}
    {inv.paid_note&&<p className={s.muted}>Payment note: {inv.paid_note}</p>}
   </section>
-  <section className="adminSection"><InvoiceActions invoice={inv}/></section>
+  <section className="adminSection"><InvoiceActions invoice={inv} openPayment={sp?.recordPayment==='1'&&inv.status==='sent'}/></section>
  </main>;
 }

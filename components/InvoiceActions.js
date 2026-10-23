@@ -4,8 +4,8 @@ import {useRouter} from 'next/navigation';
 import s from './EngineerWork.module.css';
 import DuplicateInvoiceButton from './DuplicateInvoiceButton';
 const money=p=>`£${(Number(p||0)/100).toFixed(2)}`;
-export default function InvoiceActions({invoice}){
- const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[paying,setPaying]=useState(false),[method,setMethod]=useState('bank_transfer'),[note,setNote]=useState('');
+export default function InvoiceActions({invoice,openPayment=false}){
+ const router=useRouter();const [busy,setBusy]=useState(false),[msg,setMsg]=useState(''),[paying,setPaying]=useState(openPayment),[method,setMethod]=useState('bank_transfer'),[note,setNote]=useState('');
  async function act(body,ok,confirmText){
   if(confirmText&&!confirm(confirmText))return;
   setBusy(true);setMsg('Working…');
