@@ -1,0 +1,37 @@
+/* Studio OS session workspace refinement — presentation only. */
+.engApp:has(.engFlowHero){max-width:1180px;margin-inline:auto;min-width:0;padding-inline:clamp(14px,2.8vw,34px);box-sizing:border-box;}
+.engApp .engFlowHero{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;gap:8px;background:transparent!important;border:0!important;box-shadow:none!important;padding:clamp(16px,3vw,28px) 0 22px!important;margin:0 0 14px!important;max-width:100%;}
+.engApp .engFlowHero h1{font-size:clamp(29px,5vw,46px);letter-spacing:-.042em;line-height:1.08;margin:4px 0 0;overflow-wrap:anywhere;}
+.engApp .engFlowHero p{font-size:clamp(13px,2vw,15px);line-height:1.5;color:#a9a0b0;margin:0;}
+.engApp .engFlowHero .backLink{display:inline-flex;align-items:center;min-height:36px;color:#cda9ec;font-weight:650;text-decoration:none;}
+.engApp .engFlowHero .engLiveBadge{position:static!important;align-self:flex-start;margin:4px 0 0!important;font-size:10px;letter-spacing:.11em;padding:8px 12px;border-radius:999px;}
+.engApp .engFlowCard{margin:0 0 14px!important;padding:clamp(17px,2.4vw,27px)!important;border:1px solid #32283b!important;border-radius:16px!important;background:#141019!important;box-shadow:none!important;min-width:0;overflow-wrap:anywhere;}
+.engApp .engFlowCard .engFlowTitle{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin:0 0 17px;padding:0 0 14px;border-bottom:1px solid #2b2232;}
+.engApp .engFlowCard .engFlowTitle>span:first-child{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:9px;background:#24192d;color:#caa3ea;font-size:12px;font-weight:700;}
+.engApp .engFlowCard .engFlowTitle>div{flex:1 1 200px;min-width:0;}
+.engApp .engFlowCard .engFlowTitle h2{font-size:clamp(17px,2.4vw,21px);line-height:1.2;letter-spacing:-.02em;margin:0 0 4px;}
+.engApp .engFlowCard .engFlowTitle p{font-size:13px;line-height:1.5;color:#aea4b6;margin:0;}
+.engApp .engFlowCard .engFlowTitle>a{font-size:12px;align-self:center;color:#cfa7ee;white-space:normal;}
+.engApp .engFlowCard .engArtistSummary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 0;}
+.engApp .engFlowCard .sessionBriefGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px;}
+.engApp .engFlowCard .sessionBriefGrid>div{background:#1a1421;padding:13px;border:1px solid #302639;border-radius:10px;min-width:0;}
+.engApp .engFlowCard .sessionBriefGrid .wide{grid-column:1/-1;}
+.engApp .engFlowCard :is(input:not([type=checkbox]):not([type=radio]),select,textarea){max-width:100%;min-width:0;box-sizing:border-box;background:#1b1521;color:#f6f0f9;border:1px solid #51425e;border-radius:10px;padding:11px 13px;font-size:16px;color-scheme:dark;}
+.engApp .engFlowCard :is(button,.engPrimaryAction,.engSecondaryAction){max-width:100%;box-sizing:border-box;border-radius:10px;white-space:normal;overflow-wrap:anywhere;}
+.engApp .engFlowCard :is(.engPaymentState,.extraTimeSummary,.projectIncludedBanner){border-radius:11px;box-shadow:none;}
+.engApp .engFlowCard .deliverySection{margin-top:18px;padding-top:18px;border-top:1px solid #33283b;}
+.engApp .engFlowCard .miniTimeline{max-width:100%;}
+.engApp .engFlowCard .miniTimeline :is(p,em,small){overflow-wrap:anywhere;}
+/* Never allow sticky/fixed navigation to inherit a transformed page ancestor. */
+@media(max-width:760px){
+ .engApp:has(.engFlowHero){padding-inline:14px;padding-bottom:calc(108px + env(safe-area-inset-bottom,0px));}
+ .engApp .engFlowHero{padding-top:12px!important;gap:7px;}
+ .engApp .engFlowCard{padding:17px 15px!important;border-radius:14px!important;margin-bottom:11px!important;}
+ .engApp .engFlowCard .engFlowTitle{gap:9px;}
+ .engApp .engFlowCard .sessionBriefGrid{grid-template-columns:minmax(0,1fr);}
+ .engApp .engFlowCard .sessionBriefGrid .wide{grid-column:auto;}
+ .engApp .engFlowCard :is(.sessionContactActions,.sessionQuickTools){display:flex;flex-wrap:wrap;gap:8px;}
+ .engApp .engFlowCard :is(.sessionContactActions,.sessionQuickTools)>*{max-width:100%;}
+ .staffBottomNav{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr));width:100vw;max-width:100vw;left:0;right:0;bottom:0;box-sizing:border-box;}
+ .staffBottomNav>a{min-width:0;overflow:hidden;}
+}

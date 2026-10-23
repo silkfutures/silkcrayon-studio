@@ -1,17 +1,13 @@
-# Silkcrayon visual refresh — staged patch
+# Silkcrayon OS — Session view + five-item mobile navigation
 
-Apply to the **latest** GitHub main branch, preserving existing files where not listed. This is UI-only except for the mix-offer email markup. No SQL is required.
+Based on current GitHub `silkfutures/silkcrayon-studio` (23 October 2026).
 
-Files:
-- `app/admin/layout.js` imports the new scoped CSS.
-- `app/admin/os-design-refresh.css` introduces restrained admin styling and responsive mix page styles.
-- `components/MixCreateDrawer.js` adds the compact `+ Create mix` action, opening the existing creation form only when needed.
-- `app/admin/mixes/page.js` puts creation above existing mixes, with active work first.
-- `lib/mixOfferEmail.js` provides branded, responsive, accessible email HTML.
-- `app/api/admin/mixes/[id]/offer/route.js` uses that template and continues to send the same engineer offer notification.
+Copy the four changed files into the same locations in your **latest** repo:
+- `lib/osNavigation.js` — 5 owner links: Menu, Today, Bookings, Clients, Money. Mixes resolves under Menu.
+- `app/admin/os-session-refresh.css` — session detail screen polish, responsive layout and bottom nav grid.
+- `app/admin/layout.js` — imports this stylesheet.
+- `tests/audit-patch.mjs` — updates navigation assertions to expect 5 links for each role, preventing Vercel test failure.
 
-**Important version caveat:** Files were assembled using the uploaded studio snapshot and the latest mix-offer patch available in this conversation. If the relevant files have changed in GitHub since then, merge changes rather than replacing them wholesale. In particular, retain any changes to offer route logic and `app/admin/mixes/page.js` made after those patches.
+This is a visual refactor of the live session-detail view, **not a workflow rewrite**: booking, payments, Stripe, engineer offers, delivery, and lifecycle logic are untouched. All sections remain on the page (no dropdowns). Mixes remain accessible in the Menu and via direct links.
 
-This does not remodel booking/session detail screens, all email types or the mix creation backend engineer assignment: these require a subsequent controlled integration with the live repository. Engineers can still be offered a job on the mix detail page.
-
-Verify: `npm run build`, offer email generation, create-mix drawer open/close, mobile navigation, existing Stripe and client emails, then preview in Vercel. No customer emails are sent just by installing this patch.
+Test on Vercel Preview on mobile and desktop before merging. Live Next.js build and browser verification were not available here.

@@ -24,7 +24,7 @@ assert.equal(rowsInMonth([{date:'2026-08-31T23:30:00Z'}],'2026-09-01').length,1,
 assert.deepEqual(receiptRows(),[]);
 for(const role of ['owner','engineer']){
  const items=primaryNavigation(role);
- assert.equal(items.length,role==='owner'?6:5,'Navigation count matches the redesigned role-specific menu');
+ assert.equal(items.length,5,'Mobile navigation stays at five items');
  assert.equal(items.find(x=>x.label==='Today').href,'/admin/engineer','Today opens the shared session view for owners and engineers');
  const paths=role==='engineer'?[items[0].href,'/admin/calendar','/admin/engineer/book','/admin/engineer/artists','/admin/more']:[items[0].href,'/admin/calendar','/admin/artists/123','/admin/accounting','/admin/settings','/admin/projects/123'];
  for(const path of paths){
