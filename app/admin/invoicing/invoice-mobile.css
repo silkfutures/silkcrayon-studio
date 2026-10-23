@@ -1,0 +1,18 @@
+.invoiceMobileList{display:none}
+@media(max-width:760px){
+.invoiceDesktopTable{display:none!important}
+.invoiceMobileList{display:grid;gap:0;margin-top:12px;min-width:0}
+.invoiceMobileCard{padding:16px 0;border-bottom:1px solid #3b3042;min-width:0}
+.invoiceMobileMain{display:flex;gap:12px;justify-content:space-between;align-items:flex-start;min-width:0}
+.invoiceMobileDetails{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
+.invoiceMobileRef{font-size:12px;color:#c79bed;text-decoration:none;font-weight:700}
+.invoiceMobileName{font-size:16px;line-height:1.35;color:#f6f1fa;overflow-wrap:anywhere}
+.invoiceMobileTitle{font-size:12px;line-height:1.45;color:#b7adbf;overflow-wrap:anywhere}
+.invoiceMobileAmount{font-size:19px;line-height:1.2;color:#f6f1fa;white-space:nowrap}
+.invoiceMobileMeta{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0;font-size:11px;color:#b8aebf}
+.invoiceMobileMeta span:first-child{font-size:10px;white-space:normal}
+.invoiceMobileActions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.invoiceMobileActions a{min-height:36px;display:inline-flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;border-radius:8px;padding:8px 11px;font-size:12px;font-weight:650;box-sizing:border-box}
+.invoiceMobileView{border:1px solid #594766;color:#d9b5f4}
+.invoiceMobilePay{background:#bb91e8;color:#180d20}
+}
