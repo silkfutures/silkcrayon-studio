@@ -1,0 +1,26 @@
+/* Silkcrayon OS: coherent, restrained layout treatment. Scoped to admin only. */
+.adminPage{max-width:1280px;margin-inline:auto;min-width:0}
+.adminPage .adminHeader{margin-bottom:24px}
+.adminPage .adminHeader h1{font-size:clamp(32px,5vw,50px);line-height:1.06;letter-spacing:-.035em}
+.adminPage .adminHeader .muted{max-width:690px;line-height:1.6}
+.adminPage .adminSection{border:1px solid #33283c;border-radius:16px;background:#120e16;box-shadow:none;min-width:0}
+.adminPage .adminSection h2{letter-spacing:-.025em}
+.adminPage .eyebrow{font-size:11px;letter-spacing:.15em}
+.adminPage :is(input:not([type=checkbox]):not([type=radio]),select,textarea){box-sizing:border-box;min-width:0;max-width:100%;background:#19131f;color:#f2eaf7;border:1px solid #51405d;border-radius:10px;padding:12px 14px;font:inherit;font-size:16px;color-scheme:dark}
+.adminPage :is(input,select,textarea):focus{outline:2px solid #ac82ce;outline-offset:1px;border-color:#ac82ce}
+.adminPage select{appearance:auto}
+.adminPage :is(.button,button){border-radius:10px}
+.adminPage .mixCards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px}
+.adminPage .mixCard{border:1px solid #35293f;background:#18121d;border-radius:14px;box-shadow:none;transition:border-color .15s,transform .15s}
+.adminPage .mixCard:hover{border-color:#85639c;transform:translateY(-1px)}
+.adminPage .mixMoney{gap:8px;flex-wrap:wrap}
+.mixCreateShell{margin:0 0 20px}
+.mixCreateTrigger{display:flex;align-items:center;gap:12px;width:100%;max-width:100%;padding:15px 18px;background:#b78cdb;color:#130b19;border:0;border-radius:13px;font-size:15px;font-weight:800;cursor:pointer;text-align:left}
+.mixCreateIcon{display:grid;place-items:center;font-size:24px;line-height:1;width:28px;height:28px;border:1px solid #45285850;border-radius:8px}
+.mixCreateChevron{margin-left:auto;font-size:18px}
+.mixCreatePanel{margin-top:12px}.mixCreatePanel>.adminSection{margin:0}
+.mixPipeline>.adminSection{margin-top:16px}
+/* Mix detail tabs: lightweight navigation, not button-filled cards */
+.mixTabsRoot{margin-top:24px}.mixTabsBar{gap:18px;border-bottom:1px solid #3b2e43;padding-bottom:0}.mixTabsBar button{border:0!important;border-radius:0!important;background:transparent!important;padding:14px 2px!important;color:#ada0b5;font-weight:600}.mixTabsBar button.mixTabActive{border-bottom:2px solid #b78cdb!important;color:#f4e9fa!important}
+.mixTabSection{margin-top:14px!important}
+@media(max-width:760px){.adminPage{padding-inline:14px;box-sizing:border-box}.adminPage .adminSection{padding:18px 15px;border-radius:14px}.adminPage .mixCards{grid-template-columns:1fr}.adminPage .mixCard{padding:18px}.mixTabsBar{gap:14px}.mixTabsBar button{font-size:13px}.adminPage .profileMetrics{gap:8px}.adminPage .profileMetrics>div{padding:14px 12px}.adminPage .profileMetrics b{font-size:clamp(19px,5vw,26px);overflow-wrap:anywhere}}

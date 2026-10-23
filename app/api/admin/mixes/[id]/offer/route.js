@@ -2,6 +2,7 @@ import {NextResponse} from 'next/server';
 import {getStaffContext} from '../../../../../../lib/auth';
 import {getAdminDb} from '../../../../../../lib/supabase';
 import {sendEmail,staffEmail} from '../../../../../../lib/notifications';
+import {mixOfferEmail} from '../../../../../../lib/mixOfferEmail';
 const bucket='session-deliveries';
 export async function POST(req,{params}){
  try{
@@ -23,7 +24,7 @@ export async function POST(req,{params}){
   if(path){if(!path.startsWith(`mix-offer-demos/${id}/`)||path.includes('..'))return NextResponse.json({error:'Invalid demo path'},{status:400});const {data:files,error:le}=await db.storage.from(bucket).list(`mix-offer-demos/${id}`,{limit:100});if(le)throw le;if(!files?.some(f=>path.endsWith('/'+f.name)))return NextResponse.json({error:'Demo upload has not completed'},{status:400});demoPath=path;}
   const {data:offer,error}=await db.from('mix_engineer_offers').insert({mix_job_id:id,engineer_user_id:eng.user_id,fee_pence:fee,demo_path:demoPath,demo_name:demoPath?String(b.demoName||'Demo audio').slice(0,200):null,notes:String(b.notes||'').slice(0,3000),status:'pending'}).select('id').single();if(error)throw error;
   const to=await staffEmail(eng.user_id);let warning=null;
-  if(to){const link=`${process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon.com'}/admin/engineer/mixes/${id}`;const msg=await sendEmail({to,source:'mix_engineer_offer',subject:`New mix offer — ${job.track_title}`,html:`<div style="font-family:Arial;background:#0d0914;color:white;padding:32px"><h1>New mix offer</h1><p>${escapeHtml(job.track_title)}</p><p>Proposed fee: £${(fee/100).toFixed(2)}</p><p>Log into your engineer OS to listen to the demo and accept or decline.</p><a style="color:#c394ff" href="${link}">Review offer →</a></div>`});if(!msg.ok)warning='Offer saved but email delivery failed';}else warning='Offer saved; engineer email was not found';
+  if(to){const link=`${process.env.NEXT_PUBLIC_SITE_URL||'https://silkcrayon.com'}/admin/engineer/mixes/${id}`;const mail=mixOfferEmail({trackTitle:job.track_title,feePence:fee,reviewUrl:link,engineerName:eng.engineer_name||eng.full_name||'there'});const msg=await sendEmail({to,source:'mix_engineer_offer',...mail});if(!msg.ok)warning='Offer saved but email delivery failed';}else warning='Offer saved; engineer email was not found';
   return NextResponse.json({ok:true,id:offer.id,warning});
  }catch(e){return NextResponse.json({error:e.message},{status:500})}
 }
