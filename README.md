@@ -1,18 +1,13 @@
-# Silkcrayon OS — navigation & organisation redesign
+# Silkcrayon OS navigation test build fix
 
-## Scope
-This is a **UI-only patch** designed to merge safely with newer mix-engineer and payment patches. It changes navigation, the Workspace menu, owner quick links, and responsive spacing. It does not replace Stripe, Supabase, mix management, or booking implementation files.
+## What failed
+The OS reorganisation introduced six owner navigation entries, but `tests/audit-patch.mjs` asserted that both roles must have five.
 
 ## Install
-Copy the `app`, `components`, and `lib` folders into the matching locations in the *latest* GitHub repository. Keep all other files. No migration required. Deploy to a Vercel preview and inspect owner and engineer roles.
+Copy `tests/audit-patch.mjs` into your GitHub repository at the same path, replacing only that test file. Keep the recently deployed `lib/osNavigation.js` and all other application files unchanged.
 
 ## What changed
-- Owner navigation: Today, Bookings, Mixes, Clients, Money, Menu.
-- Engineer navigation: Menu, Today, Calendar, Mixes, Book.
-- Workspace menu grouped by Daily operations, People & team, Finance, and Growth & system.
-- Owner overview gains quick shortcuts to common work.
-- Consistent dark panels, spacing, focus/hover states, and more compact mobile treatment.
-- All existing URLs and underlying workflows are retained. Current Calendar acts as Bookings hub; artist/customer directory is labelled Clients.
+The regression assertion expects 6 destinations for owners, 5 for engineers. All other assertions are preserved.
 
-## Safety & testing
-This is not a full screen-by-screen redesign and does not modify existing payment logic or job forms. Test mobile navigation against iPhone viewport and check engineer permission guards. If the Mixes engineer route isn't yet installed, install the engineer-mix workflow patch first or remove that navigation item.
+## Verification
+The `tests/audit-patch.mjs` test passed locally against the reorganisation patch's navigation module and source project's receipt modules. This does not guarantee all other build checks pass or that the full Next.js build succeeds.
