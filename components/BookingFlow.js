@@ -39,6 +39,28 @@ function prettyDay(d) {
   };
 }
 
+// Small anonymous events only: never send client details or Stripe identifiers here.
+function bookingVisitorContext(){
+ let visitorId='';
+ try{visitorId=localStorage.getItem('sc_vid')||'';}catch{}
+ if(!/^[a-zA-Z0-9_-]{12,100}$/.test(visitorId)){
+  visitorId=globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  try{localStorage.setItem('sc_vid',visitorId);}catch{}
+ }
+ let campaign={};
+ try{campaign=JSON.parse(sessionStorage.getItem('sc_campaign')||'{}')||{};}catch{}
+ let referrerHost='';
+ try{referrerHost=document.referrer?new URL(document.referrer).hostname:'';}catch{}
+ return {visitorId,utmSource:campaign.utm_source||'',utmMedium:campaign.utm_medium||'',utmCampaign:campaign.utm_campaign||'',referrerHost};
+}
+function recordBookingStep(eventName,service){
+ try{
+  const context=bookingVisitorContext();
+  fetch('/api/booking-funnel',{method:'POST',headers:{'content-type':'application/json'},keepalive:true,
+   body:JSON.stringify({...context,eventName,service})}).catch(()=>{});
+ }catch{}
+}
+
 export default function BookingFlow({promotions=[],pricing={}}) {
   const params = useSearchParams();
   const showTest = params.get("test") === "1";
@@ -48,6 +70,10 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   const initial = requestedService && (publicServices.includes(requestedService) || (requestedService === "system-test" && showTest)) ? requestedService : "vocal-recording";
   const quickDates = useMemo(() => nextBookableDays(18), []);
   const [service, setService] = useState(initial);
+  const [alternatives, setAlternatives] = useState([]);
+  const [findingAlternatives, setFindingAlternatives] = useState(false);
+  const [alternativeError, setAlternativeError] = useState('');
+  useEffect(()=>{recordBookingStep('booking_view',initial);},[]);
   const requestedDuration=Number(params.get("duration"));
   const initialDuration=services[initial].durations.includes(requestedDuration)?requestedDuration:services[initial].durations.includes(120)?120:services[initial].durations[0];
   const [duration, setDuration] = useState(initialDuration);
@@ -72,6 +98,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     // Set service + its valid default duration in the same interaction so an
     // intermediate "new service / old duration" request can never be sent.
     setService(slug);
+    recordBookingStep('service_selected',slug);
     setDuration(next.durations.includes(120)?120:next.durations[0]);
   }
   useEffect(() => { fetch("/api/public/engineers").then(r=>r.json()).then(j=>setEngineers(j.engineers||[])).catch(()=>setEngineers([])); }, []);
@@ -82,6 +109,9 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     const requestId=++availabilityRequest.current;
     const controller=new AbortController();
     setLoadingSlots(true);
+    setFindingAlternatives(false);
+    setAlternatives([]);
+    setAlternativeError('');
     setSlot(null);
     setSlots([]);
     setAvailabilityError("");
@@ -96,7 +126,17 @@ export default function BookingFlow({promotions=[],pricing={}}) {
       })
       .then(j => {
         if(requestId!==availabilityRequest.current) return;
-        setSlots(Array.isArray(j.slots)?j.slots:[]);
+        const available=Array.isArray(j.slots)?j.slots:[];
+        setSlots(available);
+        if(!available.length){
+          recordBookingStep('no_availability',service);
+          setFindingAlternatives(true);
+          fetch(`/api/availability/next?${new URLSearchParams({after:date,service,duration:String(duration)})}`,{signal:controller.signal})
+           .then(async r=>{if(!r.ok)throw new Error('Alternative times could not be loaded.');return r.json();})
+           .then(next=>{if(requestId===availabilityRequest.current)setAlternatives(next.alternatives||[]);})
+           .catch(e=>{if(e?.name!=='AbortError'&&requestId===availabilityRequest.current)setAlternativeError('Try another date or contact the studio.');})
+           .finally(()=>{if(requestId===availabilityRequest.current)setFindingAlternatives(false);});
+        }
       })
       .catch(e => {
         if(e?.name==="AbortError"||requestId!==availabilityRequest.current) return;
@@ -119,6 +159,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
     body.service = service; body.duration = duration; body.date = date; body.start = slot.start; body.end = slot.end;
+    body.analyticsVisitorId=bookingVisitorContext().visitorId;
     body.marketingConsent = fd.get("marketingConsent") === "on";
     body.smsServiceConsent = Boolean(String(body.phone||"").trim());
     body.smsMarketingConsent = fd.get("smsMarketingConsent") === "on";
@@ -177,10 +218,20 @@ export default function BookingFlow({promotions=[],pricing={}}) {
       </div></div>
 
       <div className="bookingSection"><span className="step">03</span><div><h2>Pick a time</h2>
-        {loadingSlots ? <p className="muted">Checking the diary…</p> : availabilityError ? <div className="inlineError"><b>We couldn’t load the diary.</b><span>{availabilityError}</span><small>Try the date again. If it keeps happening, contact Silkcrayon and we’ll help you book.</small></div> : <div className="slotGrid">{slots.length ? slots.map(s=><button type="button" className={`slot ${slot?.start===s.start?"selected":""}`} onClick={()=>setSlot(s)} key={s.start}>{s.start}</button>) : <p className="muted">No spaces available for this duration on this date. Try another day above.</p>}</div>}
+        {loadingSlots ? <p className="muted">Checking the diary…</p> : availabilityError ? <div className="inlineError"><b>We couldn’t load the diary.</b><span>{availabilityError}</span><small>Try the date again. If it keeps happening, contact Silkcrayon and we’ll help you book.</small></div> : <div className="slotGrid">{slots.length ? slots.map(s=><button type="button" className={`slot ${slot?.start===s.start?"selected":""}`} onClick={()=>{setSlot(s);recordBookingStep("slot_selected",service);}} key={s.start}>{s.start}</button>) : <div className="alternativeDates" role="status">
+ <p className="muted">No times available on this day.{findingAlternatives?' Looking for the next openings…':''}</p>
+ {alternatives.length>0&&<><strong>Next available dates</strong><div className="alternativeDateGrid">{alternatives.map(a=><button type="button" key={a.date} onClick={()=>setDate(a.date)}><b>{new Date(a.date+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</b><small>{a.slots.map(x=>x.start).slice(0,2).join(' · ')}{a.slots.length>2?' + more':''}</small></button>)}</div></>}
+ {alternativeError&&<p className="muted">{alternativeError}</p>}
+ <a href="/request-a-call">Need another time? Ask us →</a>
+ </div>}</div>}
       </div></div>
 
-      <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone{service==="dry-hire"&&" · required for dry hire"}</span><input name="phone" type="tel" required={service==="dry-hire"} /></label>{service==="dry-hire"&&<label className="field"><span>Home postcode</span><input name="postcode" autoComplete="postal-code" required placeholder="e.g. CF10 5EQ" /></label>}<label className="field"><span>{service==="voiceover"?"Project / recording type":"Genre / style"}</span><input name="genre" placeholder={service==="voiceover"?"e.g. advert, narration, audiobook":""} /></label><label className="field"><span>Instagram / social handle <small>Optional</small></span><input name="instagram" placeholder="@artist" autoCapitalize="none" /></label>{service!=="dry-hire"&&<label className="field"><span>Preferred engineer <small>Optional</small></span><select name="preferredEngineerUserId"><option value="">No preference — assign anyone</option>{engineers.map(e=><option value={e.id} key={e.id}>{e.name}</option>)}</select></label>}<label className="field full"><span>What are you making?</span><textarea name="notes" rows="4" placeholder={service==="voiceover"?"Tell us the script length, intended use, technical requirements and whether you need editing or mastering quoted separately.":"Tell us what you're working on and what you want to leave the session with."} /></label></div>{service==="dry-hire"&&<div className="dryHireBookingNotice"><b>Dry Hire · £40/hr · 2-hour minimum</b><p>No Silkcrayon engineer is included. You or your own engineer must be able to operate the session. Silkcrayon staff may remain on-site and will manage access to the studio.</p><label className="check policyCheck"><input type="checkbox" name="dryHireAgeAccepted" required/> <span><b>I am the lead hirer and I am 18 or over.</b> I understand Silkcrayon requires photo-ID verification before dry-hire access.</span></label><label className="check policyCheck"><input type="checkbox" name="dryHireAccepted" required/> <span><b>I agree to the <a href="/dry-hire-terms" target="_blank">Dry Hire Terms</a>.</b> I understand that I am responsible for the room, equipment and guests during the hire and that engineer/production services are not included.</span></label></div>}<label className="check policyCheck"><input type="checkbox" name="policyAccepted" required/> <span><b>I agree to Silkcrayon’s <a href="/terms" target="_blank">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank">Cancellation Policy</a> and <a href="/no-harmful-music-policy" target="_blank">No Harmful Music Policy</a>.</b> I have also read the <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label><div className="communicationChoices"><p className="serviceTextNote">If you add a mobile number, Silkcrayon may send essential booking confirmations and reminders. These messages are about your session only.</p><details className="marketingPreferences"><summary>Studio offers & updates <span>Optional</span></summary><p>Choose how you’d like to hear about future offers. These are separate from essential booking emails.</p><label className="check compactChoice signupReward"><input type="checkbox" name="marketingConsent"/> <span><b>Email — get 5% off your next session</b><small>Join the Silkcrayon list. Your one-time 5% reward is saved to your account automatically.</small></span></label><label className="check compactChoice"><input type="checkbox" name="smsMarketingConsent"/> <span>Text message <small>Reply STOP to opt out.</small></span></label></details></div></div></div>
+      <div className="bookingSection"><span className="step">04</span><div><h2>Tell us about you</h2><div className="formGrid"><label className="field"><span>Your name</span><input name="fullName" required /></label><label className="field"><span>Artist name</span><input name="artistName" /></label><label className="field"><span>Email</span><input name="email" type="email" required /></label><label className="field"><span>Phone{service==="dry-hire"&&" · required for dry hire"}</span><input name="phone" type="tel" required={service==="dry-hire"} /></label>{service==="dry-hire"&&<label className="field"><span>Home postcode</span><input name="postcode" autoComplete="postal-code" required placeholder="e.g. CF10 5EQ" /></label>}</div><details className="bookingOptionalDetails"><summary>Add creative details or choose an engineer <span>Optional</span></summary><div className="formGrid">
+<label className="field"><span>{service==="voiceover"?"Project / recording type":"Genre / style"}</span><input name="genre" placeholder={service==="voiceover"?"e.g. advert, narration, audiobook":""}/></label>
+<label className="field"><span>Instagram / social handle</span><input name="instagram" placeholder="@artist" autoCapitalize="none"/></label>
+{service!=="dry-hire"&&<label className="field"><span>Preferred engineer</span><select name="preferredEngineerUserId"><option value="">No preference — assign anyone</option>{engineers.map(e=><option value={e.id} key={e.id}>{e.name}</option>)}</select></label>}
+<label className="field full"><span>Anything we should know?</span><textarea name="notes" rows="2" placeholder="Your goals, recording requirements or references (optional)."/></label>
+</div></details>{service==="dry-hire"&&<div className="dryHireBookingNotice"><b>Dry Hire · £40/hr · 2-hour minimum</b><p>No Silkcrayon engineer is included. You or your own engineer must be able to operate the session. Silkcrayon staff may remain on-site and will manage access to the studio.</p><label className="check policyCheck"><input type="checkbox" name="dryHireAgeAccepted" required/> <span><b>I am the lead hirer and I am 18 or over.</b> I understand Silkcrayon requires photo-ID verification before dry-hire access.</span></label><label className="check policyCheck"><input type="checkbox" name="dryHireAccepted" required/> <span><b>I agree to the <a href="/dry-hire-terms" target="_blank">Dry Hire Terms</a>.</b> I understand that I am responsible for the room, equipment and guests during the hire and that engineer/production services are not included.</span></label></div>}<label className="check policyCheck"><input type="checkbox" name="policyAccepted" required/> <span><b>I agree to Silkcrayon’s <a href="/terms" target="_blank">Terms & Conditions</a>, <a href="/cancellation-policy" target="_blank">Cancellation Policy</a> and <a href="/no-harmful-music-policy" target="_blank">No Harmful Music Policy</a>.</b> I have also read the <a href="/privacy" target="_blank">Privacy Policy</a>.</span></label><div className="communicationChoices"><p className="serviceTextNote">If you add a mobile number, Silkcrayon may send essential booking confirmations and reminders. These messages are about your session only.</p><details className="marketingPreferences"><summary>Studio offers & updates <span>Optional</span></summary><p>Choose how you’d like to hear about future offers. These are separate from essential booking emails.</p><label className="check compactChoice signupReward"><input type="checkbox" name="marketingConsent"/> <span><b>Email — get 5% off your next session</b><small>Join the Silkcrayon list. Your one-time 5% reward is saved to your account automatically.</small></span></label><label className="check compactChoice"><input type="checkbox" name="smsMarketingConsent"/> <span>Text message <small>Reply STOP to opt out.</small></span></label></details></div></div></div>
       {service==="artist-development"&&<div className="bookingSection artistDevelopmentQuestions"><span className="step">05</span><div><p className="eyebrow">Before your development session</p><h2>Give us the useful context.</h2><p className="muted">You do not need polished answers. This simply helps Nathan or Toni prepare for the conversation.</p><div className="formGrid"><label className="field full"><span>What are you trying to achieve?</span><textarea name="developmentGoal" rows="3" required placeholder="For example: release my first single, choose from a backlog, build confidence or understand Spotify distribution."/></label><label className="field full"><span>What is currently stopping you?</span><textarea name="developmentBlocker" rows="3" required placeholder="Tell us honestly—time, fear, perfectionism, organisation, technical knowledge or something else."/></label><label className="field"><span>How much unreleased music do you have? <small>Optional</small></span><input name="developmentBacklog" placeholder="e.g. 3 finished songs and 10 demos"/></label><label className="field"><span>Music or artist link <small>Optional</small></span><input name="developmentMusicLink" type="url" placeholder="Spotify, SoundCloud or private link"/></label><label className="field full"><span>What would make this hour feel worthwhile?</span><textarea name="developmentOutcome" rows="3" required/></label><label className="field"><span>Session format</span><select name="developmentFormat" defaultValue="in_person"><option value="in_person">In person at Silkcrayon</option><option value="online">Online video call</option></select></label></div></div></div>}
       {error && <div className="errorBox">{error}</div>}
       {checkoutReady&&<div className="checkoutBar ready"><div><small>Your booking</small><b>{services[service].name} · {date} at {slot.start}</b></div><button className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to payment →"}</button></div>}
