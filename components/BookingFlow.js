@@ -159,7 +159,12 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
     body.service = service; body.duration = duration; body.date = date; body.start = slot.start; body.end = slot.end;
-    body.analyticsVisitorId=bookingVisitorContext().visitorId;
+    const tracking=bookingVisitorContext();
+    body.analyticsVisitorId=tracking.visitorId;
+    body.analyticsSource=tracking.utmSource;
+    body.analyticsMedium=tracking.utmMedium;
+    body.analyticsCampaign=tracking.utmCampaign;
+    body.analyticsReferrerHost=tracking.referrerHost;
     body.marketingConsent = fd.get("marketingConsent") === "on";
     body.smsServiceConsent = Boolean(String(body.phone||"").trim());
     body.smsMarketingConsent = fd.get("smsMarketingConsent") === "on";
