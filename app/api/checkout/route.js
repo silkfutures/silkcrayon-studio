@@ -140,6 +140,10 @@ export async function POST(request) {
     }).eq("id", reservedId);
     const booking = { id: reservedId };
 
+    // Anonymous attribution only. Never allow browser analytics to set payment status.
+    const visitorId=String(body.analyticsVisitorId||'').slice(0,100);
+    const tracked=/^[a-zA-Z0-9_-]{12,100}$/.test(visitorId);
+    const tag=(v,n)=>String(v||'').trim().slice(0,n)||null;
     const stripe = getStripe();
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const session = await stripe.checkout.sessions.create({
@@ -148,13 +152,25 @@ export async function POST(request) {
       invoice_creation: { enabled: true },
       customer_email: email,
       client_reference_id: booking.id,
-      metadata: { booking_id: booking.id, service_slug: service.slug, promotion_code:promotion?.code||'', supported_artist_id:programme?.id||'', email_signup_discount_applied:rewardApplied?'true':'false' },
+      metadata: { booking_id: booking.id, service_slug: service.slug, promotion_code:promotion?.code||'', supported_artist_id:programme?.id||'', email_signup_discount_applied:rewardApplied?'true':'false', analytics_visitor_id:tracked?visitorId:'' },
       line_items: [{ quantity: 1, price_data: { currency: "gbp", unit_amount: amountPence, product_data: { name: `Silkcrayon — ${programme?"Supported Artist · Studio session":service.name}${promotion?` · ${promotion.name}`:(rewardApplied?' · 5% email reward':'')}`, description: `${body.date} · ${body.start}–${body.end} · Cardiff Bay${promotion?` · ${promotion.name}`:(rewardApplied?' · 5% email-list reward applied':'')}` } } }],
       success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: programme?`${baseUrl}/account/supported-artists?cancelled=1`:`${baseUrl}/booking?cancelled=1`,
       expires_at: Math.floor(Date.now()/1000) + 30*60,
     });
     await db.from("bookings").update({ stripe_checkout_session_id: session.id }).eq("id", booking.id);
+    if(tracked){
+      // Best effort: analytics must never prevent a paid booking or redirect.
+      try{
+        const {error:trackError}=await db.from('booking_funnel_events').insert({
+          event_name:'checkout_started',visitor_id:visitorId,booking_id:booking.id,service_slug:service.slug,
+          utm_source:tag(body.analyticsSource,120),utm_medium:tag(body.analyticsMedium,120),
+          utm_campaign:tag(body.analyticsCampaign,120),referrer_host:tag(body.analyticsReferrerHost,120)
+        });
+        if(trackError)console.error('Checkout conversion event failed',trackError.message);
+      }catch(error){console.error('Checkout conversion event failed',error?.message||error);}
+    }
+
     return NextResponse.json({ url: session.url });
   } catch (e) {
     if (bookingId) { try { await getAdminDb().from("bookings").update({ status: "cancelled" }).eq("id", bookingId); } catch {} }
