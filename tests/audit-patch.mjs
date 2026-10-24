@@ -40,3 +40,21 @@ assert.ok(pages.some(([table,start])=>table==='bookings'&&start===500));
 const brokenDb={from(){return {select(){return this},order(){return this},async range(){return {data:null,error:{message:'database unavailable'}}}}}};
 await assert.rejects(()=>loadReceiptRows(brokenDb),/Could not load receipt data/);
 console.log('Receipt pagination and failure tests passed');
+
+const {summariseBookingFunnel}=await import('../lib/bookingFunnel.js');
+const funnel=summariseBookingFunnel([
+ {event_name:'booking_view',visitor_id:'visitor-a'},
+ {event_name:'booking_view',visitor_id:'visitor-a'},
+ {event_name:'booking_view',visitor_id:'visitor-b'},
+ {event_name:'slot_selected',visitor_id:'visitor-a'},
+ {event_name:'checkout_started',visitor_id:'visitor-a',booking_id:'booking-one',utm_source:'google'},
+ {event_name:'checkout_started',visitor_id:'visitor-b',booking_id:'booking-two'},
+ {event_name:'booking_paid',visitor_id:'visitor-a',booking_id:'booking-one'},
+ {event_name:'booking_paid',visitor_id:'visitor-a',booking_id:'booking-one'}
+]);
+assert.equal(funnel.bookingViews,2,'Unique booking-page visitors must be deduplicated');
+assert.equal(funnel.timesChosen,1);
+assert.equal(funnel.checkoutStarts,2);
+assert.equal(funnel.paidBookings,1,'Duplicate Stripe webhook events must not inflate conversions');
+assert.equal(funnel.checkoutRate,50);
+assert.equal(funnel.attribution.google,1);
