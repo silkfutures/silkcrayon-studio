@@ -121,6 +121,18 @@ export async function POST(request) {
         if (id) {
           const inv=await invoiceFields(session); await db.from("bookings").update({ status: "confirmed", payment_status: session.payment_status === "paid" ? "paid" : "unpaid", amount_paid_pence: session.payment_status === "paid" ? Number(session.amount_total||0) : 0, stripe_payment_intent_id: typeof session.payment_intent === "string" ? session.payment_intent : null, hold_expires_at: null, updated_at: new Date().toISOString(), ...inv }).eq("id", id);
           if (session.payment_status === "paid") {
+            // Stripe is the source of truth; never trust a browser-submitted paid event.
+            // Ignore analytics failures so paid bookings and customer notifications continue.
+            const visitorId=String(session.metadata?.analytics_visitor_id||'').slice(0,100);
+            if(/^[a-zA-Z0-9_-]{12,100}$/.test(visitorId)){
+              try{
+                const {error:trackError}=await db.from('booking_funnel_events').insert({
+                  event_name:'booking_paid',visitor_id:visitorId,booking_id:id,
+                  service_slug:String(session.metadata?.service_slug||'').slice(0,60)||null
+                });
+                if(trackError&&trackError.code!=='23505')console.error('Paid conversion event failed',trackError.message);
+              }catch(error){console.error('Paid conversion event failed',error?.message||error);}
+            }
             if(session.metadata?.email_signup_discount_applied==='true'){
               const {data:bookCustomer}=await db.from("bookings").select("customer_id,customers(email)").eq("id",id).maybeSingle();
               if(bookCustomer?.customer_id)await db.from("customers").update({email_signup_discount_available:false,email_signup_discount_used_at:new Date().toISOString()}).eq("id",bookCustomer.customer_id);

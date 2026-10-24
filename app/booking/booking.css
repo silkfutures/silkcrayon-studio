@@ -20,3 +20,21 @@
  .bookingPage .optionGrid{grid-template-columns:1fr}
  .bookingPage .option{padding:14px 16px}
 }
+
+/* Conversion improvements: compact optional fields and helpful alternatives. */
+.bookingOptionalDetails{margin:18px 0 10px;border:1px solid #4a3857;border-radius:13px;background:#100c17;padding:0 16px}
+.bookingOptionalDetails>summary{list-style:none;cursor:pointer;padding:15px 0;font-size:14px;font-weight:650;color:#e6d4f4;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.bookingOptionalDetails>summary::-webkit-details-marker{display:none}
+.bookingOptionalDetails>summary span{font-size:11px;color:#b5a9be;font-weight:500}
+.bookingOptionalDetails[open]>summary{border-bottom:1px solid #392b43;margin-bottom:18px}
+.bookingOptionalDetails .formGrid{margin-bottom:16px}
+.alternativeDates{width:100%;grid-column:1/-1;display:grid;gap:12px;border:1px solid #4c375f;border-radius:14px;background:#130d1c;padding:17px}
+.alternativeDates p{margin:0}
+.alternativeDates strong{color:#f5edf9;font-size:14px}
+.alternativeDates>a{color:#d8b2ff;text-underline-offset:3px;text-decoration:underline;font-size:13px}
+.alternativeDateGrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.alternativeDateGrid button{min-width:0;display:flex;flex-direction:column;gap:6px;align-items:flex-start;justify-content:center;padding:13px 11px;border-radius:10px;border:1px solid #625078;background:#21172b;color:#f7f0fa;cursor:pointer}
+.alternativeDateGrid button:hover,.alternativeDateGrid button:focus-visible{border-color:#d4a7ff;background:#30203e}
+.alternativeDateGrid button b{font-size:13px}
+.alternativeDateGrid button small{font-size:11px;color:#c7bad4;line-height:1.4}
+@media(max-width:610px){.alternativeDateGrid{grid-template-columns:1fr}.alternativeDateGrid button{min-height:56px}.bookingOptionalDetails{padding-inline:13px}}
