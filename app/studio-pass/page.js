@@ -1,0 +1,5 @@
+import Link from 'next/link';
+import StudioHoursStore from '../../components/StudioHoursStore';
+import {getStudioSettings} from '../../lib/studioSettings';
+export const metadata={title:'Studio Pass | Silkcrayon',robots:{index:false,follow:false}};
+export default async function Page(){const pricing=await getStudioSettings();return <main className="marketingSite storePage"><header style={{padding:'30px 6%'}}><Link href="/booking">← Back to booking</Link></header><section className="storeHero"><div className="container storeHeroGrid"><div><p className="eyebrow">SILKCRAYON / STUDIO PASSES</p><h1>Make time for the music.</h1><p className="lede">Build your own 30-day studio pass. Buy 4–8 recording hours today, then book your sessions when you're ready. Your engineer is included.</p></div><div className="storeImage"><img src="/images/vault.webp" alt="Silkcrayon recording studio"/></div></div></section><section className="section"><div className="container"><StudioHoursStore pass hourlyPrice={pricing.studioHourlyPricePence/100}/></div></section></main>}

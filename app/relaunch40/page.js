@@ -1,0 +1,4 @@
+import StudioHoursStore from '../../components/StudioHoursStore';
+import Link from 'next/link';
+export const metadata={title:'Relaunch Invitation | Silkcrayon',robots:{index:false,follow:false}};
+export default function Page(){return <main className="marketingSite storePage"><header style={{padding:'30px 6%'}}><Link href="/">SILKCRAYON</Link></header><section className="storeHero"><div className="container"><p className="eyebrow">PRIVATE RELAUNCH INVITATION · RELAUNCH40</p><h1>We're back. Make something.</h1><p className="lede">£40 per hour, with your engineer. Purchase your two-hour recording session by 2 November 2026 and record during November, subject to availability.</p></div></section><section className="section"><div className="container"><StudioHoursStore relaunch40 hourlyPrice={50}/></div></section></main>}

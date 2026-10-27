@@ -38,3 +38,5 @@
 .alternativeDateGrid button b{font-size:13px}
 .alternativeDateGrid button small{font-size:11px;color:#c7bad4;line-height:1.4}
 @media(max-width:610px){.alternativeDateGrid{grid-template-columns:1fr}.alternativeDateGrid button{min-height:56px}.bookingOptionalDetails{padding-inline:13px}}
+
+.passPromotion{display:flex;justify-content:space-between;gap:24px;align-items:center;margin:38px 0;padding:30px;border:1px solid rgba(255,255,255,.17);border-radius:16px;background:#171719}.passPromotion h2{font-size:clamp(24px,3vw,38px);margin:9px 0}.passPromotion p{max-width:540px;color:#a6a3a9}.passPromotion span{font-size:11px;letter-spacing:.15em;color:#b6a8c6}@media(max-width:720px){.passPromotion{flex-direction:column;align-items:stretch}}

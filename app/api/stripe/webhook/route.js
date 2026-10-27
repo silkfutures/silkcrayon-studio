@@ -78,6 +78,10 @@ export async function POST(request) {
             });
             if(creditError && creditError.code!=='23505') throw creditError;
           }
+          if(isPaid && ['studio_pass','relaunch40'].includes(session.metadata?.payment_kind)){
+            const {error:passError}=await db.from('studio_pass_purchases').upsert({payment_id:payment.id,customer_id:payment.customer_id,hours_purchased:hours,purchased_at:new Date(session.created*1000).toISOString(),expires_at:session.metadata?.payment_kind==='relaunch40'?'2026-12-01T00:00:00Z':new Date((session.created+30*86400)*1000).toISOString()},{onConflict:'payment_id'});
+            if(passError)throw passError;
+          }
           const {error:updateError}=await db.from('studio_payments').update({
             status:isPaid?'paid':'pending',
             stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,
