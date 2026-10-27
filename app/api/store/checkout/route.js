@@ -20,6 +20,7 @@ export async function POST(req){
   const b=await req.json();
   const requestedHours=Number(b.hours);
   const kind=b.kind==="gift"?"gift":b.kind==="relaunch"?"relaunch":b.kind==="relaunch40"?"relaunch40":b.kind==="project_pass"?"project_pass":b.kind==="studio_pass"?"studio_pass":"hours";
+  if(kind==="project_pass")return NextResponse.json({error:"The previous Project Pass is no longer available. Please select a current Studio Pass."},{status:410});
   const hours=kind==="relaunch"||kind==="relaunch40"?2:kind==="project_pass"?6:requestedHours;
   if(kind==="studio_pass"&&(!Number.isInteger(hours)||hours<4||hours>8))return NextResponse.json({error:"Choose 4–8 hours for your Studio Pass."},{status:400});
   if(kind==="gift"&&!GIFTS.includes(hours))return NextResponse.json({error:"Choose between 1 and 8 gift hours."},{status:400});
@@ -69,7 +70,7 @@ export async function POST(req){
   }
   const pricing=await getStudioSettings();
   const listAmount=Math.round(hours*pricing.studioHourlyPricePence);
-  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?Math.round(hours*(hours>=8?3500:hours>=6?3750:4000)):listAmount;
+  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?({4:17000,5:21000,6:24000,7:28000,8:30000})[hours]:listAmount;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch40"?"2 studio hours — RELAUNCH40":kind==="relaunch"
