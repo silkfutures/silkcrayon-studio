@@ -15,3 +15,15 @@
 .formPanel button[type=submit]:hover{background:#d6b1ff}
 .accountLink{color:var(--accent,#C394FF)!important}
 @media(max-width:750px){.formPanel{padding:18px;max-width:100%}.application{padding:80px 20px}}
+
+/* Mobile form: keep consent and CTA in their own flow with consistent spacing. */
+.formPanel :global(.artistSupportForm){display:grid;gap:22px;min-width:0}
+.formPanel :global(.artistSupportForm .formGrid){min-width:0;gap:20px}
+.formPanel :global(.artistSupportForm .field){min-width:0}
+.formPanel :global(.artistSupportForm .field input),.formPanel :global(.artistSupportForm .field textarea){width:100%;min-width:0;display:block}
+.formPanel :global(.artistSupportForm .check){display:flex;align-items:flex-start;gap:12px;margin:0;line-height:1.55}
+.formPanel :global(.artistSupportForm .check input){flex:0 0 18px;width:18px;height:18px;margin:4px 0 0;accent-color:var(--accent,#C394FF)}
+.formPanel :global(.artistSupportForm .check span){min-width:0;flex:1}
+.formPanel :global(.artistSupportForm button[type=submit]){display:inline-flex;align-items:center;justify-content:center;width:fit-content;max-width:100%;min-height:50px;padding:13px 22px;white-space:normal;text-align:center;line-height:1.35;font-size:15px;overflow-wrap:break-word}
+.formPanel :global(.artistSupportForm p[role=status]){margin:0;overflow-wrap:anywhere}
+@media(max-width:750px){.formPanel :global(.artistSupportForm button[type=submit]){width:100%;padding:14px 12px;font-size:14px}.formPanel :global(.artistSupportForm .check){font-size:13px}.formPanel :global(.artistSupportForm){gap:20px}}
