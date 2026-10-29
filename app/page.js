@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SiteFooter from "../components/SiteFooter";
 import MeetEngineers from "../components/MeetEngineers";
 import SiteHeader from "../components/SiteHeader";
 import Reveal from "../components/Reveal";
@@ -38,7 +39,7 @@ export default async function Home(){
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
       <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
-      <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/request-a-call">Need a hand choosing? Request a call →</Link></div>
+      <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/enquire?call=1">Need a hand choosing? Request a call →</Link></div>
     </div></section>
 
     <section id="work" className="section workV12"><div className="container workGrid">
@@ -61,7 +62,7 @@ export default async function Home(){
       <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">{hourly}/hour · Secure online booking · Cardiff Bay</p></Reveal>
     </div></section>
 
-    <footer className="siteFooter"><div className="container footerGrid"><div><img src="/logo.png" alt="Silkcrayon"/><p>Cardiff Bay · Recording & creative development</p></div><div><a href="#services">Services</a><a href="#space">The Space</a><Link href="/booking">Book</Link></div><div><Link href="/buy-hours">Studio hour packs</Link><Link href="/gift-studio-time">Gift studio time</Link><Link href="/young-creators">Young creators</Link><Link href="/account/login">My Studio</Link><Link href="/getting-here">Getting here</Link><Link href="/faq">FAQ</Link><Link href="/terms">Terms</Link><Link href="/privacy">Privacy</Link><Link href="/cancellation-policy">Cancellation & refunds</Link><Link href="/no-harmful-music-policy">No Harmful Music</Link><a href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer">Instagram ↗</a><a href="mailto:info@silkcrayon.com">info@silkcrayon.com</a></div></div></footer>
+    <SiteFooter/>
     <Link href="/booking" className="mobileBookBar">Book a session <span>↗</span></Link>
   </main>
 }
