@@ -15,6 +15,7 @@ const ownerGroups=[
   ['/admin/sessions','Session reports','Review completed work','✓']]},
  {title:'People & team',description:'Your clients and engineers',items:[
   ['/admin/artists','Clients & artists','Profiles and booking history','◎'],
+  ['/admin/community','Community','Interests, availability and follow-ups','◎'],
   ['/admin/contacts','Contacts','Contact directory','◌'],
   ['/admin/staff','Engineers & staff','Roles and access','♧'],
   ['/admin/engineer-pay','Engineer payouts','Rates, payouts and exceptions','£'],

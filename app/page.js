@@ -46,6 +46,8 @@ export default async function Home(){
       <Reveal delay={120}><div className="listenStack"><div className="spotifyShell"><iframe style={{borderRadius:'12px'}} src="https://open.spotify.com/embed/playlist/5IuKX22eXsbJFApMV3c74z?utm_source=generator&theme=0" width="100%" height="380" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Recorded at Silkcrayon playlist"></iframe></div><a className="instagramLink" href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer"><span>Follow the studio</span><strong>@silkcrayon ↗</strong></a></div></Reveal>
     </div></section>
 
+    <section className="section"><div className="container spaceGrid"><div><img src="/images/wide2.webp" alt="The shared creative space at Silkcrayon Studios" loading="lazy" width="1920" height="1280" style={{width:'100%',height:'auto'}}/></div><div className="copyBlock"><p className="eyebrow">Community · Since 2020</p><h2>Find your people.<br/>Make your next thing.</h2><p>Since 2020, Silkcrayon has been a community hub connecting artists, producers and creative minds. We’re making more space for those connections through small-group studio collaborations and monthly producer meetups.</p><Link className="button primary" href="/community">Explore the community <span>↗</span></Link></div></div></section>
+
     <GoogleReviewProof/>
 
     <MeetEngineers/>
