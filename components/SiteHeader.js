@@ -54,6 +54,7 @@ export default function SiteHeader(){
       <a href="/#space">The Studio</a>
       <a href="/#engineers">Engineers</a>
       <a href="/#work">Listen</a>
+      <Link href="/community">Community</Link>
       <Link href="/contact">Visit &amp; Contact</Link>
       <Link href="/account/login">My Studio</Link>
       <Link className="navCta" href="/booking">BOOK</Link>
@@ -68,6 +69,7 @@ export default function SiteHeader(){
       <a href="/#space" onClick={close}>The Studio</a>
       <a href="/#engineers" onClick={close}>Engineers</a>
       <a href="/#work" onClick={close}>Listen</a>
+      <Link href="/community" onClick={close}>Community</Link>
       <Link href="/contact" onClick={close}>Visit &amp; Contact</Link>
       <Link href="/account/login" onClick={close}>My Studio</Link>
       <Link className="button primary" href="/booking" onClick={close}>Book a session</Link>
