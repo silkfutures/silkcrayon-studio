@@ -12,7 +12,12 @@ async function route(path){const context=vm.createContext({console,URL,Date});co
 const pub=await route('app/api/community-interest/route.js');
 const body={name:'Test',email:'TEST@example.com',phone:'07700 900123',role:'Producer',genres:['Pop'],interests:['Silk Sessions'],availability:['Weekday evenings'],consent:false};
 const req=b=>({text:async()=>JSON.stringify(b),json:async()=>b,headers:new Headers({origin:'https://studio.test'}),url:'https://studio.test/api/admin/community'});
-assert.equal((await pub.POST(req({...body,phone:''}))).status,400);assert.equal(saved,null);
+assert.equal((await pub.POST(req({...body,phone:'123'}))).status,400);assert.equal(saved,null);
+assert.equal((await pub.POST(req({name:'Test',email:'test@example.com',interests:['Silk Sessions']}))).status,200);assert.equal(saved.phone,null);assert.equal(saved.role,null);assert.equal(saved.genres.length,0);assert.equal(saved.availability.length,0);
+for(const role of ['Instrumentalist / Musician','Videographer / Filmmaker','Photographer','Content creator']){assert.equal((await pub.POST(req({...body,role,instruments:'Guitar',pronouns:'they/them'}))).status,200);assert.equal(saved.role,role);assert.equal(saved.instruments,'Guitar');assert.equal(saved.pronouns,'they/them');}
+assert.equal((await pub.POST(req({...body,accessNeeds:'Quiet space'}))).status,400);
+assert.equal((await pub.POST(req({...body,accessNeeds:'Quiet space',accessConsent:true}))).status,200);assert.equal(saved.access_needs,'Quiet space');assert.ok(saved.access_consent_at);
+assert.equal((await pub.POST(req({...body,interests:[]}))).status,400);
 assert.equal((await pub.POST(req({...body,musicLink:'javascript:alert(1)'}))).status,400);
 assert.equal((await pub.POST(req(body))).status,200);assert.equal(saved.phone,'+447700900123');assert.equal(saved.email,'test@example.com');assert.equal(saved.marketing_consent,false);
 limited=true;assert.equal((await pub.POST(req(body))).status,429);limited=false;
