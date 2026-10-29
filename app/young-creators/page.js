@@ -34,7 +34,7 @@ export default async function YoungCreators(){const pricing=await getStudioSetti
      <p className="eyebrow">Young creators · Parents & carers</p>
      <h1>Give them more than <span>studio time.</span></h1>
      <p className="ycHeroLead">Give them somewhere to turn an idea into something real — to write, record, learn, listen back and discover what they are capable of.</p>
-     <div className="actions"><Link className="button primary large" href="/gift-studio-time">Gift studio time <span>↗</span></Link><Link className="textLink" href="/request-a-call">Talk to us first →</Link></div>
+     <div className="actions"><Link className="button primary large" href="/gift-studio-time">Gift studio time <span>↗</span></Link><Link className="textLink" href="/enquire?call=1">Talk to us first →</Link></div>
     </div></Reveal>
     <Reveal delay={100}><div className="ycHeroVisual"><img src="/images/booth.webp" alt="Professional vocal recording booth at Silkcrayon Studios Cardiff"/><div className="ycHeroStamp"><b>Professional space.</b><span>Real creative ownership.</span></div></div></Reveal>
    </div>
@@ -80,7 +80,7 @@ export default async function YoungCreators(){const pricing=await getStudioSetti
   <section className="section ycParents">
    <div className="container ycParentsGrid">
     <Reveal><div><p className="eyebrow">For parents & carers</p><h2>A gift they can actually make something with.</h2><p>Instead of choosing a date for them, buy studio hours and let the young creator decide when they are ready to use them.</p><div className="ycParentPoints"><span>01 · Choose anywhere from 1–8 hours</span><span>02 · No session date needed at checkout</span><span>03 · Hours are added for the recipient to use later</span><span>04 · Professional recording environment in Cardiff</span></div></div></Reveal>
-    <Reveal delay={100}><aside className="ycParentCard"><p>START HERE</p><h3>Not sure whether studio time is right for them?</h3><span>Tell us what they're interested in — singing, rap, songwriting, production, recording or simply exploring music — and we can point you in the right direction.</span><Link className="button primary" href="/request-a-call">Talk to Silkcrayon →</Link></aside></Reveal>
+    <Reveal delay={100}><aside className="ycParentCard"><p>START HERE</p><h3>Not sure whether studio time is right for them?</h3><span>Tell us what they're interested in — singing, rap, songwriting, production, recording or simply exploring music — and we can point you in the right direction.</span><Link className="button primary" href="/enquire?call=1">Talk to Silkcrayon →</Link></aside></Reveal>
    </div>
   </section>
 
