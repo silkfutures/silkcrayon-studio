@@ -1,6 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "../../components/SiteHeader";
 import Reveal from "../../components/Reveal";
+import JourneyChooser from "../../components/JourneyChooser";
 import {getStudioSettings} from "../../lib/studioSettings";
 
 export const metadata={
@@ -39,6 +40,8 @@ export default async function Services(){
    <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Choose the part<br/>you need now.</h2></div><p>You do not need to know the whole journey before you start. Pick the closest fit and we’ll help with the rest.</p></div></Reveal>
    <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*55}><article className={`serviceRow ${i===0?"featured":""}`}><span className="serviceNumber">{String(i+1).padStart(2,'0')}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong><Link href={s.href}>{s.cta}</Link></div></article></Reveal>)}</div>
   </div></section>
+
+  <section className="section"><div className="container"><JourneyChooser/></div></section>
 
   <section className="section"><div className="container"><Link className="textLink" href="/young-creators">Studio sessions for young creators →</Link></div></section>
   <section className="section servicesStory"><div className="container servicesStoryGrid">

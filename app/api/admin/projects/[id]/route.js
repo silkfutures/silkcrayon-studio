@@ -17,7 +17,12 @@ export async function PATCH(req,{params}){try{
   const recording=pence(b.recordingPounds),post=pence(b.postPounds);
   if(recording!==null||post!==null){const {data:current,error:ce}=await db.from('studio_projects').select('recording_amount_pence,post_amount_pence').eq('id',id).single();if(ce)throw ce;const r=recording??Number(current.recording_amount_pence||0),p=post??Number(current.post_amount_pence||0);Object.assign(patch,{recording_amount_pence:r,post_amount_pence:p,quote_amount_pence:r+p});}
  }
- const {error}=await db.from('studio_projects').update(patch).eq('id',id);if(error)throw error;return NextResponse.json({ok:true});
+ const {error}=await db.from('studio_projects').update(patch).eq('id',id);if(error)throw error;
+ // Keep the originating enquiry's pipeline in step with the project.
+ if(patch.status){const leadStatus=patch.status==='lost'?'lost':patch.status==='quoted'?'quote_sent':'confirmed';
+  const {data:project}=await db.from('studio_projects').select('lead_id').eq('id',id).maybeSingle();
+  if(project?.lead_id)await db.from('leads').update({status:leadStatus,updated_at:new Date().toISOString()}).eq('id',project.lead_id);}
+ return NextResponse.json({ok:true});
 }catch(e){return NextResponse.json({error:e.message||'Could not update project.'},{status:500})}}
 
 export async function DELETE(req,{params}){try{
