@@ -24,18 +24,13 @@ comment on column public.leads.studio_budget_range is 'Portion of the total budg
 comment on column public.leads.budget_covers is 'What else the total budget must cover (musicians, filming, artwork, PR).';
 
 -- Enquiry pipeline: new -> discussing -> quote_sent -> confirmed, plus lost.
--- 'interested' is an existing value in the table and is kept as an alias of
--- 'discussing' so no historic row is rewritten.
-do $$
-begin
-  if not exists (
-    select 1 from pg_constraint where conname = 'leads_status_check'
-  ) then
-    alter table public.leads add constraint leads_status_check
-      check (status in ('new','interested','discussing','quote_sent','confirmed','lost','spam'));
-  end if;
-end
-$$;
+-- Replaces the earlier constraint (new, contacted, interested, booked, won,
+-- lost). Every old value stays allowed so no historic row is rewritten; the
+-- OS displays contacted/interested as Discussing and booked/won as Confirmed.
+alter table public.leads drop constraint if exists leads_status_check;
+alter table public.leads add constraint leads_status_check
+  check (status in ('new','discussing','quote_sent','confirmed','lost',
+                    'contacted','interested','booked','won'));
 
 create index if not exists leads_status_created_idx on public.leads (status, created_at desc);
 create index if not exists leads_enquiry_type_idx on public.leads (enquiry_type);

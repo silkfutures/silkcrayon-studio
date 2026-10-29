@@ -9,7 +9,16 @@ assert.equal(LEAD_STATUSES.length,5);
 // 'interested' predates the pipeline and must keep working, not reset to new.
 assert.equal(normaliseLeadStatus('interested'),'discussing');
 assert.equal(leadStatusLabel('interested'),'Discussing');
+assert.equal(normaliseLeadStatus('contacted'),'discussing');
+assert.equal(normaliseLeadStatus('booked'),'confirmed');
+assert.equal(normaliseLeadStatus('won'),'confirmed');
 assert.equal(normaliseLeadStatus('new'),'new');
+// Every key the OS writes must be allowed by the database constraint.
+const migration=fs.readFileSync(new URL('../supabase/v20-12-55-project-enquiries.sql',import.meta.url),'utf8');
+const allowedInDb=[...migration.match(/check \(status in \(([^)]*)\)\)/s)[1].matchAll(/'([a-z_]+)'/g)].map(m=>m[1]);
+for(const k of LEAD_STATUS_KEYS)assert(allowedInDb.includes(k),`${k} is not allowed by leads_status_check`);
+for(const k of ['new','contacted','interested','booked','won','lost'])assert(allowedInDb.includes(k),`legacy status ${k} must stay allowed`);
+assert(!/if not exists \(\s*select 1 from pg_constraint/.test(migration),'constraint must be replaced, not conditionally skipped');
 assert.equal(normaliseLeadStatus('quote_sent'),'quote_sent');
 assert.equal(normaliseLeadStatus(null),'new');
 assert.equal(normaliseLeadStatus('something_else'),'new');
