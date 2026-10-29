@@ -29,6 +29,6 @@ export async function POST(req,{params}){try{
   quote_amount_pence:total,recording_amount_pence:recordingTotal,post_amount_pence:postTotal,audio_recording_amount_pence:audioRecording,video_production_amount_pence:videoProduction,audio_post_amount_pence:audioPost,video_post_amount_pence:videoPost,
   target_dates:lead.target_dates||lead.deadline||null,notes:lead.project_details||null
  }).select('id').single();if(pe)throw pe;
- await db.from('leads').update({status:'interested',updated_at:new Date().toISOString()}).eq('id',id);
+ await db.from('leads').update({status:'quote_sent',updated_at:new Date().toISOString()}).eq('id',id);
  return NextResponse.json({ok:true,id:project.id});
 }catch(e){return NextResponse.json({error:e.message||'Could not create project.'},{status:500})}}

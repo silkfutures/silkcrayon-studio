@@ -321,6 +321,23 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 .enquiryForm{position:relative;max-width:960px;margin:18px auto 70px;padding:clamp(24px,5vw,52px);border:1px solid #49395a;border-radius:26px;background:linear-gradient(145deg,rgba(25,17,31,.97),rgba(10,8,13,.98));box-shadow:0 26px 80px rgba(0,0,0,.45)}
 .enquiryForm:before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:radial-gradient(circle at 90% 0%,rgba(195,148,255,.12),transparent 33%)}
 .enquiryForm>div,.enquiryForm>button{position:relative;z-index:1}.enquiryGrid input,.enquiryGrid select,.enquiryGrid textarea{background:#0d0a10;border-color:#51435b}.enquiryGrid input:focus,.enquiryGrid select:focus,.enquiryGrid textarea:focus{outline:none;border-color:#C394FF;box-shadow:0 0 0 3px rgba(195,148,255,.08)}
+.enquiryGrid label.check{display:flex;align-items:center;gap:10px}.enquiryGrid label.check input{width:18px;height:18px;flex:0 0 auto;accent-color:#C394FF}.enquiryGrid label small{color:#8c8490;font-size:11px;line-height:1.45}
+.enquiryGrid label.budgetNote{gap:5px;margin-top:10px;padding-top:18px;border-top:1px solid #2e2833}.enquiryGrid label.budgetNote span{color:#C394FF;font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+.leadPipelineSummary{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}.leadPipelineCount{border:1px solid #332d37;border-radius:14px;background:#0a090b;padding:13px}.leadPipelineCount small{display:block;color:#8c8490;font-size:9px;letter-spacing:.11em;text-transform:uppercase}.leadPipelineCount b{display:block;font-size:27px;margin-top:5px}.leadPipelineCount.empty b{color:#4f4857}
+.leadPipeline{margin:14px 0}.leadPipelineTrack{display:flex;flex-wrap:wrap;gap:5px}.leadPipelineStep{border:1px solid #3a3043;border-radius:999px;background:#0b090d;color:#9d95a6;padding:7px 11px;font-size:10px;letter-spacing:.04em;cursor:pointer}.leadPipelineStep:hover:not(:disabled){border-color:#6d5583;color:#fff}.leadPipelineStep.active{border-color:#C394FF;background:#1a1023;color:#fff;font-weight:800}.leadPipelineStep.lost.active{border-color:#b4637a;background:#1d1013;color:#ffc6d3}.leadPipelineStep:disabled{opacity:.55;cursor:default}
+.leadCard.projectLead{border-color:#5a4370;background:linear-gradient(#0e0a12,#0a090b)}
+.leadBudget{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin:12px 0;padding:12px;border:1px solid #3a3043;border-radius:12px;background:#0d0a10}.leadBudget small{display:block;color:#8c8490;font-size:9px;letter-spacing:.1em;text-transform:uppercase}.leadBudget b{display:block;font-size:15px;margin-top:3px}.leadBudget p{grid-column:1/-1;margin:0;color:#aaa1af;font-size:11px}
+@media(max-width:700px){.leadPipelineSummary{grid-template-columns:repeat(2,1fr)}}
+.journeyChooserHead{max-width:620px;margin-bottom:28px}.journeyChooserHead h2{font-size:clamp(32px,4.5vw,46px);margin:8px 0}.journeyChooserHead>p:last-child{color:var(--muted)}
+.journeyGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.journeyCard{display:flex;flex-direction:column;border:1px solid #332d37;border-radius:20px;background:#0a090b;padding:24px;color:#fff;text-decoration:none;transition:border-color .18s,transform .18s}
+.journeyCard:hover{border-color:#6d5583;transform:translateY(-2px)}
+.journeyCard small{color:var(--accent);font-size:10px;letter-spacing:.18em}
+.journeyCard h3{font-size:27px;margin:14px 0 10px}
+.journeyCard p{color:var(--muted);margin:0 0 22px;line-height:1.55}
+.journeyCard span{margin-top:auto;color:var(--accent);font-size:13px;font-weight:800}
+.journeyCard.feature{border-color:#5a4370;background:linear-gradient(#120b18,#0a090b)}
+@media(max-width:850px){.journeyGrid{grid-template-columns:1fr}}
 .blockedTimes{margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}.blockedTimes h3{font-size:15px}.blockoutList{display:grid;gap:7px}.blockoutItem{display:flex;justify-content:space-between;align-items:center;gap:12px;border:1px solid var(--line);border-radius:11px;padding:10px}.blockoutItem b,.blockoutItem small{display:block}.blockoutItem b{font-size:11px}.blockoutItem small{font-size:9px;color:var(--muted);margin-top:3px}
 @media(max-width:700px){.enquiryPage .section{padding-top:105px}.enquiryForm{margin:8px 0 40px;border-radius:18px}.hoursControls{grid-template-columns:48px minmax(140px,1fr) 48px}.hoursControls input[type=range]{height:48px}.blockoutItem{align-items:flex-start;flex-direction:column}.blockoutItem .miniButton{width:100%}}
 
