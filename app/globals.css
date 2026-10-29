@@ -718,3 +718,14 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 .option .serviceDescription{display:block;font-size:14px;line-height:1.6;color:#c9c1d1;margin-top:12px;font-weight:400;white-space:normal}
 .bookingHelp{margin:0 0 36px;padding:22px;border:1px solid #3d3150;line-height:1.7}
 .bookingHelp p{margin:0 0 12px}.bookingHelp a{color:#c394ff;text-decoration:underline}.bookingHelp summary{cursor:pointer;color:#c9c1d1}
+
+/* v20.12.56 — simpler navigation and one shared footer */
+.desktopNav a.navQuiet:not(.navCta){color:#a39cab;font-weight:500;margin-left:6px;padding-left:14px;border-left:1px solid #ffffff22;border-radius:0}
+.desktopNav a.navQuiet:not(.navCta):hover{color:#fff;background:none}
+.mobileMenu a.mobileMenuQuiet{font-size:14px;color:#a39cab;border:0;margin-top:6px}
+.siteFooterGrid{grid-template-columns:1.6fr repeat(4,1fr);gap:36px}
+.siteFooterGrid>nav{display:flex;flex-direction:column;gap:10px;font-size:13px;color:#b6afb9}
+.siteFooterGrid>nav a{color:#b6afb9;text-decoration:none}
+.siteFooterGrid>nav a:hover{color:#fff}
+.footerHeading{color:var(--accent);font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px}
+@media(max-width:850px){.siteFooterGrid{grid-template-columns:1fr 1fr;gap:30px 20px}.siteFooterGrid>div:first-child{grid-column:1/-1}}

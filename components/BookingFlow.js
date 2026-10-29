@@ -213,7 +213,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
 
   return (
     <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/request-a-call">Not sure what to book? Ask us</a></p></div></div>
+      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/enquire?call=1">Not sure what to book? Ask us</a></p></div></div>
 
 
       <div className="bookingSection"><span className="step">02</span><div><h2>Duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=promotions.find(p=>p.showOnBooking&&p.serviceSlug===service&&Number(p.durationMinutes)===d);return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} onClick={()=>setDuration(d)}><span>{d===480?"Full day (8 hours)":durationLabel(d)} · {offer?`£${offer.offerPricePence/100}`:livePrice(service,d)}</span>{offer&&<small><s>£{offer.normalPricePence/100}</s> · SAVE £{(offer.normalPricePence-offer.offerPricePence)/100} · OFFER</small>}</button>})}</div>
@@ -227,7 +227,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
  <p className="muted">No times available on this day.{findingAlternatives?' Looking for the next openings…':''}</p>
  {alternatives.length>0&&<><strong>Next available dates</strong><div className="alternativeDateGrid">{alternatives.map(a=><button type="button" key={a.date} onClick={()=>setDate(a.date)}><b>{new Date(a.date+'T12:00:00Z').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'})}</b><small>{a.slots.map(x=>x.start).slice(0,2).join(' · ')}{a.slots.length>2?' + more':''}</small></button>)}</div></>}
  {alternativeError&&<p className="muted">{alternativeError}</p>}
- <a href="/request-a-call">Need another time? Ask us →</a>
+ <a href="/enquire?call=1">Need another time? Ask us →</a>
  </div>}</div>}
       </div></div>
 
