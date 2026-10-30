@@ -8,7 +8,7 @@ import { getStripe } from "../../../lib/stripe";
 import { generateSlots } from "../../../lib/availability";
 import { londonDateTimeToUtc } from "../../../lib/time";
 import { rateLimit } from "../../../lib/rateLimit";
-import { getPromotionFor, promotionIsLive } from "../../../lib/promotions";
+import { getPromotionFor } from "../../../lib/promotions";
 import {getStudioSettings} from "../../../lib/studioSettings";
 
 export async function POST(request) {
@@ -88,7 +88,7 @@ export async function POST(request) {
       if(programme||service.slug==='system-test'||!/^[A-Z0-9_-]{3,40}$/.test(requestedCode))return NextResponse.json({error:'Invalid discount code.'},{status:400});
       const {data:codeOffer,error:codeError}=await db.from('promotions').select('*').eq('code',requestedCode).maybeSingle();
       if(codeError)throw codeError;
-      if(!codeOffer||!promotionIsLive(codeOffer)||codeOffer.service_slug&&codeOffer.service_slug!==service.slug||codeOffer.duration_minutes&&Number(codeOffer.duration_minutes)!==duration||codeOffer.min_duration_minutes&&duration<Number(codeOffer.min_duration_minutes))return NextResponse.json({error:'This code is expired or not valid for this session.'},{status:400});
+      if(!codeOffer||!codeOffer.active||(codeOffer.starts_at&&new Date(codeOffer.starts_at)>new Date())||(codeOffer.ends_at&&new Date(codeOffer.ends_at)<new Date())||codeOffer.service_slug&&codeOffer.service_slug!==service.slug||codeOffer.duration_minutes&&Number(codeOffer.duration_minutes)!==duration||codeOffer.min_duration_minutes&&duration<Number(codeOffer.min_duration_minutes))return NextResponse.json({error:'This code is expired or not valid for this session.'},{status:400});
       promotion=codeOffer;
     }
     if(promotion?.usage_limit_per_customer){
