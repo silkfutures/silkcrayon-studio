@@ -83,12 +83,20 @@ export async function POST(request) {
     const commercial=await getStudioSettings();
     const listPricePence = service.slug==="vocal-recording"?Math.round(duration/60*commercial.studioHourlyPricePence):service.slug==="full-day"?commercial.fullDayPricePence:priceFor(service,duration);
     let promotion=programme||service.slug==='system-test'?null:await getPromotionFor(service.slug,duration);
+    const requestedCode=String(body.promoCode||'').trim().toUpperCase();
+    if(requestedCode){
+      if(programme||service.slug==='system-test'||!/^[A-Z0-9_-]{3,40}$/.test(requestedCode))return NextResponse.json({error:'Invalid discount code.'},{status:400});
+      const {data:codeOffer,error:codeError}=await db.from('promotions').select('*').eq('code',requestedCode).maybeSingle();
+      if(codeError)throw codeError;
+      if(!codeOffer||!codeOffer.active||(codeOffer.starts_at&&new Date(codeOffer.starts_at)>new Date())||(codeOffer.ends_at&&new Date(codeOffer.ends_at)<new Date())||codeOffer.service_slug&&codeOffer.service_slug!==service.slug||codeOffer.duration_minutes&&Number(codeOffer.duration_minutes)!==duration||codeOffer.min_duration_minutes&&duration<Number(codeOffer.min_duration_minutes))return NextResponse.json({error:'This code is expired or not valid for this session.'},{status:400});
+      promotion=codeOffer;
+    }
     if(promotion?.usage_limit_per_customer){
       const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).eq('promotion_id',promotion.id).in('status',['pending','confirmed','completed']);
-      if(Number(count||0)>=Number(promotion.usage_limit_per_customer)) promotion=null;
+      if(Number(count||0)>=Number(promotion.usage_limit_per_customer)){if(requestedCode)return NextResponse.json({error:'This code has reached its usage limit.'},{status:400});promotion=null;}
     }
     const rewardApplied=!programme&&!promotion&&rewardAvailableBefore&&service.slug!=='system-test';
-    let amountPence = programme?Math.round(duration/60*programmeRate(programme)):promotion?Number(promotion.offer_price_pence):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
+    let amountPence = programme?Math.round(duration/60*programmeRate(programme)):promotion?(promotion.discount_percent?Math.round(listPricePence*(100-Number(promotion.discount_percent))/100):Number(promotion.offer_price_pence)):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
     const holdExpires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const { data: reservedId, error: bookingError } = await db.rpc(programme?"reserve_supported_booking_v2":"reserve_booking", programme?{
       p_expected_rate_pence:programmeRate(programme),p_membership_id:programme.id,p_customer_id:customer.id,p_booking_date:body.date,p_start_time:body.start,p_end_time:body.end,p_duration_minutes:duration,p_genre:body.genre?.trim()||null,p_notes:developmentContext||null,p_harmful_music_policy_accepted:true
@@ -147,7 +155,7 @@ export async function POST(request) {
     const stripe = getStripe();
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const session = await stripe.checkout.sessions.create({
-      allow_promotion_codes: !programme,
+      allow_promotion_codes: false,
       mode: "payment",
       invoice_creation: { enabled: true },
       customer_email: email,
