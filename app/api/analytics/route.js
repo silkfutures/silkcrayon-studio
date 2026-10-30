@@ -6,7 +6,7 @@ export async function POST(req){try{
  const b=await req.json(),path=String(b.path||'').split(/[?#]/)[0];
  if(!path.startsWith('/')||path.startsWith('//')||/^\/(admin|account|api)(\/|$)/.test(path)||path==='/__analytics_check')return NextResponse.json({ok:false},{status:400});
  let referrer=null;try{referrer=b.referrer?new URL(b.referrer).origin:null;}catch{}
- const {error}=await getAdminDb().from('page_views').insert({path:path.slice(0,300),referrer,visitor_id:String(b.visitorId||'').slice(0,100)||null});
+ const {error}=await getAdminDb().from('page_views').insert({path:path.slice(0,300),referrer,visitor_id:String(b.visitorId||'').slice(0,100)||null,utm_source:String(b.campaign?.utm_source||'').slice(0,120)||null,utm_medium:String(b.campaign?.utm_medium||'').slice(0,120)||null,utm_campaign:String(b.campaign?.utm_campaign||'').slice(0,120)||null});
  if(error)throw error;
  return NextResponse.json({ok:true});
  }catch(error){console.error('Analytics write failed',error.message);return NextResponse.json({ok:false,error:'Analytics storage unavailable'},{status:503});}
