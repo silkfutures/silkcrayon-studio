@@ -70,6 +70,9 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   const initial = requestedService && (publicServices.includes(requestedService) || (requestedService === "system-test" && showTest)) ? requestedService : "vocal-recording";
   const quickDates = useMemo(() => nextBookableDays(18), []);
   const [service, setService] = useState(initial);
+  const [promoCode,setPromoCode]=useState('');
+  const [codeResult,setCodeResult]=useState(null);
+  const [codeLoading,setCodeLoading]=useState(false);
   const [alternatives, setAlternatives] = useState([]);
   const [findingAlternatives, setFindingAlternatives] = useState(false);
   const [alternativeError, setAlternativeError] = useState('');
@@ -158,7 +161,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     setSubmitting(true); setError("");
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
-    body.service = service; body.duration = duration; body.date = date; body.start = slot.start; body.end = slot.end;
+    body.service = service; body.duration = duration; body.promoCode=codeResult?.ok?promoCode.trim().toUpperCase():''; body.date = date; body.start = slot.start; body.end = slot.end;
     const tracking=bookingVisitorContext();
     body.analyticsVisitorId=tracking.visitorId;
     body.analyticsSource=tracking.utmSource;
@@ -192,6 +195,8 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     setDetailsReady(Boolean(fullName && email && policy && dryHirePolicy && dryHireAge && dryHireContact && form.elements.email?.checkValidity()));
   }
 
+  useEffect(()=>{setCodeResult(null)},[service,duration]);
+  async function checkCode(){setCodeLoading(true);setCodeResult(null);try{const r=await fetch('/api/booking-discount',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({code:promoCode,service,duration})});const j=await r.json();setCodeResult(r.ok?{ok:true,...j}:{ok:false,error:j.error||'Code unavailable'});}catch{setCodeResult({ok:false,error:'Unable to check code'})}finally{setCodeLoading(false)}}
   const checkoutReady = Boolean(slot && detailsReady);
   const money=p=>`£${(Number(p||0)/100).toFixed(Number(p||0)%100?2:0)}`;
   const livePrice=(slug,d)=>{
@@ -222,6 +227,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
         <details className="moreDates"><summary>Choose a later date</summary><label className="field"><span>Date</span><input type="date" value={date} min={minDate} onChange={e=>setDate(e.target.value)} required /></label></details>
       </div></div>
 
+      <div className="bookingSection"><span className="step">CODE</span><div><h2>Have a discount code?</h2><div style={{display:'flex',gap:10,flexWrap:'wrap'}}><input aria-label="Discount code" placeholder="Enter code" value={promoCode} onChange={e=>{setPromoCode(e.target.value);setCodeResult(null)}} style={{padding:13,background:'#0b0a0d',color:'white',border:'1px solid var(--line)'}}/><button type="button" className="button outline" onClick={checkCode} disabled={codeLoading||!promoCode.trim()}>{codeLoading?'Checking…':'Apply code'}</button></div>{codeResult?.ok&&<p style={{color:'var(--accent)'}}>Code applied: £{(codeResult.pricePence/100).toFixed(2)} total · save £{(codeResult.savingsPence/100).toFixed(2)}</p>}{codeResult?.ok===false&&<p role="alert">{codeResult.error}</p>}</div></div>
       <div className="bookingSection"><span className="step">03</span><div><h2>Pick a time</h2>
         {loadingSlots ? <p className="muted">Checking the diary…</p> : availabilityError ? <div className="inlineError"><b>We couldn’t load the diary.</b><span>{availabilityError}</span><small>Try the date again. If it keeps happening, contact Silkcrayon and we’ll help you book.</small></div> : <div className="slotGrid">{slots.length ? slots.map(s=><button type="button" className={`slot ${slot?.start===s.start?"selected":""}`} onClick={()=>{setSlot(s);recordBookingStep("slot_selected",service);}} key={s.start}>{s.start}</button>) : <div className="alternativeDates" role="status">
  <p className="muted">No times available on this day.{findingAlternatives?' Looking for the next openings…':''}</p>
