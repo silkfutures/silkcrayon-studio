@@ -26,6 +26,7 @@ const ownerGroups=[
   ['/admin/accounting','Accounting','Revenue, refunds and exports','↗']]},
  {title:'Growth & system',description:'Use when you need them',items:[
   ['/admin/analytics','Analytics','Performance and visitor reporting','▥'],
+  ['/admin/campaigns','Campaign performance','Track visits after Instagram posts','↗'],
   ['/admin/marketing','Marketing','Email campaigns and audience','✦'],
   ['/admin/promotions','Promotions','Offers and campaigns','✺'],
   ['/admin/automation','Automations','Reminders and notifications','⚡'],
