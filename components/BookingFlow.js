@@ -69,7 +69,10 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   const publicServices = ["vocal-recording", "voiceover", "dry-hire"];
   const initial = requestedService && (publicServices.includes(requestedService) || (requestedService === "system-test" && showTest)) ? requestedService : "vocal-recording";
   const quickDates = useMemo(() => nextBookableDays(18), []);
-  const [service, setService] = useState(initial);\n  const [promoCode,setPromoCode]=useState('');\n  const [codeResult,setCodeResult]=useState(null);\n  const [codeLoading,setCodeLoading]=useState(false);
+  const [service, setService] = useState(initial);
+  const [promoCode,setPromoCode]=useState('');
+  const [codeResult,setCodeResult]=useState(null);
+  const [codeLoading,setCodeLoading]=useState(false);
   const [alternatives, setAlternatives] = useState([]);
   const [findingAlternatives, setFindingAlternatives] = useState(false);
   const [alternativeError, setAlternativeError] = useState('');
