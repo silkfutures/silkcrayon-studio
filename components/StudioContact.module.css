@@ -1,0 +1,12 @@
+.contact{position:fixed;right:max(18px,env(safe-area-inset-right));bottom:max(var(--contact-bottom,86px),calc(16px + env(safe-area-inset-bottom)));z-index:65;color:var(--text);font-size:14px;max-width:calc(100vw - 36px)}
+.contact summary{list-style:none;display:flex;align-items:center;gap:7px;min-height:48px;padding:12px 16px;border:1px solid #795696;border-radius:999px;background:#100b16;box-shadow:0 8px 30px #0006;cursor:pointer;font-weight:600}
+.contact summary::-webkit-details-marker{display:none}
+.contact summary>span:first-child{color:var(--accent)}
+.plus{margin-left:5px;font-size:20px;line-height:1}
+.contact[open] .plus{transform:rotate(45deg)}
+.panel{position:absolute;bottom:calc(100% + 10px);right:0;width:300px;max-width:calc(100vw - 36px);max-height:55dvh;overflow:auto;padding:20px;border:1px solid #63477e;border-radius:14px;background:#100b16;box-shadow:0 12px 45px #0008}
+.panel strong{font-size:16px}.panel p{color:var(--muted);margin:8px 0 14px;line-height:1.55}.number{display:block;font-size:18px;letter-spacing:.04em}
+.actions{display:flex;gap:10px;margin-top:16px}.actions a{flex:1;display:flex;align-items:center;justify-content:center;min-height:46px;padding:10px;border:1px solid var(--accent);border-radius:7px;font-weight:700;color:var(--accent)}.actions a:last-child{background:var(--accent);color:#09050d}
+.contact summary:focus-visible,.actions a:focus-visible{outline:3px solid #fff;outline-offset:4px}
+:global(.navLocked) .contact,:global(body:has(.googleConsent)) .contact{display:none}
+@media print{.contact{display:none}}
