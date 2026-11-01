@@ -1,4 +1,5 @@
 "use client";
+import OnsiteCheckout from './OnsiteCheckout';
 import FormProtection from './FormProtection';
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -83,6 +84,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [availabilityError, setAvailabilityError] = useState("");
   const [error, setError] = useState("");
+  const [checkout,setCheckout]=useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [detailsReady, setDetailsReady] = useState(false);
   const [engineers, setEngineers] = useState([]);
@@ -158,6 +160,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     setSubmitting(true); setError("");
     const fd = new FormData(e.currentTarget);
     const body = Object.fromEntries(fd.entries());
+    body.checkoutMode=e.nativeEvent.submitter?.value==='hosted'?'hosted':'onsite';
     body.service = service; body.duration = duration; body.date = date; body.start = slot.start; body.end = slot.end;
     const tracking=bookingVisitorContext();
     body.analyticsVisitorId=tracking.visitorId;
@@ -177,7 +180,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
       const res = await fetch("/api/checkout", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not create booking");
-      window.location.href = data.url;
+      if(data.clientSecret){setCheckout(data);setSubmitting(false);}else window.location.href = data.url;
     } catch (e) { setError(e.message); setSubmitting(false); }
   }
 
@@ -212,7 +215,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
   };
 
   return (
-    <form className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
+    <><form style={checkout?{display:"none"}:undefined} className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
       <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/enquire?call=1">Not sure what to book? Ask us</a></p></div></div>
 
 
@@ -240,6 +243,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
       {service==="artist-development"&&<div className="bookingSection artistDevelopmentQuestions"><span className="step">05</span><div><p className="eyebrow">Before your development session</p><h2>Give us the useful context.</h2><p className="muted">You do not need polished answers. This simply helps Nathan or Toni prepare for the conversation.</p><div className="formGrid"><label className="field full"><span>What are you trying to achieve?</span><textarea name="developmentGoal" rows="3" required placeholder="For example: release my first single, choose from a backlog, build confidence or understand Spotify distribution."/></label><label className="field full"><span>What is currently stopping you?</span><textarea name="developmentBlocker" rows="3" required placeholder="Tell us honestly—time, fear, perfectionism, organisation, technical knowledge or something else."/></label><label className="field"><span>How much unreleased music do you have? <small>Optional</small></span><input name="developmentBacklog" placeholder="e.g. 3 finished songs and 10 demos"/></label><label className="field"><span>Music or artist link <small>Optional</small></span><input name="developmentMusicLink" type="url" placeholder="Spotify, SoundCloud or private link"/></label><label className="field full"><span>What would make this hour feel worthwhile?</span><textarea name="developmentOutcome" rows="3" required/></label><label className="field"><span>Session format</span><select name="developmentFormat" defaultValue="in_person"><option value="in_person">In person at Silkcrayon</option><option value="online">Online video call</option></select></label></div></div></div>}
       {error && <div className="errorBox">{error}</div>}
       <div className={`checkoutBar${checkoutReady?" ready":""}`}><div><small>Your booking</small><b>{services[service].name} · {durationLabel(duration)} · {livePrice(service,duration)}</b><small>{slot?`${date} at ${slot.start}`:"Choose a date and time above."}</small>{!detailsReady&&<small>Enter your name and email, and accept the booking terms above.</small>}</div><button type="submit" className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to payment →"}</button></div>
-    </form>
+      <button type="submit" value="hosted" className="onsiteHostedFallback" disabled={submitting}>Use separate Stripe checkout</button>
+    </form>{checkout&&<OnsiteCheckout checkout={checkout} onBack={()=>{setCheckout(null);setError("");}}/>}</>
   );
 }

@@ -1,3 +1,4 @@
+import {createWebsiteCheckout} from '../../../../lib/onsiteCheckout';
 import {publicFormGuard} from "../../../../lib/publicFormGuard";
 import {NextResponse} from "next/server";
 import {getAdminDb} from "../../../../lib/supabase";
@@ -100,7 +101,7 @@ export async function POST(req){
     ? "Limited relaunch offer. Two prepaid studio hours; choose the date later."
     :kind==="project_pass"?"6 prepaid studio hours, engineer included — book later":kind==="studio_pass"?"Engineer included. Sessions must take place within 30 calendar days of payment; unused hours expire.": `${hours} prepaid studio hours — choose your sessions later`;
 
-  const session=await stripe.checkout.sessions.create({
+  const {session,response:checkoutResponse}=await createWebsiteCheckout(stripe,{
    mode:"payment",invoice_creation:{enabled:true},customer_email:buyerEmail,
    client_reference_id:payment.id,
    metadata:{
@@ -111,10 +112,10 @@ export async function POST(req){
    line_items:[{quantity:1,price_data:{currency:"gbp",unit_amount:amount,product_data:{name:productName,description:productDescription}}}],
    success_url:kind==="relaunch40"?`${base}/relaunch40?paid=1&session_id={CHECKOUT_SESSION_ID}`:kind==="relaunch"?`${base}/relaunch-offer?paid=1&session_id={CHECKOUT_SESSION_ID}`:`${base}/${kind==="gift"?"gift-studio-time":kind==="studio_pass"?"studio-pass":"buy-hours"}?paid=1&hours=${hours}&session_id={CHECKOUT_SESSION_ID}`,
    cancel_url:kind==="relaunch40"?`${base}/relaunch40?cancelled=1`:kind==="relaunch"?`${base}/relaunch-offer?cancelled=1`:`${base}/${kind==="gift"?"gift-studio-time":kind==="studio_pass"?"studio-pass":"buy-hours"}?cancelled=1`
-  });
+  },{onsite:b.checkoutMode==='onsite',origin:new URL(req.url).origin});
 
   await db.from("studio_payments").update({stripe_checkout_session_id:session.id}).eq("id",payment.id);
-  return NextResponse.json({url:session.url});
+  return NextResponse.json(checkoutResponse,{headers:{'Cache-Control':'no-store'}});
  }catch(e){
   return NextResponse.json({error:e.message||"Could not start checkout."},{status:500});
  }
