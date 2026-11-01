@@ -1,3 +1,4 @@
+import {isCheckoutHold} from '../../lib/bookingVisibility';
 import {loadReceiptRows} from '../../lib/receiptData';
 import {rowsInMonth,receiptNet} from '../../lib/receiptRows';
 import {londonToday} from '../../lib/time';
@@ -41,7 +42,7 @@ export default async function Admin(){
  ]);
  if(results.some(result=>result.error))throw new Error('Could not load the studio overview.');
  const [bookings,,reports,engineers,blockouts,mixJobs]=results.map(result=>result.data||[]),customers=results[1].count||0;
- const upcoming=bookings.filter(b=>b.booking_date>=today&&!['cancelled','completed'].includes(b.status)),unassigned=upcoming.filter(b=>b.service_slug!=='dry-hire'&&!b.engineer_user_id),cancelRequests=upcoming.filter(b=>b.cancellation_requested_at),changeRequests=upcoming.filter(b=>b.change_request_status==='pending');
+ const upcoming=bookings.filter(b=>!isCheckoutHold(b)&&b.booking_date>=today&&!['cancelled','completed'].includes(b.status)),unassigned=upcoming.filter(b=>b.service_slug!=='dry-hire'&&!b.engineer_user_id),cancelRequests=upcoming.filter(b=>b.cancellation_requested_at),changeRequests=upcoming.filter(b=>b.change_request_status==='pending');
  const mixOutstanding=(mixJobs||[]).reduce((s,j)=>s+Math.max(0,Number(j.quoted_amount_pence||0)-Number(j.paid_amount_pence||0)),0),outstanding=upcoming.filter(b=>!['paid','part_refunded','refunded'].includes(b.payment_status)&&b.payment_method!=='credits').reduce((s,b)=>s+Number(b.amount_pence||0),0)+mixOutstanding,scheduledValue=upcoming.reduce((s,b)=>s+Number(b.amount_pence||0),0);
  const engPay=reports.reduce((s,r)=>s+r.engineer_fee_pence,0),completedHours=reports.reduce((s,r)=>s+Number(r.actual_hours||0),0);
  const mixPaymentDue=(mixJobs||[]).filter(j=>j.payment_due_date&&j.payment_due_date<=today);
