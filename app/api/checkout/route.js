@@ -1,3 +1,4 @@
+import {createWebsiteCheckout} from '../../../lib/onsiteCheckout';
 import {getCustomerContext} from '../../../lib/customerAuth';
 import {programmeSlotAllowed,programmeRate} from '../../../lib/supportedArtists';
 import {publicFormGuard} from "../../../lib/publicFormGuard";
@@ -146,7 +147,7 @@ export async function POST(request) {
     const tag=(v,n)=>String(v||'').trim().slice(0,n)||null;
     const stripe = getStripe();
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
-    const session = await stripe.checkout.sessions.create({
+    const {session,response:checkoutResponse}=await createWebsiteCheckout(stripe,{
       allow_promotion_codes: !programme,
       mode: "payment",
       invoice_creation: { enabled: true },
@@ -157,7 +158,7 @@ export async function POST(request) {
       success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: programme?`${baseUrl}/account/supported-artists?cancelled=1`:`${baseUrl}/booking?cancelled=1`,
       expires_at: Math.floor(Date.now()/1000) + 30*60,
-    });
+    },{onsite:body.checkoutMode==='onsite',origin:new URL(request.url).origin});
     await db.from("bookings").update({ stripe_checkout_session_id: session.id }).eq("id", booking.id);
     if(tracked){
       // Best effort: analytics must never prevent a paid booking or redirect.
@@ -171,7 +172,7 @@ export async function POST(request) {
       }catch(error){console.error('Checkout conversion event failed',error?.message||error);}
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json(checkoutResponse,{headers:{'Cache-Control':'no-store'}});
   } catch (e) {
     if (bookingId) { try { await getAdminDb().from("bookings").update({ status: "cancelled" }).eq("id", bookingId); } catch {} }
     return NextResponse.json({ error: e.message || "Checkout failed" }, { status: 500 });

@@ -1,11 +1,13 @@
 "use client";
+import OnsiteCheckout from './OnsiteCheckout';
 import FormProtection from './FormProtection';
 
-import {useMemo,useState} from "react";
+import {useState} from "react";
 
 const GIFT_OPTIONS=[1,2,3,4,5,6,7,8];
 
 export default function StudioHoursStore({gift=false,offer=false,relaunch40=false,pass=false,hourlyPrice=50,relaunchPrice=90}){
+ const [checkout,setCheckout]=useState(null);
  const [hours,setHours]=useState(offer||relaunch40?2:gift?2:pass?6:3),[busy,setBusy]=useState(false),[msg,setMsg]=useState("");
  const PASS_PRICES={4:170,5:210,6:240,7:280,8:300};
  const passPrice=h=>PASS_PRICES[h];
@@ -18,18 +20,20 @@ export default function StudioHoursStore({gift=false,offer=false,relaunch40=fals
  async function submit(e){
   e.preventDefault();setBusy(true);setMsg("Opening secure checkout…");
   const fd=new FormData(e.currentTarget);
-  const body={form_token:fd.get("form_token"),website:fd.get("website"),kind:relaunch40?"relaunch40":offer?"relaunch":gift?"gift":pass?"studio_pass":"hours",hours,
+  const body={checkoutMode:e.nativeEvent.submitter?.value==='hosted'?'hosted':'onsite',form_token:fd.get("form_token"),website:fd.get("website"),kind:relaunch40?"relaunch40":offer?"relaunch":gift?"gift":pass?"studio_pass":"hours",hours,
    buyerName:String(fd.get("buyerName")||""),buyerEmail:String(fd.get("buyerEmail")||""),
    recipientName:gift?String(fd.get("recipientName")||""):String(fd.get("buyerName")||""),
    recipientEmail:gift?String(fd.get("recipientEmail")||""):String(fd.get("buyerEmail")||""),
    message:gift?String(fd.get("message")||""):""};
+  try {
   const r=await fetch("/api/store/checkout",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
   const j=await r.json().catch(()=>({}));
   if(!r.ok){setBusy(false);setMsg(j.error||"Could not start checkout.");return}
-  location.href=j.url;
+  if(j.clientSecret){setCheckout(j);setBusy(false);setMsg("");}else location.href=j.url;
+  }catch(error){setBusy(false);setMsg(error.message||"Could not start checkout.");}
  }
 
- return <form className={`hoursStore ${offer||relaunch40?"relaunchStore":""}`} onSubmit={submit}><FormProtection/>
+ return <><form style={checkout?{display:"none"}:undefined} className={`hoursStore ${offer||relaunch40?"relaunchStore":""}`} onSubmit={submit}><FormProtection/>
    {relaunch40?<div className="relaunchOfferPrice"><div><small>RELAUNCH40 · 30 OCT–2 NOV</small><b>2 hours</b></div><div><strong>£80</strong><span><s>£100</s> · save £20</span></div></div>:offer?<div className="relaunchOfferPrice"><div><small>LIMITED RELAUNCH OFFER</small><b>2 hours</b></div><div><strong>£{relaunchPrice}</strong><span><s>£{2*hourlyPrice}</s> · save £{Math.max(0,2*hourlyPrice-relaunchPrice)}</span></div></div>
    :gift?<div className="hoursChoice">{GIFT_OPTIONS.map(h=><button type="button" key={h} className={hours===h?"active":""} onClick={()=>setHours(h)}><b>{h}h</b><span>£{h*hourlyPrice}</span></button>)}</div>
    :<div className="hourWheel">
@@ -49,5 +53,6 @@ export default function StudioHoursStore({gift=false,offer=false,relaunch40=fals
    </div>
    <div className="hoursStoreSummary"><div><small>{title}</small><b>{hours} hour{hours===1?"":"s"} · £{price}</b><span>{relaunch40?"One per customer. Buy 30 Oct–2 Nov; record by 30 Nov 2026. Subject to availability.":offer?"One per customer. Buy now and choose the date later.":gift?"No date required. Hours stay on the artist’s Silkcrayon account until they book.":`Usually £${listPrice}. Save £${saving}. ${pass?"Sessions must take place within 30 days of purchase. Unused pass hours expire.":"Use the balance across future sessions."}`}</span></div><button className="button primary" disabled={busy}>{busy?"Opening checkout…":relaunch40?"Get 2 hours for £80 →":offer?`Get 2 hours for £${relaunchPrice} →`:gift?"Buy gift →":"Buy hour pack →"}</button></div>
    {msg&&<p className="muted">{msg}</p>}
- </form>
+   <button type="submit" value="hosted" className="onsiteHostedFallback" disabled={busy}>Use separate Stripe checkout</button>
+ </form>{checkout&&<OnsiteCheckout checkout={checkout} onBack={()=>{setCheckout(null);setMsg("");}}/>}</>
 }
