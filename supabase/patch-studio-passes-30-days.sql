@@ -92,3 +92,11 @@ begin
 end;$$;
 
 
+
+-- Server-only access for pass accounting and credit reservations.
+revoke all on public.studio_pass_purchases from anon, authenticated;
+grant all on public.studio_pass_purchases to service_role;
+revoke all on function public.track_studio_pass_debit() from public,anon,authenticated;
+revoke all on function public.reserve_credit_booking(uuid,text,text,date,time,time,integer,text,text,integer,boolean) from public,anon,authenticated;
+grant execute on function public.expire_studio_passes(uuid), public.studio_pass_booking_date_check(uuid,date,numeric), public.reserve_credit_booking(uuid,text,text,date,time,time,integer,text,text,integer,boolean) to service_role;
+NOTIFY pgrst, 'reload schema';
