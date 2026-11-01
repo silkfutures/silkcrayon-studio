@@ -1,3 +1,4 @@
+import {isCheckoutHold} from '../../../lib/bookingVisibility';
 import {loadReceiptRows} from '../../../lib/receiptData';
 import {rowsInMonth,receiptNet} from '../../../lib/receiptRows';
 import {londonToday} from '../../../lib/time';
@@ -38,7 +39,8 @@ export default async function EngineerHome(){
  const nowIso=new Date().toISOString();
  const results=await Promise.all([q,db.from('engineer_session_offers').select('id,fee_pence,pay_hourly_pence,fee_is_flat,expires_at,booking_id,bookings(id,booking_date,start_time,end_time,duration_minutes,service_name,service_slug,genre,customers(artist_name,full_name))').eq('engineer_user_id',ctx.user.id).eq('status','sent').gt('expires_at',nowIso).order('expires_at'),db.from('session_reports').select('id,booking_id,customer_id,artist_name,session_date,actual_hours,work_completed,customers(phone,email)').eq('submitted_by_user_id',ctx.user.id).order('created_at',{ascending:false}).limit(3)]);
  if([results[0],results[2]].some(result=>result.error))throw new Error('Could not load your sessions.');
- const [bookings,offers,recent]=results.map(result=>result.data||[]);
+ const [allBookings,offers,recent]=results.map(result=>result.data||[]);
+ const bookings=allBookings.filter(b=>!isCheckoutHold(b));
  const owner=ctx.profile.role==='owner';
  const todayBookings=bookings.filter(b=>b.booking_date===today),future=bookings.filter(b=>b.booking_date>today),first=(ctx.profile.full_name||'').split(' ')[0];
  return <main className="engApp"><EngineerHeader profile={ctx.profile}/><section className="engWelcome"><p className="eyebrow">Engineer dashboard</p><h1>Good {new Date().getHours()<12?'morning':new Date().getHours()<18?'afternoon':'evening'}, {first}.</h1><p>Your assigned sessions and bookings.</p></section>
