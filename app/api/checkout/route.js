@@ -9,7 +9,7 @@ import { getStripe } from "../../../lib/stripe";
 import { generateSlots } from "../../../lib/availability";
 import { londonDateTimeToUtc } from "../../../lib/time";
 import { rateLimit } from "../../../lib/rateLimit";
-import { getPromotionFor } from "../../../lib/promotions";
+import { getPromotionByCode } from "../../../lib/promotions";
 import {getStudioSettings} from "../../../lib/studioSettings";
 
 export async function POST(request) {
@@ -83,7 +83,7 @@ export async function POST(request) {
     }
     const commercial=await getStudioSettings();
     const listPricePence = service.slug==="vocal-recording"?Math.round(duration/60*commercial.studioHourlyPricePence):service.slug==="full-day"?commercial.fullDayPricePence:priceFor(service,duration);
-    let promotion=programme||service.slug==='system-test'||!String(body.promotionCode||'').trim()?null:await getPromotionFor(service.slug,duration);
+    let promotion=programme||service.slug==='system-test'||!String(body.promotionCode||'').trim()?null:await getPromotionByCode(body.promotionCode,service.slug,duration);
     if(promotion && promotion.code?.toUpperCase()!==String(body.promotionCode).trim().toUpperCase())promotion=null;
     if(String(body.promotionCode||'').trim()&&!promotion)return NextResponse.json({error:'This discount code is invalid or not eligible for this session.'},{status:400});
     if(promotion?.usage_limit_per_customer){
