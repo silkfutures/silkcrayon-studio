@@ -158,7 +158,7 @@ export async function POST(request) {
       success_url: `${baseUrl}/booking/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: programme?`${baseUrl}/account/supported-artists?cancelled=1`:`${baseUrl}/booking?cancelled=1`,
       expires_at: Math.floor(Date.now()/1000) + 30*60,
-    },{onsite:body.checkoutMode==='onsite',origin:new URL(request.url).origin});
+    },{onsite:body.checkoutMode==='onsite',origin:request.headers.get('origin')||new URL(request.url).origin});
     await db.from("bookings").update({ stripe_checkout_session_id: session.id }).eq("id", booking.id);
     if(tracked){
       // Best effort: analytics must never prevent a paid booking or redirect.

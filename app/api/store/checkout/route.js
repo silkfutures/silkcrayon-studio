@@ -112,7 +112,7 @@ export async function POST(req){
    line_items:[{quantity:1,price_data:{currency:"gbp",unit_amount:amount,product_data:{name:productName,description:productDescription}}}],
    success_url:kind==="relaunch40"?`${base}/relaunch40?paid=1&session_id={CHECKOUT_SESSION_ID}`:kind==="relaunch"?`${base}/relaunch-offer?paid=1&session_id={CHECKOUT_SESSION_ID}`:`${base}/${kind==="gift"?"gift-studio-time":kind==="studio_pass"?"studio-pass":"buy-hours"}?paid=1&hours=${hours}&session_id={CHECKOUT_SESSION_ID}`,
    cancel_url:kind==="relaunch40"?`${base}/relaunch40?cancelled=1`:kind==="relaunch"?`${base}/relaunch-offer?cancelled=1`:`${base}/${kind==="gift"?"gift-studio-time":kind==="studio_pass"?"studio-pass":"buy-hours"}?cancelled=1`
-  },{onsite:b.checkoutMode==='onsite',origin:new URL(req.url).origin});
+  },{onsite:b.checkoutMode==='onsite',origin:req.headers.get('origin')||new URL(req.url).origin});
 
   await db.from("studio_payments").update({stripe_checkout_session_id:session.id}).eq("id",payment.id);
   return NextResponse.json(checkoutResponse,{headers:{'Cache-Control':'no-store'}});

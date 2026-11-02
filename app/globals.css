@@ -729,3 +729,5 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 .siteFooterGrid>nav a:hover{color:#fff}
 .footerHeading{color:var(--accent);font-size:10px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:4px}
 @media(max-width:850px){.siteFooterGrid{grid-template-columns:1fr 1fr;gap:30px 20px}.siteFooterGrid>div:first-child{grid-column:1/-1}}
+
+.studioContact{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:90;max-width:calc(100vw - 32px);font-size:14px}.studioContact button{background:#100b18;color:#f6f1fa;border:1px solid #9370b7;border-radius:30px;padding:16px 20px;box-shadow:0 6px 30px #0008;cursor:pointer;font:inherit}.studioContact b{color:#c399ff}.studioContact>div{position:absolute;bottom:64px;right:0;min-width:230px;background:#100b18;border:1px solid #9370b7;border-radius:16px;padding:12px;box-shadow:0 6px 30px #0008}.studioContact a{display:block;color:#f6f1fa;padding:12px;text-decoration:none}.studioContact a:hover{text-decoration:underline}

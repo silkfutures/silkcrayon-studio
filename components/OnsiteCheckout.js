@@ -30,7 +30,8 @@ export default function OnsiteCheckout({checkout: data, onBack}) {
         setSession(checkout.session());
         checkout.on('change', value=>{if(active)setSession(value);});
         wallet = checkout.createExpressCheckoutElement({buttonHeight:50,buttonTheme:{applePay:'white-outline'},
-          paymentMethods:{applePay:'auto',googlePay:'auto',link:'never',amazonPay:'never',paypal:'never',klarna:'never'}});
+          layout:{maxColumns:1,maxRows:2,overflow:'never'},paymentMethodOrder:['apple_pay','google_pay'],
+          paymentMethods:{applePay:'always',googlePay:'always',link:'never',amazonPay:'never',paypal:'never',klarna:'never'}});
         wallet.on('ready',event=>{if(active)setWallets(Boolean(event.availablePaymentMethods && Object.values(event.availablePaymentMethods).some(Boolean)));});
         wallet.on('confirm',event=>confirm(checkout,event));
         wallet.on('loaderror',()=>{if(active)setWallets(false);});
