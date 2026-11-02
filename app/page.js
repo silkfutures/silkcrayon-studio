@@ -29,12 +29,19 @@ export default async function Home(){
         <p className="eyebrow heroEyebrow">Cardiff Bay · Est. 2020</p>
         <h1>A Studio For Artists<br/>Who Want To <span>Go Further.</span></h1>
         <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
-        <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#services">Explore the studio →</a></div>
+        <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#space">Explore the studio →</a></div>
         {promo && <p className="homeOffer"><Link href={`/booking?service=${promo.serviceSlug}&duration=${promo.durationMinutes}`}>{promo.badgeText || 'Studio offer'}: {promo.durationMinutes / 60} hours for £{promo.offerPricePence / 100} · {promo.ctaText || 'View offer'} →</Link></p>}
         <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span><b>{hourly}</b> per hour</span></div>
       </div>
-      <a className="scrollCue" href="#services"><span>Scroll</span><i/></a>
+      <a className="scrollCue" href="#space"><span>Scroll</span><i/></a>
     </section>
+
+    <section id="space" className="section spaceV12"><div className="container spaceGrid">
+      <Reveal className="spaceVisual"><div className="imageStack"><img className="spaceMain" src="/images/vault.webp" alt="Silkcrayon studio interior"/><img className="spaceDetail" src="/images/neon.webp" alt="Silkcrayon neon wall"/></div></Reveal>
+      <Reveal delay={120}><div className="copyBlock"><p className="eyebrow">The Space</p><h2>Hidden in a <span>1926</span><br/>bank vault.</h2><p>Warm light, proper monitoring, a dedicated vocal booth and enough character to make the room feel like somewhere work matters.</p><p>The equipment is important. The atmosphere is what lets you forget about it.</p><div className="spaceFacts"><span>Neumann U87</span><span>Adam monitoring</span><span>Private vocal booth</span><span>Cardiff Bay</span></div><Link className="textLink" href="/getting-here">Find us in Cardiff Bay →</Link></div></Reveal>
+    </div></section>
+
+    <GoogleReviewProof/>
 
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
@@ -42,21 +49,14 @@ export default async function Home(){
       <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/enquire?call=1">Need a hand choosing? Request a call →</Link></div>
     </div></section>
 
+    <MeetEngineers/>
+
     <section id="work" className="section workV12"><div className="container workGrid">
       <Reveal><div><p className="eyebrow">Made at Silkcrayon</p><h2>Hear the room,<br/>not the sales pitch.</h2><p className="muted">Music recorded and developed through Silkcrayon. Real artists, real sessions, real releases.</p></div></Reveal>
       <Reveal delay={120}><div className="listenStack"><div className="spotifyShell"><iframe style={{borderRadius:'12px'}} src="https://open.spotify.com/embed/playlist/5IuKX22eXsbJFApMV3c74z?utm_source=generator&theme=0" width="100%" height="380" frameBorder="0" allowFullScreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" title="Recorded at Silkcrayon playlist"></iframe></div><a className="instagramLink" href="https://instagram.com/silkcrayon" target="_blank" rel="noreferrer"><span>Follow the studio</span><strong>@silkcrayon ↗</strong></a></div></Reveal>
     </div></section>
 
     <section className="section"><div className="container spaceGrid"><div><img src="/images/wide2.webp" alt="The shared creative space at Silkcrayon Studios" loading="lazy" width="1920" height="1280" style={{width:'100%',height:'auto'}}/></div><div className="copyBlock"><p className="eyebrow">Community · Since 2020</p><h2>Find your people.<br/>Make your next thing.</h2><p>Since 2020, Silkcrayon has been a community hub connecting artists, producers and creative minds. We’re making more space for those connections through small-group studio collaborations and monthly producer meetups.</p><Link className="button primary" href="/community">Explore the community <span>↗</span></Link></div></div></section>
-
-    <GoogleReviewProof/>
-
-    <MeetEngineers/>
-
-    <section id="space" className="section spaceV12"><div className="container spaceGrid">
-      <Reveal className="spaceVisual"><div className="imageStack"><img className="spaceMain" src="/images/vault.webp" alt="Silkcrayon studio interior"/><img className="spaceDetail" src="/images/neon.webp" alt="Silkcrayon neon wall"/></div></Reveal>
-      <Reveal delay={120}><div className="copyBlock"><p className="eyebrow">The Space</p><h2>Hidden in a <span>1926</span><br/>bank vault.</h2><p>Warm light, proper monitoring, a dedicated vocal booth and enough character to make the room feel like somewhere work matters.</p><p>The equipment is important. The atmosphere is what lets you forget about it.</p><div className="spaceFacts"><span>Neumann U87</span><span>Adam monitoring</span><span>Private vocal booth</span><span>Cardiff Bay</span></div><Link className="textLink" href="/getting-here">Find us in Cardiff Bay →</Link></div></Reveal>
-    </div></section>
 
     <section className="section finalCta"><div className="container">
       <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">{hourly}/hour · Secure online booking · Cardiff Bay</p></Reveal>

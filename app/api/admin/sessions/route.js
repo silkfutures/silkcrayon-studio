@@ -34,12 +34,17 @@ export async function POST(req){
 
   if(!engineer||!b.artistName||!b.sessionDate||!b.actualHours)return NextResponse.json({error:'Engineer, artist, date and hours are required.'},{status:400});
 
+  if(!Number.isFinite(Number(b.actualHours))||Number(b.actualHours)<=0||Number(b.actualHours)>24)return NextResponse.json({error:'Enter valid hours worked.'},{status:400});
+  if(!b.bookingId&&b.studioFee!==undefined&&(!Number.isFinite(Number(b.studioFee))||Number(b.studioFee)<0))return NextResponse.json({error:'Enter a valid amount owed.'},{status:400});
   let customerId=null,projectId=null,bookingBefore=null;
   const issuesFlagged=b.issuesFlagged==='yes',issuesNote=issuesFlagged?String(b.issuesNote||'').trim().slice(0,1000):null;
   if(issuesFlagged&&!issuesNote)return NextResponse.json({error:'Describe the issue so the owner can review the payment.'},{status:400});
   if(b.bookingId){
    const {data:booking,error:be}=await db.from('bookings').select('*').eq('id',b.bookingId).single();bookingBefore=booking;
    if(be)throw be;
+   if(['cancelled','no_show'].includes(booking.status))return NextResponse.json({error:'This session is cancelled or marked no-show.'},{status:409});
+   const {data:existingReport}=await db.from('session_reports').select('id').eq('booking_id',booking.id).limit(1).maybeSingle();
+   if(existingReport)return NextResponse.json({error:'This session already has a report.'},{status:409});
    if(ctx.profile.role==='engineer'&&booking.engineer_user_id!==ctx.user.id)return NextResponse.json({error:'This booking is not assigned to you.'},{status:403});
    customerId=booking.customer_id||null;projectId=booking.project_id||null;
   }else if(b.customerId){

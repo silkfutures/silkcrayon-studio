@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {needsSessionReport} from '../lib/unresolvedSessions.js';
+import {engineerTabRows} from '../lib/engineerTab.js';
+const b={id:'b',status:'confirmed',booking_date:'2026-10-01',duration_minutes:120,engineer_user_id:'e',engineer_fee_pence:4000,customers:{full_name:'Simon'},session_reports:[]};
+assert.equal(needsSessionReport(b,'2026-11-01'),true);
+assert.equal(needsSessionReport({...b,status:'completed'},'2026-11-01'),true);
+for(const patch of [{status:'cancelled'},{status:'no_show'},{session_reports:[{id:'report'}]},{booking_date:'2026-12-01'},{status:'pending',payment_status:'unpaid',payment_method:'stripe',stripe_checkout_session_id:'cs',amount_paid_pence:0}])assert.equal(needsSessionReport({...b,...patch},'2026-11-01'),false);
+const staff=[{user_id:'e',role:'engineer',engineer_pay_hourly_pence:2000}],m={id:'m',engineer_user_id:'e',engineer_fee_pence:7000,track_title:'Hey Baby',status:'first_mix_sent'};
+let rows=engineerTabRows({bookings:[b],staff,mixes:[m]});assert.equal(rows.reduce((n,r)=>n+r.amount,0),11000);assert.equal(rows.length,2);
+rows=engineerTabRows({bookings:[b],staff,mixes:[m],payouts:[{id:'p',booking_id:'b',engineer_user_id:'e',kind:'session',status:'paid',amount_pence:4000,paid_via:'outside_stripe'}],mixPayouts:[{mix_job_id:'m',status:'paid',paid_via:'outside_stripe'}]});assert.equal(rows.length,0);
+rows=engineerTabRows({bookings:[b],staff,payouts:[{id:'p',booking_id:'b',engineer_user_id:'e',kind:'session',status:'processing',amount_pence:4000,attempts:1}]});assert.equal(rows.length,1);assert.equal(rows[0].blocked,true);
+rows=engineerTabRows({bookings:[{...b,engineer_fee_pence:null,engineer_pay_hourly_pence:null}],staff});assert.equal(rows[0].amount,4000);
+console.log('Unresolved report visibility and engineer tab assignment, fee, payment and duplicate exclusion tests passed.');

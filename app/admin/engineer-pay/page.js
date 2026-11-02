@@ -1,3 +1,5 @@
+import EngineerTabs from '../../../components/EngineerTabs';
+import {engineerTabRows} from '../../../lib/engineerTab';
 import Link from 'next/link';
 import AdminNav from '../../../components/AdminNav';
 import {requireOwner} from '../../../lib/auth';
@@ -18,12 +20,16 @@ export default async function EngineerPay({searchParams}){
   db.from('engineer_payouts').select('*,bookings(id,booking_date,start_time,end_time,duration_minutes,service_name,payment_method,payment_status,customers(artist_name,full_name)),session_reports(actual_hours,issues_flagged,issues_note)').order('created_at',{ascending:false}).limit(showAll?500:150),
   db.from('staff_profiles').select('user_id,full_name,engineer_name,role,active,engineer_pay_hourly_pence,engineer_supported_pay_hourly_pence,stripe_connect_account_id,stripe_transfers_active').eq('role','engineer').order('full_name')
  ]);
+ const tabResults=await Promise.all([db.from('bookings').select('id,engineer_user_id,engineer_fee_pence,engineer_pay_hourly_pence,booking_date,duration_minutes,service_name,service_slug,status,customers(full_name,artist_name)').not('engineer_user_id','is',null).not('status','in','(cancelled,no_show)'),db.from('engineer_payouts').select('*,bookings(booking_date,customers(full_name,artist_name))').neq('status','cancelled'),db.from('mix_jobs').select('id,engineer_user_id,engineer_fee_pence,track_title,created_at,status').not('engineer_user_id','is',null),db.from('mix_engineer_payouts').select('*'),db.from('engineer_payment_batches').select('*').order('paid_on',{ascending:false})]);
+ if(tabResults.some(r=>r.error))throw new Error('Could not load engineer tabs.');
+ const tabRows=engineerTabRows({bookings:tabResults[0].data,payouts:tabResults[1].data,mixes:tabResults[2].data,mixPayouts:tabResults[3].data,staff});
  const rows=(payouts||[]).filter(p=>showAll||p.status!=='cancelled').sort((a,b)=>(ORDER[a.status]-ORDER[b.status])||String(b.created_at).localeCompare(String(a.created_at)));
  const attention=rows.filter(p=>['needs_approval','failed','on_hold'].includes(p.status));
  const month=new Date().toISOString().slice(0,7);
  const paidMonth=rows.filter(p=>p.status==='paid'&&String(p.paid_at||'').startsWith(month)).reduce((n,p)=>n+p.amount_pence,0);
  const scheduled=rows.filter(p=>['pending','processing'].includes(p.status)).reduce((n,p)=>n+p.amount_pence,0);
- return <main className="adminPage"><header className="adminHeader"><div><p className="eyebrow">Silkcrayon OS</p><h1>Engineer pay</h1><p className="muted">Routine sessions pay themselves. Only exceptions land here for you.</p></div><AdminNav profile={ctx.profile}/></header>
+ return <main className="adminPage"><header className="adminHeader"><div><p className="eyebrow">Silkcrayon OS</p><h1>Engineer pay</h1><p className="muted">Track assigned work, amounts owed and payments made.</p></div><AdminNav profile={ctx.profile}/></header>
+  <EngineerTabs rows={tabRows} staff={staff} batches={tabResults[4].data||[]}/>
   <section className="adminSection"><div className={s.stats}><div><small>Needs you</small><b>{attention.length}</b></div><div><small>Scheduled</small><b data-sensitive="financial">{formatGBP(scheduled)}</b></div><div><small>Paid this month</small><b data-sensitive="financial">{formatGBP(paidMonth)}</b></div><div><small>Engineers set up</small><b>{(staff||[]).filter(x=>x.active&&x.stripe_transfers_active).length}/{(staff||[]).filter(x=>x.active).length}</b></div></div>
    <StripeBalanceBox/>
    <p className="muted">Card bookings pay the engineer automatically out of that booking’s own card payment. Cash, bank-transfer and prepaid-hours sessions <b>never</b> pay automatically: they wait here for you to choose <b>Pay via Stripe</b> (from your Stripe balance) or <b>Mark as paid outside Stripe</b> (you paid them yourself — Stripe will never send it).</p></section>
