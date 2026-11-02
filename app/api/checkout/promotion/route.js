@@ -1,5 +1,5 @@
 import {NextResponse} from 'next/server';
-import {getPromotionFor} from '../../../../lib/promotions';
+import {getPromotionByCode} from '../../../../lib/promotions';
 import {getAdminDb} from '../../../../lib/supabase';
 import {rateLimit} from '../../../../lib/rateLimit';
 
@@ -11,7 +11,7 @@ export async function POST(request){
     const service=String(body.service||'');
     const duration=Number(body.duration);
     if(!code||code.length>80||!Number.isInteger(duration)||duration<60)return NextResponse.json({error:'Enter a valid discount code.'},{status:400});
-    const promotion=await getPromotionFor(service,duration);
+    const promotion=await getPromotionByCode(code,service,duration);
     if(!promotion||String(promotion.code||'').toUpperCase()!==code)return NextResponse.json({error:'This code is not available for the selected session.'},{status:400});
     // Final eligibility and per-customer usage are checked again when booking.
     return NextResponse.json({code:promotion.code,offerPricePence:Number(promotion.offer_price_pence),name:promotion.name},{headers:{'Cache-Control':'no-store'}});
