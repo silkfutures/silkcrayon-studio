@@ -10,6 +10,7 @@ import {formatUkDate} from '../../../../../lib/dates';
 import {ensureDryHireIdRequest} from '../../../../../lib/dryHireId';
 import {recordBookingEvent} from '../../../../../lib/bookingEvents';
 import {after} from 'next/server';
+import {hasSessionStarted,pastSessionEmail} from '../../../../../lib/pastBookings';
 import {ensureCallPrep} from '../../../../../lib/callPrep';
 
 function money(v){return Math.round(Number(v||0)*100)}
@@ -43,7 +44,10 @@ export async function POST(req){try{
   if(balanceReminderDate<londonDateOffset(0))return NextResponse.json({error:'The balance reminder date cannot be in the past.'},{status:400});
   if(balancePaymentUrl){try{const u=new URL(balancePaymentUrl);if(!['http:','https:'].includes(u.protocol))throw new Error('bad protocol')}catch{return NextResponse.json({error:'Paste a valid Monzo/payment link for the remaining balance.'},{status:400})}}
  }
- const when=londonDateTimeToUtc(b.date,b.start);if(!when||when.getTime()<=Date.now())return NextResponse.json({error:'Choose a future session.'},{status:400});
+ const when=londonDateTimeToUtc(b.date,b.start);
+ if(!when||!Number.isFinite(when.getTime())||b.start>='24:00'||b.end>='24:00'||b.end<=b.start)return NextResponse.json({error:'Choose a valid session date and time, ending on the same day.'},{status:400});
+ const pastSession=hasSessionStarted({booking_date:b.date,start_time:b.start});
+ if(pastSession&&!b.pastSessionConfirmed)return NextResponse.json({error:'Confirm that this session has already taken place.'},{status:400});
  const {data:customer,error:ce}=await db.from('customers').select('*').eq('id',b.customerId).single();if(ce||!customer)return NextResponse.json({error:'Artist not found.'},{status:404});
  if(dryHire&&!customer.phone)return NextResponse.json({error:'Add a mobile number to the artist before creating a Dry Hire booking.'},{status:400});
  let engineer=null;
@@ -83,11 +87,11 @@ export async function POST(req){try{
  const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).in('status',['confirmed','completed']);
  const remainingPence=Math.max(0,amount-partialPaidPence);
  const paymentLabel=project?'Included in your project recording quote':isManualPaid?`£${(amount/100).toFixed(2)} · Paid manually`:isPartialPaid?`£${(partialPaidPence/100).toFixed(2)} paid · £${(remainingPence/100).toFixed(2)} remaining · reminder ${formatUkDate(balanceReminderDate)}`:`£${(amount/100).toFixed(2)} · Payment due`;
- const msg=confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
- await sendLoggedNotification({booking,customer,type:'admin_booking_confirmation',...msg});
- if(customer.phone)await sendLoggedSms({booking,customer,type:'admin_booking_confirmation_sms',body:project?`Silkcrayon: your project session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. ${dryHireIdRequired?'If ID verification is still needed, a secure ID-check link will follow.':'No ID check is required for this booking.'}`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
+ const msg=pastSession?pastSessionEmail(booking,customer,{paymentLabel}):confirmationEmail(booking,customer,{firstTime:(count||0)<=1,paymentLabel,portalUrl,engineer});
+ await sendLoggedNotification({booking,customer,type:pastSession?'past_session_recorded':'admin_booking_confirmation',...msg});
+ if(customer.phone)await sendLoggedSms({booking,customer,type:pastSession?'past_session_recorded_sms':'admin_booking_confirmation_sms',body:pastSession?`Silkcrayon: recorded your past session on ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}. ${paymentLabel}. This is not a new booking.`:project?`Silkcrayon: your project session is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. This session is included in your project recording quote; editing/mixing is billed separately if agreed.`:dryHire?`Silkcrayon: your Dry Hire is booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. No Silkcrayon engineer is included. ${dryHireIdRequired?'If ID verification is still needed, a secure ID-check link will follow.':'No ID check is required for this booking.'}`:`Silkcrayon: you're booked for ${formatUkDate(booking.booking_date)} at ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}. ${paymentLabel}. ${portalUrl||''}`});
  let idRequestWarning=null,idRequestSent=false;
- if(dryHire&&dryHireIdRequired){
+ if(!pastSession&&dryHire&&dryHireIdRequired){
   try{const idResult=await ensureDryHireIdRequest({booking,customer,ctx,source:'manual_booking'});idRequestSent=Boolean(idResult?.emailSent||idResult?.smsSent||idResult?.verified||idResult?.status==='requested'||idResult?.status==='submitted');}
   catch(idError){
    idRequestWarning='Booking created, but the automatic ID request could not be sent. Open the booking and press Request ID.';
@@ -96,7 +100,7 @@ export async function POST(req){try{
   }
  }
  if(dryHire&&!dryHireIdRequired){try{await recordBookingEvent({db,booking,eventType:'dry_hire_id_waived',reasonCode:'owner_booking_override',note:'Owner marked ID verification as not required for this Dry Hire booking.',ctx,snapshot:{customer_id:customer.id}})}catch{}}
- const assignmentNotification=engineer?await notifyAssignedEngineer({...booking,customers:customer}):null;
+ const assignmentNotification=!pastSession&&engineer?await notifyAssignedEngineer({...booking,customers:customer}):null;
 
  let paymentUrl=null,paymentLinkWarning=null;
  if(!project&&['pay_by_bank','card_or_bank'].includes(paymentMode)){try{
@@ -117,12 +121,12 @@ export async function POST(req){try{
   await db.from('studio_payments').update({stripe_checkout_session_id:session.id}).eq('id',payment.id);
   await db.from('bookings').update({stripe_checkout_session_id:session.id}).eq('id',id);
   const methodLabel=paymentMode==='pay_by_bank'?'Pay by Bank':'card or Pay by Bank';
-  const payHtml=`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Complete your session payment.</h1><p style="color:#c8c1cc">Hi ${esc(customer.artist_name||customer.full_name)}, your session is in the calendar. Use the secure ${methodLabel} link below to pay <b>£${(amount/100).toFixed(2)}</b>.</p><p><a href="${paymentUrl}" style="display:inline-block;background:#C394FF;color:#09050d;padding:14px 20px;text-decoration:none;font-weight:800">PAY FOR SESSION →</a></p><p style="color:#8f8894;font-size:12px">Booking: ${formatUkDate(booking.booking_date)} · ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}</p></div></div>`;
+  const payHtml=`<div style="font-family:Arial;background:#08070a;color:#fff;padding:32px"><div style="max-width:620px;margin:auto;border:1px solid #3d3150;padding:30px"><div style="color:#C394FF;letter-spacing:3px;font-size:11px">SILKCRAYON STUDIOS</div><h1>Complete your session payment.</h1><p style="color:#c8c1cc">Hi ${esc(customer.artist_name||customer.full_name)}, ${pastSession?'your past session has been recorded.':'your session is in the calendar.'} Use the secure ${methodLabel} link below to pay <b>£${(amount/100).toFixed(2)}</b>.</p><p><a href="${paymentUrl}" style="display:inline-block;background:#C394FF;color:#09050d;padding:14px 20px;text-decoration:none;font-weight:800">PAY FOR SESSION →</a></p><p style="color:#8f8894;font-size:12px">Booking: ${formatUkDate(booking.booking_date)} · ${String(booking.start_time).slice(0,5)}–${String(booking.end_time).slice(0,5)}</p></div></div>`;
   await sendLoggedNotification({booking,customer,type:'manual_booking_payment_link',subject:'Complete your Silkcrayon session payment',html:payHtml});
   if(customer.phone)await sendLoggedSms({booking,customer,type:'manual_booking_payment_link_sms',body:`Silkcrayon payment: £${(amount/100).toFixed(2)} for your ${formatUkDate(booking.booking_date)} session. Pay securely here: ${paymentUrl}`});
  }catch(paymentError){paymentLinkWarning=paymentUrl?'Booking created, but payment-link delivery could not be confirmed. Open the existing booking to check before sending again.':'Booking created, but the payment link could not be created. Open the existing booking to arrange payment; do not create it again.';console.error('Booking payment link failed',paymentError?.message);}
  }
  if(project){await db.from('studio_projects').update({status:['quoted','accepted','deposit_due'].includes(project.status)?'scheduled':project.status,updated_at:new Date().toISOString()}).eq('id',project.id);}
- after(()=>ensureCallPrep({sourceType:'booking',sourceId:id,createdBy:ctx.user.id}).catch(error=>console.error('Automatic booking call prep failed',error?.message||error)));
- return NextResponse.json({ok:true,assignmentNotification,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,dryHireIdRequired:dryHire?dryHireIdRequired:null,projectId:project?.id||null});
+ if(!pastSession)after(()=>ensureCallPrep({sourceType:'booking',sourceId:id,createdBy:ctx.user.id}).catch(error=>console.error('Automatic booking call prep failed',error?.message||error)));
+ return NextResponse.json({ok:true,pastSession,assignmentNotification,bookingId:id,paymentUrl,paymentLinkWarning,depositWarning,idRequestSent,idRequestWarning,dryHireIdRequired:dryHire?dryHireIdRequired:null,projectId:project?.id||null});
 }catch(e){return NextResponse.json({error:e.message||'Could not create booking.'},{status:500})}}

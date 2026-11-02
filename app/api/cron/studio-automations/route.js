@@ -1,3 +1,4 @@
+import {wasRecordedAfterStart} from '../../../../lib/pastBookings';
 import {NextResponse} from 'next/server';
 import {getAdminDb} from '../../../../lib/supabase';
 import {notifyAssignedEngineer,sendLoggedNotification,reminderEmail,bookAgainEmail} from '../../../../lib/notifications';
@@ -80,6 +81,7 @@ export async function GET(request){
   }
  }
  for(const b of past){
+  if(wasRecordedAfterStart(b))continue;
   const c=b.customers;if(!c?.email)continue;
   const msg=bookAgainEmail(b,c),r=await sendLoggedNotification({booking:b,customer:c,type:'book_again',...msg});if(r.ok)sent++;
  }

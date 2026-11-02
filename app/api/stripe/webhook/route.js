@@ -1,3 +1,4 @@
+import {hasSessionStarted,pastSessionEmail} from '../../../../lib/pastBookings';
 import { NextResponse, after } from "next/server";
 import { getStripe } from "../../../../lib/stripe";
 import { getAdminDb } from "../../../../lib/supabase";
@@ -92,14 +93,16 @@ export async function POST(request) {
           if(isPaid){try{await onStudioPaymentPaid(db,{paymentId:payment.id,session});}catch(invoiceError){console.error('Project invoice update failed',invoiceError?.message||invoiceError);}}
           if(isPaid&&payment.booking_id){
             const {error:bookingPayError}=await db.from('bookings').update({
-              status:'confirmed',payment_status:'paid',payment_method:'stripe',amount_paid_pence:payment.amount_pence,
+              payment_status:'paid',payment_method:'stripe',amount_paid_pence:payment.amount_pence,
               stripe_payment_intent_id:typeof session.payment_intent==='string'?session.payment_intent:null,
               stripe_checkout_session_id:session.id,hold_expires_at:null,updated_at:new Date().toISOString(),...inv
             }).eq('id',payment.booking_id);
             if(bookingPayError)throw bookingPayError;
             const {data:confirmedBooking,error:confirmedError}=await db.from('bookings').select('*,customers(*)').eq('id',payment.booking_id).single();
             if(confirmedError)throw confirmedError;
-            if(confirmedBooking){
+            if(confirmedBooking&&hasSessionStarted(confirmedBooking)){
+              if(confirmedBooking.customers?.email)await sendLoggedNotification({booking:confirmedBooking,customer:confirmedBooking.customers,type:'past_session_payment_received',...pastSessionEmail(confirmedBooking,confirmedBooking.customers,{paid:true,paymentLabel:`£${(Number(payment.amount_pence)/100).toFixed(2)} received`})});
+            }else if(confirmedBooking){
               await notifyAssignedEngineer(confirmedBooking);
               if(confirmedBooking.customers?.email)await sendLoggedNotification({booking:confirmedBooking,customer:confirmedBooking.customers,type:'booking_confirmation',...confirmationEmail(confirmedBooking,confirmedBooking.customers)});
             }
