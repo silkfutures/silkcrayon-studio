@@ -80,7 +80,7 @@ export default function OnsiteCheckout({checkout: data, onBack}) {
     <p className="eyebrow">Secure payment</p><h2>Complete your payment.</h2>
     {session?.lineItems?.map(item=><p className="onsiteItem" key={item.id}>{item.name}</p>)}
     {total&&<p className="onsiteTotal">Total <strong>{total}</strong></p>}
-    {data.allowPromotionCodes&&<form className="onsitePromo" onSubmit={applyPromo}>
+    {data.allowPromotionCodes !== false && <form className="onsitePromo" onSubmit={applyPromo}>
       <label htmlFor="checkout-promo">Discount code</label><div><input id="checkout-promo" value={promo} onChange={e=>setPromo(e.target.value)} placeholder="Enter code" autoCapitalize="characters" disabled={busy||closing||applying}/><button type="submit" disabled={!session||busy||closing||applying||!promo.trim()}>{applying?'Applying…':'Apply'}</button></div>
     </form>}
     {session?.discountAmounts?.map((discount,i)=><p className="onsiteDiscount" key={i}>{discount.displayName} · −{discount.amount}</p>)}
