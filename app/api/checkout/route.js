@@ -83,10 +83,12 @@ export async function POST(request) {
     }
     const commercial=await getStudioSettings();
     const listPricePence = service.slug==="vocal-recording"?Math.round(duration/60*commercial.studioHourlyPricePence):service.slug==="full-day"?commercial.fullDayPricePence:priceFor(service,duration);
-    let promotion=programme||service.slug==='system-test'?null:await getPromotionFor(service.slug,duration);
+    let promotion=programme||service.slug==='system-test'||!String(body.promotionCode||'').trim()?null:await getPromotionFor(service.slug,duration);
+    if(promotion && promotion.code?.toUpperCase()!==String(body.promotionCode).trim().toUpperCase())promotion=null;
+    if(String(body.promotionCode||'').trim()&&!promotion)return NextResponse.json({error:'This discount code is invalid or not eligible for this session.'},{status:400});
     if(promotion?.usage_limit_per_customer){
       const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).eq('promotion_id',promotion.id).in('status',['pending','confirmed','completed']);
-      if(Number(count||0)>=Number(promotion.usage_limit_per_customer)) promotion=null;
+      if(Number(count||0)>=Number(promotion.usage_limit_per_customer)) return NextResponse.json({error:'This discount code has reached its usage limit.'},{status:400});
     }
     const rewardApplied=!programme&&!promotion&&rewardAvailableBefore&&service.slug!=='system-test';
     let amountPence = programme?Math.round(duration/60*programmeRate(programme)):promotion?Number(promotion.offer_price_pence):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence);
@@ -148,7 +150,7 @@ export async function POST(request) {
     const stripe = getStripe();
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin;
     const {session,response:checkoutResponse}=await createWebsiteCheckout(stripe,{
-      allow_promotion_codes: !programme,
+      allow_promotion_codes: false,
       mode: "payment",
       invoice_creation: { enabled: true },
       customer_email: email,
