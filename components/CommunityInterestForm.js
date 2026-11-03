@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import FormProtection from "./FormProtection";
 import {communityRoles} from "../lib/community";
 const genres=["R&B / Neo Soul","Rap / Grime","Indie / Alternative","Pop","Electronic / Experimental","Afrobeats / Amapiano","Other"];
 const interests=["Silk Sessions","Producer meetups","Networking events"];
@@ -9,11 +10,12 @@ export default function CommunityInterestForm(){
  const [status,setStatus]=useState("idle"),[error,setError]=useState("");
  const set=(key,value)=>setForm(p=>({...p,[key]:value}));
  const toggle=(key,value)=>setForm(p=>({...p,[key]:p[key].includes(value)?p[key].filter(v=>v!==value):[...p[key],value]}));
- async function submit(e){e.preventDefault();setError("");if(form.accessNeeds.trim()&&!form.accessConsent){setError("Please agree to us using your access information, or leave that optional field blank.");return}setStatus("loading");try{const r=await fetch("/api/community-interest",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});const j=await r.json();if(!r.ok)throw Error(j.error||"Unable to submit right now");setStatus("success")}catch(e){setError(e.message);setStatus("idle")}}
+ async function submit(e){e.preventDefault();const security=Object.fromEntries(new FormData(e.currentTarget));setError("");if(form.accessNeeds.trim()&&!form.accessConsent){setError("Please agree to us using your access information, or leave that optional field blank.");return}setStatus("loading");try{const r=await fetch("/api/community-interest",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...form,website:security.website||"",form_token:security.form_token||""})});const j=await r.json();if(!r.ok)throw Error(j.error||"Unable to submit right now");setStatus("success")}catch(e){setError(e.message);setStatus("idle")}}
  const group=(label,key,values)=><fieldset style={{border:0,padding:0,margin:"0 0 24px"}}><legend style={{fontWeight:700,marginBottom:12}}>{label}</legend><div style={{display:"flex",flexWrap:"wrap",gap:9}}>{values.map(v=><label key={v} style={{border:"1px solid "+(form[key].includes(v)?"var(--accent)":"var(--line)"),padding:"11px 14px",cursor:"pointer",background:form[key].includes(v)?"var(--panel2)":"transparent"}}><input type="checkbox" checked={form[key].includes(v)} onChange={()=>toggle(key,v)} style={{marginRight:8}}/>{v}</label>)}</div></fieldset>;
  const field=(key,label,type="text",maxLength=160)=><label className="field">{label}<input type={type} value={form[key]} required={key==="name"||key==="email"} maxLength={maxLength} autoComplete={key==="phone"?"tel":key==="email"?"email":key==="name"?"name":undefined} onChange={e=>set(key,e.target.value)}/></label>;
  if(status==="success")return <section className="featureCard" role="status"><div><p className="eyebrow">YOU'RE ON THE LIST</p><h2>Thanks for registering.</h2><p>We'll be in touch when sessions and meetups are announced.</p></div></section>;
  return <form onSubmit={submit} style={{borderTop:"1px solid var(--line)",paddingTop:35,maxWidth:760}}>
+  <FormProtection/>
   <p className="eyebrow">REGISTER YOUR INTEREST</p><h2 style={{fontSize:"clamp(32px,5vw,50px)",margin:"0 0 12px"}}>Find your next collaboration.</h2>
   <p className="muted" style={{marginBottom:28}}>Just your name, email and what you’re interested in to get started. Everything else is optional. This is an expression of interest, not a booking.</p>
   <div className="communityFormFields">{field("name","Name / artist name (required)")}{field("email","Email address (required)","email")}{field("phone","Phone number (optional)","tel",30)}</div>
