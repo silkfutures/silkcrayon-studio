@@ -2,7 +2,6 @@ import {NextResponse} from "next/server";
 import {getAdminDb} from "../../../lib/supabase";
 import {normalizeCommunityPhone,communityRoles} from "../../../lib/community";
 import {publicFormGuard} from "../../../lib/publicFormGuard";
-import {leadSpamScore} from "../../../lib/leadSpam";
 export const runtime="nodejs";
 const allowed={genres:["R&B / Neo Soul","Rap / Grime","Indie / Alternative","Pop","Electronic / Experimental","Afrobeats / Amapiano","Other"],interests:["Silk Sessions","Producer meetups","Networking events"],availability:["Weekday daytime","Weekday evenings","Saturday daytime","Saturday evenings","Sunday daytime"]};
 const validEmail=s=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
@@ -13,7 +12,7 @@ export async function POST(request){
   const blocked=await publicFormGuard(request,b);if(blocked)return blocked;
   const spamFields=[b.name,b.instagram,b.instruments,b.pronouns,b.influences].map(v=>String(v||""));
   const gibberish=spamFields.filter(v=>v.length>=12&&!/\\s/.test(v)&&/[A-Z]/.test(v)&&/[a-z]/.test(v)&&/[^aeiou]{5}/i.test(v)).length;
-  if(leadSpamScore({full_name:b.name,email:b.email,artist_or_company:b.instagram})>=4||gibberish>=2)return NextResponse.json({error:"Please check your details and try again, or contact the studio directly."},{status:400});
+  if(/^[A-Za-z0-9]{18,}$/.test(String(b.name||""))||gibberish>=2)return NextResponse.json({error:"Please check your details and try again, or contact the studio directly."},{status:400});
   const name=str(b.name,160),email=str(b.email,160).toLowerCase(),role=str(b.role,80);
   if(!name||!validEmail(email)||(role&&!communityRoles.includes(role)))return NextResponse.json({error:"Please enter your name and a valid email address"},{status:400});
   const phoneInput=str(b.phone,31),phone=phoneInput?normalizeCommunityPhone(phoneInput):null;
