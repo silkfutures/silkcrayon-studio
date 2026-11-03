@@ -21,12 +21,12 @@ export default function BookingModeChooser({promotions, pricing}) {
         <span className="bookingModeGlyph" aria-hidden="true">▤</span>
         <strong>Studio Hour Pass</strong>
         <span>Prepay 4–8 hours. Book across multiple visits.</span>
-        <b>From £37.50/hour</b>
+        <b>From £35/hour</b>
         <span className="bookingModeCheck" aria-hidden="true">{mode === "pass" ? "●" : "○"}</span>
       </button>
     </div>
     {mode === "session" ? <BookingFlow promotions={promotions} pricing={pricing}/> : <section className="bookingModePass" aria-label="Build your Studio Hour Pass">
-      <div className="bookingModePassIntro"><span>STUDIO HOUR PASSES</span><h2>Make time for the music.</h2><p>Build your 30-day pass. Engineer included. All sessions must take place within 30 calendar days of purchase.</p></div>
+      <div className="bookingModePassIntro"><span>STUDIO HOUR PASSES</span><h2>Make time for the music.</h2><p>Build your 60-day pass. Engineer included. All sessions must take place within 60 calendar days of purchase.</p></div>
       <StudioHoursStore pass hourlyPrice={pricing.studioHourlyPricePence / 100}/>
     </section>}
   </div>;
