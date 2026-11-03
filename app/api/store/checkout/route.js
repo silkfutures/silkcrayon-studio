@@ -23,7 +23,7 @@ export async function POST(req){
   const kind=b.kind==="gift"?"gift":b.kind==="relaunch"?"relaunch":b.kind==="relaunch40"?"relaunch40":b.kind==="project_pass"?"project_pass":b.kind==="studio_pass"?"studio_pass":"hours";
   if(kind==="project_pass")return NextResponse.json({error:"The previous Project Pass is no longer available. Please select a current Studio Pass."},{status:410});
   const hours=kind==="relaunch"||kind==="relaunch40"?2:kind==="project_pass"?6:requestedHours;
-  if(kind==="studio_pass"&&(!Number.isInteger(hours)||hours<4||hours>8))return NextResponse.json({error:"Choose 4–8 hours for your Studio Pass."},{status:400});
+  if(kind==="studio_pass"&&(!Number.isInteger(hours)||![4,8].includes(hours)))return NextResponse.json({error:"Choose 4 or 8 hours for your Studio Pass."},{status:400});
   if(kind==="gift"&&!GIFTS.includes(hours))return NextResponse.json({error:"Choose between 1 and 8 gift hours."},{status:400});
   if(kind==="hours"&&(!Number.isInteger(hours)||hours<3||hours>10))return NextResponse.json({error:"Choose a studio-hour pack between 3 and 10 hours."},{status:400});
   if(kind==="relaunch40"){
@@ -71,19 +71,19 @@ export async function POST(req){
   }
   const pricing=await getStudioSettings();
   const listAmount=Math.round(hours*pricing.studioHourlyPricePence);
-  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?({4:17000,5:21000,6:24000,7:28000,8:30000})[hours]:listAmount;
+  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?({4:15000,8:28000})[hours]:listAmount;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch40"?"2 studio hours — RELAUNCH40":kind==="relaunch"
     ? "2 studio hours — Relaunch offer"
-    :kind==="project_pass"?"6-hour project pass":kind==="studio_pass"?`${hours}-hour 30-day Studio Pass`: `${hours}-hour prepaid studio pack`;
+    :kind==="project_pass"?"6-hour project pass":kind==="studio_pass"?`${hours}-hour 60-day Studio Pass`: `${hours}-hour prepaid studio pack`;
 
   const {data:payment,error:pe}=await db.from("studio_payments").insert({
    customer_id:customer.id,kind:kind==="gift"?"gift":"package",description,
    amount_pence:amount,list_amount_pence:listAmount,hours_credit:hours,status:"pending",
    discount_code:kind==="relaunch40"?"RELAUNCH40":kind==="relaunch"?relaunch.code:null,
    discount_amount_pence:Math.max(0,listAmount-amount),
-   created_by_name:kind==="gift"?buyerName:kind==="relaunch40"?"RELAUNCH40":kind==="relaunch"?"Relaunch offer":kind==="project_pass"?"Project pass":kind==="studio_pass"?"30-day Studio Pass":"Website"
+   created_by_name:kind==="gift"?buyerName:kind==="relaunch40"?"RELAUNCH40":kind==="relaunch"?"Relaunch offer":kind==="project_pass"?"Project pass":kind==="studio_pass"?"60-day Studio Pass":"Website"
   }).select().single();
   if(pe)throw pe;
 
@@ -99,7 +99,7 @@ export async function POST(req){
    ? `Studio-time gift for ${recipientName}`
    :kind==="relaunch40"?"Two studio hours. Book by 2 November 2026, sessions in November.":kind==="relaunch"
     ? "Limited relaunch offer. Two prepaid studio hours; choose the date later."
-    :kind==="project_pass"?"6 prepaid studio hours, engineer included — book later":kind==="studio_pass"?"Engineer included. Sessions must take place within 30 calendar days of payment; unused hours expire.": `${hours} prepaid studio hours — choose your sessions later`;
+    :kind==="project_pass"?"6 prepaid studio hours, engineer included — book later":kind==="studio_pass"?"Engineer included. Sessions must take place within 60 calendar days of payment; unused hours expire.": `${hours} prepaid studio hours — choose your sessions later`;
 
   const {session,response:checkoutResponse}=await createWebsiteCheckout(stripe,{
    mode:"payment",invoice_creation:{enabled:true},customer_email:buyerEmail,
