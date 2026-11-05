@@ -83,7 +83,7 @@ export async function POST(req){
    amount_pence:amount,list_amount_pence:listAmount,hours_credit:hours,status:"pending",
    discount_code:kind==="relaunch40"?"RELAUNCH40":kind==="relaunch"?relaunch.code:null,
    discount_amount_pence:Math.max(0,listAmount-amount),
-   created_by_name:kind==="gift"?buyerName:kind==="relaunch40"?"RELAUNCH40":kind==="relaunch"?"Relaunch offer":kind==="project_pass"?"Project pass":kind==="studio_pass"?"60-day Studio Pass":"Website"
+   created_by_name:kind==="gift"?buyerName:kind==="relaunch40"?"RELAUNCH40":kind==="relaunch"?"Relaunch offer":kind==="project_pass"?"Project pass":kind==="studio_pass"?"30-day Studio Pass":"Website"
   }).select().single();
   if(pe)throw pe;
 
