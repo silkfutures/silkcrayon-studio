@@ -12,8 +12,9 @@ export async function POST(request){
     const duration=Number(body.duration);
     if(!code||code.length>80||!Number.isInteger(duration)||duration<60)return NextResponse.json({error:'Enter a valid discount code.'},{status:400});
     const promotion=await getPromotionFor(service,duration,code);
+    if(code==='RELAUNCH40'&&(service!=='vocal-recording'||duration<120))return NextResponse.json({error:'RELAUNCH40 requires at least two recording hours.'},{status:400});
     if(!promotion||String(promotion.code||'').toUpperCase()!==code)return NextResponse.json({error:'This code is not available for the selected session.'},{status:400});
     // Final eligibility and per-customer usage are checked again when booking.
-    return NextResponse.json({code:promotion.code,offerPricePence:Number(promotion.offer_price_pence),name:promotion.name},{headers:{'Cache-Control':'no-store'}});
+    return NextResponse.json({code:promotion.code,offerPricePence:code==='RELAUNCH40'?Math.round(duration/60*4000):Number(promotion.offer_price_pence),name:promotion.name},{headers:{'Cache-Control':'no-store'}});
   }catch{return NextResponse.json({error:'Could not validate discount code.'},{status:400});}
 }
