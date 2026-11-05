@@ -16,3 +16,18 @@ export async function PATCH(request){
   return NextResponse.json({registration:data});
  }catch{return NextResponse.json({error:'Invalid request'},{status:400})}
 }
+
+export async function DELETE(request){
+ const origin=request.headers.get('origin');
+ if(origin&&origin!==new URL(request.url).origin)return NextResponse.json({error:'Invalid request origin'},{status:403});
+ const ctx=await getStaffContext();
+ if(!ctx||ctx.profile.role!=='owner')return NextResponse.json({error:'Owner access required'},{status:403});
+ try{
+  const {id}=await request.json();
+  if(typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id))return NextResponse.json({error:'Invalid registration'},{status:400});
+  const {data,error}=await getAdminDb().from('community_interests').delete().eq('id',id).select('id').maybeSingle();
+  if(error)return NextResponse.json({error:'Could not delete registration'},{status:500});
+  if(!data)return NextResponse.json({error:'Registration not found'},{status:404});
+  return NextResponse.json({deletedId:data.id});
+ }catch{return NextResponse.json({error:'Invalid request'},{status:400});}
+}
