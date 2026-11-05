@@ -71,12 +71,12 @@ export async function POST(req){
   }
   const pricing=await getStudioSettings();
   const listAmount=Math.round(hours*pricing.studioHourlyPricePence);
-  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?({4:15000,8:28000})[hours]:listAmount;
+  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?({4:18000,8:32000})[hours]:listAmount;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch40"?"2 studio hours — RELAUNCH40":kind==="relaunch"
     ? "2 studio hours — Relaunch offer"
-    :kind==="project_pass"?"6-hour project pass":kind==="studio_pass"?`${hours}-hour 60-day Studio Pass`: `${hours}-hour prepaid studio pack`;
+    :kind==="project_pass"?"6-hour project pass":kind==="studio_pass"?`${hours}-hour 30-day Studio Pass`: `${hours}-hour prepaid studio pack`;
 
   const {data:payment,error:pe}=await db.from("studio_payments").insert({
    customer_id:customer.id,kind:kind==="gift"?"gift":"package",description,
@@ -99,7 +99,7 @@ export async function POST(req){
    ? `Studio-time gift for ${recipientName}`
    :kind==="relaunch40"?"Two studio hours. Book by 2 November 2026, sessions in November.":kind==="relaunch"
     ? "Limited relaunch offer. Two prepaid studio hours; choose the date later."
-    :kind==="project_pass"?"6 prepaid studio hours, engineer included — book later":kind==="studio_pass"?"Engineer included. Sessions must take place within 60 calendar days of payment; unused hours expire.": `${hours} prepaid studio hours — choose your sessions later`;
+    :kind==="project_pass"?"6 prepaid studio hours, engineer included — book later":kind==="studio_pass"?"Engineer included. Sessions must take place within 30 calendar days of payment; unused hours expire.": `${hours} prepaid studio hours — choose your sessions later`;
 
   const {session,response:checkoutResponse}=await createWebsiteCheckout(stripe,{
    mode:"payment",invoice_creation:{enabled:true},customer_email:buyerEmail,
