@@ -33,3 +33,21 @@ export async function POST(req){
   return NextResponse.json({ok:true,emailSent:!!delivery.ok,message:delivery.ok?'Saved and email sent.':'Saved, but email was not sent. Use Resend decision email to retry.'});
  }catch(e){console.error('Supported artist review failed',e.message);return NextResponse.json({error:'Could not complete this update. Refresh to check its status before retrying.'},{status:500});}
 }
+
+export async function DELETE(req){
+ try{
+  const ctx=await getStaffContext();
+  if(ctx?.profile.role!=='owner')return NextResponse.json({error:'Owner access required.'},{status:403});
+  if(req.headers.get('sec-fetch-site')==='cross-site'||(req.headers.get('origin')&&req.headers.get('origin')!==new URL(req.url).origin))return NextResponse.json({error:'Invalid origin.'},{status:403});
+  const {id}=await req.json();
+  if(typeof id!=='string'||!/^[0-9a-f-]{36}$/i.test(id))return NextResponse.json({error:'Invalid application.'},{status:400});
+  const db=getAdminDb();
+  const {data:app,error:readError}=await db.from('supported_artists').select('id,status,customer_id').eq('id',id).maybeSingle();
+  if(readError||!app)return NextResponse.json({error:'Application not found.'},{status:404});
+  if(app.status==='approved')return NextResponse.json({error:'Pause or decline an approved artist before deleting their application.'},{status:409});
+  const {data,error}=await db.from('supported_artists').delete().eq('id',id).neq('status','approved').select('id').maybeSingle();
+  if(error)return NextResponse.json({error:'Cannot delete this application while linked records exist.'},{status:409});
+  if(!data)return NextResponse.json({error:'Application could not be deleted.'},{status:409});
+  return NextResponse.json({deletedId:data.id});
+ }catch{return NextResponse.json({error:'Could not delete application.'},{status:400});}
+}
