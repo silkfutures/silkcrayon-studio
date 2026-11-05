@@ -6,7 +6,7 @@ assert.equal(SERVICES['vocal-recording'].durations.includes(480),true);
 assert.deepEqual(SERVICES['dry-hire'].durations,[120,180,240,300,360,420,480]);
 assert.equal(SERVICES['dry-hire'].hourlyPence,4000);
 assert.equal(SERVICES['vocal-recording'].hourlyPence,5000);
-assert.equal(SERVICES['voiceover'].hourlyPence,5000);
+assert.equal(SERVICES['voiceover'].hourlyPence,6000);
 assert.equal(SERVICES['artist-development'].fixedPence,7500);
 assert.equal(SERVICES['dry-hire'].durations[0],120);
 const summer=londonDateTimeToUtc('2026-08-15','10:00');assert.equal(summer.toISOString(),'2026-08-15T09:00:00.000Z');
