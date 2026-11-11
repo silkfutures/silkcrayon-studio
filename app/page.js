@@ -41,6 +41,15 @@ export default async function Home(){
       <Reveal delay={120}><div className="copyBlock"><p className="eyebrow">The Space</p><h2>Hidden in a <span>1926</span><br/>bank vault.</h2><p>Warm light, proper monitoring, a dedicated vocal booth and enough character to make the room feel like somewhere work matters.</p><p>The equipment is important. The atmosphere is what lets you forget about it.</p><div className="spaceFacts"><span>Neumann U87</span><span>Adam monitoring</span><span>Private vocal booth</span><span>Cardiff Bay</span></div><Link className="textLink" href="/getting-here">Find us in Cardiff Bay →</Link></div></Reveal>
     </div></section>
 
+    <section className="section sessionGallerySection"><div className="container">
+      <div className="sectionHeading"><div><p className="eyebrow">Inside the session</p><h2>Ideas become music.</h2></div></div>
+      <div className="sessionGallery">
+        <img src="/images/sessions/studio-session.jpg" alt="Artists working together at the studio workstation under turquoise lighting" width="1800" height="1200" loading="lazy" decoding="async"/>
+        <img className="sessionPortrait" src="/images/sessions/songwriting.jpg" alt="An artist writing in a notebook during a studio session" width="1067" height="1600" loading="lazy" decoding="async"/>
+        <img src="/images/sessions/vocal-recording.jpg" alt="An artist wearing headphones recording vocals at a studio microphone" width="1800" height="1200" loading="lazy" decoding="async"/>
+      </div>
+    </div></section>
+
     <GoogleReviewProof/>
 
     <section id="services" className="section servicesV12"><div className="container">

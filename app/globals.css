@@ -744,3 +744,9 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
  .navLocked .studioContact{display:none}
  .reportTaskActions{gap:8px;justify-content:flex-start}.engRecent:has(.reportTaskActions){flex-wrap:wrap;gap:14px}
 }
+
+/* Studio session photography */
+.sessionGallery{display:grid;grid-template-columns:2fr 1fr;gap:20px;align-items:center}
+.sessionGallery img{display:block;width:100%;height:auto;border-radius:12px}
+.sessionGallery .sessionPortrait{grid-column:2;grid-row:1 / span 2}
+@media(max-width:640px){.sessionGallery{grid-template-columns:1fr;gap:16px}.sessionGallery .sessionPortrait{grid-column:auto;grid-row:auto}}
