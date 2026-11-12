@@ -1,0 +1,18 @@
+.section { background: #0b080f; }
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(32px, 6vw, 80px); align-items: start; }
+.lede { color: var(--muted); font-size: 17px; line-height: 1.75; margin: 0 0 32px; max-width: 48ch; }
+.photo { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: cover; }
+.answer { padding: 24px 0; border-bottom: 1px solid var(--line); }
+.answer:first-child { padding-top: 0; }
+.answer h3, .cta h3 { margin: 0 0 10px; font-size: 21px; line-height: 1.3; letter-spacing: -.02em; }
+.answer p, .cta p { margin: 0; color: var(--muted); font-size: 16px; line-height: 1.75; }
+.cta { padding-top: 28px; }
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: 20px 26px; margin-top: 22px; }
+.actions a { min-height: 48px; display: inline-flex; align-items: center; gap: 14px; }
+.actions a:focus-visible { outline: 2px solid var(--accent); outline-offset: 5px; }
+@media (max-width: 760px) {
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 32px; }
+  .lede { max-width: none; margin-bottom: 24px; }
+  .photo { aspect-ratio: 3 / 2; }
+  .answer { padding: 22px 0; }
+}

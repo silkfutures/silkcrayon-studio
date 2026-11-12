@@ -1,4 +1,5 @@
 import Link from "next/link";
+import styles from "./first-session.module.css";
 import SiteFooter from "../components/SiteFooter";
 import MeetEngineers from "../components/MeetEngineers";
 import SiteHeader from "../components/SiteHeader";
@@ -57,6 +58,24 @@ export default async function Home(){
       <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
       <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/enquire?call=1">Need a hand choosing? Request a call →</Link></div>
     </div></section>
+
+    <section id="first-session" className={`section ${styles.section}`} aria-labelledby="first-session-heading">
+      <div className={`container ${styles.grid}`}>
+        <div className={styles.intro}>
+          <p className="eyebrow">New to the studio?</p>
+          <h2 id="first-session-heading">Your first<br/>studio session.</h2>
+          <p className={styles.lede}>You don’t need to have done this before. If you’ve been writing songs, recording in your bedroom or wondering what your voice could sound like in a studio, you’re welcome here.</p>
+          <img className={styles.photo} src="/images/sessions/vocal-recording.jpg" alt="An artist wearing headphones recording vocals at a studio microphone" width="1800" height="1200" loading="lazy" decoding="async"/>
+        </div>
+        <div className={styles.details}>
+          <div className={styles.answer}><h3>What should I bring?</h3><p>Bring your lyrics, your beat or backing track, and a couple of songs you like the sound of. If you’re still working out your ideas or need help with production, talk to us before booking so we can find the right session for you.</p></div>
+          <div className={styles.answer}><h3>What happens when I arrive?</h3><p>We’ll have a chat, listen to what you’re working on and get you comfortable with the setup. Your engineer will guide you through recording, help you work through different takes and listen back with you.</p></div>
+          <div className={styles.answer}><h3>Do I need to get it right first time?</h3><p>No. There’s room to try things, make mistakes and go again. You don’t have to arrive sounding like a finished record.</p></div>
+          <div className={styles.answer}><h3>What will I leave with?</h3><p>That depends on what we’re making and how much time we have. Your vocal recording booking covers recording, mixing and mastering within the session time. We’ll help you set a realistic aim for the session and explain if your track needs more work before release.</p></div>
+          <div className={styles.cta}><h3>Not sure where to start?</h3><p>Tell us a little about your music. We’ll help you work out what to book.</p><div className={styles.actions}><Link className="button primary" href="/enquire?call=1">Talk to us <span aria-hidden="true">↗</span></Link><Link className="textLink" href="/booking?service=vocal-recording">Book a session →</Link></div></div>
+        </div>
+      </div>
+    </section>
 
     <MeetEngineers/>
 
