@@ -1,3 +1,4 @@
+import {recordingOfferActive} from "../lib/recordingOffer";
 import Link from "next/link";
 import styles from "./first-session.module.css";
 import SiteFooter from "../components/SiteFooter";
@@ -14,11 +15,11 @@ export default async function Home(){
   const [livePromotions,pricing]=await Promise.all([getLivePromotions(),getStudioSettings()]);
   const promo=publicPromotion(livePromotions.find(p=>p.show_on_homepage));
   const hourly=`£${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}`;
-  const offerActive=Date.now()<Date.parse('2026-12-01T00:00:00Z');
+  const offerActive=recordingOfferActive();
   const services=[
-    {n:'01',title:'Vocal Recording',copy:'Record singing or rap vocals over your beat or backing track. Charged by the hour, with an engineer, mixing and mastering included during your booked time.',meta:offerActive?`${hourly} for 1h · £40/hr for 2h+`:`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
-    {n:'02',title:'Studio Dry Hire',copy:'Already know what you are doing? Bring your own engineer or run the session yourself. Use the Silkcrayon room, booth, monitoring and studio setup without a Silkcrayon engineer.',meta:'£40 / hour · 2h minimum',href:'/dry-hire-cardiff'},
-    {n:'03',title:'Mixing & Mastering',copy:'Professional mix and master from an engineer who has developed artists from first session to release-ready. Your sound, elevated.',meta:'Tailored quote per track',href:'/mix-request',enquire:true},
+    {n:'01',title:'Vocal Recording',copy:'Record vocals with an engineer. Mixing and mastering included within your booked time.',meta:offerActive?"£40/hour for 2+ hours":`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
+    {n:'02',title:'Studio Dry Hire',copy:'Your session, your engineer, our studio. Two-hour minimum.',meta:'£40 / hour · 2h minimum',href:'/dry-hire-cardiff'},
+    {n:'03',title:'Mixing & Mastering',copy:'Get your track ready for release with a professional mix and master.',meta:'Tailored quote per track',href:'/mix-request',enquire:true},
   ];
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
   const business={"@context":"https://schema.org","@type":"LocalBusiness","@id":`${site}/#studio`,name:"Silkcrayon Studios",url:site,image:`${site}/images/wide.webp`,description:"Premium vocal recording, mixing and release-ready music production in Cardiff Bay.",priceRange:"££",address:{"@type":"PostalAddress",streetAddress:process.env.STUDIO_STREET_ADDRESS||"113-116 Portland House",addressLocality:process.env.STUDIO_LOCALITY||"Cardiff",postalCode:process.env.STUDIO_POSTCODE||undefined,addressCountry:"GB"},sameAs:["https://instagram.com/silkcrayon",process.env.GOOGLE_BUSINESS_URL].filter(Boolean)};
@@ -32,9 +33,9 @@ export default async function Home(){
         <h1>A Studio For Artists<br/>Who Want To <span>Go Further.</span></h1>
         <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
         <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#space">Explore the studio →</a></div>
-        {offerActive&&<p className="homeOffer"><Link href="/booking?service=vocal-recording&duration=120">RECORDING OFFER · 2+ hours at £40/hr · Save 20% →</Link></p>}
+        {offerActive&&<div className="homeOffer recordingHomeOffer"><Link href="/booking?service=vocal-recording&duration=120"><strong>£40/hour for 2+ hours</strong><span>Save 20% <span aria-hidden="true">↗</span></span></Link><small>1 hour · {hourly}</small></div>}
         {!offerActive&&promo && <p className="homeOffer"><Link href={`/booking?service=${promo.serviceSlug}&duration=${promo.durationMinutes}`}>{promo.badgeText || 'Studio offer'}: {promo.durationMinutes / 60} hours for £{promo.offerPricePence / 100} · {promo.ctaText || 'View offer'} →</Link></p>}
-        <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span><b>{hourly}</b> per hour</span></div>
+        <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span>Engineer included</span></div>
       </div>
       <a className="scrollCue" href="#space"><span>Scroll</span><i/></a>
     </section>
@@ -57,7 +58,7 @@ export default async function Home(){
 
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
-      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
+      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.featured&&offerActive&&<><span className="serviceOfferSaving">Save 20%</span><small>1 hour · {hourly}</small></>}{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
       <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/enquire?call=1">Need a hand choosing? Request a call →</Link></div>
     </div></section>
 
@@ -87,7 +88,7 @@ export default async function Home(){
     <section className="section"><div className="container spaceGrid"><div><img src="/images/wide2.webp" alt="The shared creative space at Silkcrayon Studios" loading="lazy" width="1920" height="1280" style={{width:'100%',height:'auto'}}/></div><div className="copyBlock"><p className="eyebrow">Community · Since 2020</p><h2>Find your people.<br/>Make your next thing.</h2><p>Since 2020, Silkcrayon has been a community hub connecting artists, producers and creative minds. We’re making more space for those connections through small-group studio collaborations and monthly producer meetups.</p><Link className="button primary" href="/community">Explore the community <span>↗</span></Link></div></div></section>
 
     <section className="section finalCta"><div className="container">
-      <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">{hourly}/hour · Secure online booking · Cardiff Bay</p></Reveal>
+      <Reveal><p className="eyebrow">Your next record starts here</p><h2>Ready when you are.</h2><p>Choose a session, pick a time and come make something worth keeping.</p><Link className="button primary large" href="/booking">Book Silkcrayon <span>↗</span></Link><p className="ctaMicro">Secure online booking · Engineer included · Cardiff Bay</p></Reveal>
     </div></section>
 
     <SiteFooter/>

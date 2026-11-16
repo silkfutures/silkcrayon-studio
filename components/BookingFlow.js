@@ -1,4 +1,5 @@
 "use client";
+import {recordingOfferActive,recordingOfferEligible,recordingOfferPrice} from "../lib/recordingOffer";
 import OnsiteCheckout from './OnsiteCheckout';
 import FormProtection from './FormProtection';
 
@@ -6,8 +7,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 const services = {
- "vocal-recording": {name:"Vocal Recording", description:"Record singing or rap vocals with an engineer. Mixing and mastering can be worked on within your booked time.",durations:[60,120,180,240,300,360,420,480]},
- "voiceover": {name:"Voice Over Recording",description:"Professional voice over and narration recording with an engineer. Recording files included; editing and mastering quoted separately.",durations:[60,120,180,240,300,360,420,480]},
+ "vocal-recording": {name:"Vocal Recording", description:"Engineer included. Record, mix and master within your session.",durations:[60,120,180,240,300,360,420,480]},
+ "voiceover": {name:"Voice Over Recording",description:"Engineer and recording files included. Editing quoted separately.",durations:[60,120,180,240,300,360,420,480]},
  "full-day": {name:"Full Day Studio",description:"A full day in the studio with an engineer.",durations:[480]},
  "artist-development": {name:"Artist Development",description:"One hour of guidance on your music and releases.",durations:[60]},
  "dry-hire": {name:"Studio Dry Hire",description:"Bring your own engineer. Two-hour minimum.",durations:[120,180,240,300,360,420,480]},
@@ -213,8 +214,8 @@ export default function BookingFlow({promotions=[],pricing={}}) {
 
   const checkoutReady = Boolean(slot && detailsReady);
   const money=p=>`£${(Number(p||0)/100).toFixed(Number(p||0)%100?2:0)}`;
-  const offerActive=Date.now()<Date.parse("2026-12-01T00:00:00Z");
-  const offerEligible=(slug,d)=>offerActive&&slug==="vocal-recording"&&Number(d)>=120;
+  const offerActive=recordingOfferActive();
+  const offerEligible=recordingOfferEligible;
   const standardRecordingPrice=d=>Math.round(Number(d)/60*(pricing.studioHourlyPricePence||5000));
   const livePrice=(slug,d)=>{
     if(slug==="system-test") return "£0.30";
@@ -222,23 +223,23 @@ export default function BookingFlow({promotions=[],pricing={}}) {
     if(slug==="artist-development") return "£75";
     if(slug==="voiceover") return money(Math.round((Number(d)||0)/60*6000));
     if(slug==="dry-hire") return money(Math.round((Number(d)||0)/60*4000));
-    return money(offerEligible(slug,d)?Math.round(Number(d)/60*4000):standardRecordingPrice(d));
+    return money(offerEligible(slug,d)?recordingOfferPrice(d):standardRecordingPrice(d));
   };
   const serviceCardPrice=slug=>{
     if(slug==="artist-development") return "£75 · 60 minutes";
     if(slug==="full-day") return `${money(pricing.fullDayPricePence||40000)} · 8 hours`;
     if(slug==="system-test") return "£0.30";
-    if(slug==="voiceover") return "£60 / hour · engineer included";
-    if(slug==="dry-hire") return "£40 / hour · 2h minimum";
+    if(slug==="voiceover") return "£60 / hour";
+    if(slug==="dry-hire") return "£40 / hour";
     return offerActive?`${money(pricing.studioHourlyPricePence||5000)} / 1h · £40/hr for 2h+`:`${money(pricing.studioHourlyPricePence||5000)} / hour`;
   };
 
   return (
     <><form style={checkout?{display:"none"}:undefined} className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b><small>{serviceCardPrice(slug)}</small><span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/enquire?call=1">Not sure what to book? Ask us</a></p></div></div>
+      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b>{slug==="vocal-recording"&&offerActive?<><strong className="recordingOfferRate">£40/hour <span>for 2+ hours</span></strong><span className="recordingOfferSaving">Save 20%</span><small className="recordingStandard">1 hour · {money(pricing.studioHourlyPricePence||5000)}</small></>:<small>{serviceCardPrice(slug)}</small>}<span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/enquire?call=1">Not sure what to book? Ask us</a></p></div></div>
 
 
-      <div className="bookingSection"><span className="step">02</span><div><h2>Duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=offerEligible(service,d)?{offerPricePence:Math.round(d/60*4000),normalPricePence:standardRecordingPrice(d)}:null;return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} onClick={()=>setDuration(d)}><span>{d===480?"Full day (8 hours)":durationLabel(d)} · {offer?money(offer.offerPricePence):livePrice(service,d)}</span>{offer&&<small><s>{money(offer.normalPricePence)}</s> · SAVE {money(offer.normalPricePence-offer.offerPricePence)} (20%)</small>}</button>})}</div>
+      <div className="bookingSection"><span className="step">02</span><div><h2>Duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=offerEligible(service,d)?{offerPricePence:recordingOfferPrice(d),normalPricePence:standardRecordingPrice(d)}:null;return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} aria-pressed={duration===d} onClick={()=>setDuration(d)}><span>{durationLabel(d)} · {offer?money(offer.offerPricePence):livePrice(service,d)}</span>{offer&&<small><s>{money(offer.normalPricePence)}</s> · Save {money(offer.normalPricePence-offer.offerPricePence)}</small>}</button>})}</div>
         <p className="dateHint">Choose a day</p>
         <div className="dateGrid">{quickDates.map(d=>{const v=isoLocal(d); const p=prettyDay(d); return <button type="button" key={v} className={`dateCard ${date===v?"selected":""}`} onClick={()=>setDate(v)}><span>{p.weekday}</span><b>{p.day}</b><small>{p.month}</small></button>})}</div>
         <details className="moreDates"><summary>Choose a later date</summary><label className="field"><span>Date</span><input type="date" value={date} min={minDate} onChange={e=>setDate(e.target.value)} required /></label></details>
@@ -262,7 +263,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
       {service==="artist-development"&&<div className="bookingSection artistDevelopmentQuestions"><span className="step">05</span><div><p className="eyebrow">Before your development session</p><h2>Give us the useful context.</h2><p className="muted">You do not need polished answers. This simply helps Nathan or Toni prepare for the conversation.</p><div className="formGrid"><label className="field full"><span>What are you trying to achieve?</span><textarea name="developmentGoal" rows="3" required placeholder="For example: release my first single, choose from a backlog, build confidence or understand Spotify distribution."/></label><label className="field full"><span>What is currently stopping you?</span><textarea name="developmentBlocker" rows="3" required placeholder="Tell us honestly—time, fear, perfectionism, organisation, technical knowledge or something else."/></label><label className="field"><span>How much unreleased music do you have? <small>Optional</small></span><input name="developmentBacklog" placeholder="e.g. 3 finished songs and 10 demos"/></label><label className="field"><span>Music or artist link <small>Optional</small></span><input name="developmentMusicLink" type="url" placeholder="Spotify, SoundCloud or private link"/></label><label className="field full"><span>What would make this hour feel worthwhile?</span><textarea name="developmentOutcome" rows="3" required/></label><label className="field"><span>Session format</span><select name="developmentFormat" defaultValue="in_person"><option value="in_person">In person at Silkcrayon</option><option value="online">Online video call</option></select></label></div></div></div>}
       {error && <div className="errorBox">{error}</div>}
 
-      <div className={`checkoutBar${checkoutReady?" ready":""}`}><div><small>Your booking</small><b>{services[service].name} · {durationLabel(duration)} · {appliedDiscount?money(appliedDiscount.offerPricePence):livePrice(service,duration)}</b>{offerEligible(service,duration)&&<small><s>{money(standardRecordingPrice(duration))}</s> · You save {money(standardRecordingPrice(duration)-Math.round(duration/60*4000))}</small>}<small>{slot?`${date} at ${slot.start}`:"Choose a date and time above."}</small>{!detailsReady&&<small>Enter your name and email, and accept the booking terms above.</small>}</div><button type="submit" className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to Apple Pay / card →"}</button></div>
+      <div className={`checkoutBar${checkoutReady?" ready":""}`}><div><small>Your booking</small><b>{services[service].name} · {durationLabel(duration)} · {appliedDiscount?money(appliedDiscount.offerPricePence):livePrice(service,duration)}</b>{offerEligible(service,duration)&&<small><s>{money(standardRecordingPrice(duration))}</s> · You save {money(standardRecordingPrice(duration)-recordingOfferPrice(duration))}</small>}<small>{slot?`${date} at ${slot.start}`:"Choose a date and time above."}</small>{!detailsReady&&<small>Enter your name and email, and accept the booking terms above.</small>}</div><button type="submit" className="button primary" disabled={submitting}>{submitting?"Opening secure checkout…":"Continue to Apple Pay / card →"}</button></div>
       <button type="submit" value="hosted" className="onsiteHostedFallback" disabled={submitting}>Use separate Stripe checkout</button>
     </form>{checkout&&<OnsiteCheckout checkout={checkout} onBack={()=>{setCheckout(null);setError("");}}/>}</>
   );

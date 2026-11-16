@@ -48,3 +48,24 @@
 .bookingModeCard.selected{border:2px solid #d9b4f2;background:#23182c;padding:21px 47px 21px 21px}.bookingModeCard:focus-visible{outline:3px solid #d9b4f2;outline-offset:3px}.bookingModeGlyph{font-size:25px;color:#c6a5da;line-height:1}.bookingModeCard strong{font-size:19px}.bookingModeCard>span:not(.bookingModeGlyph):not(.bookingModeCheck){color:#c1b8c9;font-size:13px;line-height:1.55}.bookingModeCard b{font-size:15px;margin-top:5px}.bookingModeCheck{position:absolute;right:19px;top:19px;font-size:19px;color:#d9b4f2}
 .bookingModePass{padding:28px;border:1px solid #493c52;border-radius:16px;background:#130f18;margin-bottom:18px}.bookingModePassIntro h2{font-size:clamp(24px,3vw,32px);margin:9px 0}.bookingModePassIntro p{color:#c1b8c9;line-height:1.6;max-width:680px;margin:0 0 22px}
 @media(max-width:640px){.bookingModeGrid{gap:9px}.bookingModeCard{padding:15px 26px 15px 14px;min-height:208px}.bookingModeCard.selected{padding:14px 25px 14px 13px}.bookingModeCard strong{font-size:16px}.bookingModeCheck{right:9px;top:11px}.bookingModePass{padding:16px}.bookingModeCard>span:not(.bookingModeGlyph):not(.bookingModeCheck){font-size:12px}}
+
+/* Clear rates and comfortable tap targets without extra cards. */
+.bookingPage .option .recordingOfferRate{display:block;color:var(--accent);font-size:22px;line-height:1.35;margin-top:10px}
+.bookingPage .recordingOfferRate span{font-size:14px;font-weight:500;white-space:nowrap}
+.bookingPage .recordingOfferSaving{display:block;color:var(--accent);font-size:12px;font-weight:700;margin-top:3px}
+.bookingPage .option .recordingStandard{margin-top:10px}
+.bookingPage .option .serviceDescription{display:block;margin-top:8px;color:var(--muted)}
+.bookingPage .bookingModeCard{min-height:0}
+.bookingPage .durationRow button{min-height:48px}
+.bookingPage .durationRow button small{display:block;margin-top:5px;font-size:11px}
+.bookingPage .checkoutBar{line-height:1.5}
+body:has(.bookingPage) .studioContact{position:relative;inset:auto;margin:0 14px 24px auto;width:max-content;z-index:10}
+@media(max-width:640px){
+ .bookingPage .bookingModeCard,.bookingPage .bookingModeCard.selected{padding:16px 28px 16px 14px;gap:7px}
+ .bookingPage .bookingModeCard b{font-size:12px;line-height:1.5}
+ .bookingPage .bookingModeGlyph{display:none}
+ .bookingPage .bookingModeGrid{margin-bottom:20px}
+ .bookingPage .checkoutBar{position:static;padding:16px;gap:14px}
+ .bookingPage .checkoutBar .button{white-space:normal;min-height:48px;text-align:center}
+ .bookingPage .bookingOptionalDetails>summary{align-items:flex-start;flex-wrap:wrap}
+}

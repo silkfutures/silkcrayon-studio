@@ -1,3 +1,4 @@
+import * as recordingOffer from '../lib/recordingOffer.js';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
@@ -13,6 +14,7 @@ async function checkout({signedIn=true,member=membership,rpcError=null,bodyPatch
  const customer={id:'customer-1',full_name:'Real Artist',email:'real@example.com',artist_name:'Real',email_signup_discount_available:true};
  const db={from(table){const q={select(){return q},eq(){return q},gte(){return q},lte(){return q},in(){return q},update(row){calls[table+'Update']=row;return q},upsert(){return q},insert(){return q},maybeSingle(){return Promise.resolve({data:table==='supported_artists'?member:table==='customers'?customer:table==='staff_profiles'?{user_id:'engineer-1',full_name:'Nathan',active:true,role:'owner'}:null})},single(){return Promise.resolve({data:table==='bookings'?{amount_pence:member.hourly_price_pence*2}:customer})},then(resolve,reject){return Promise.resolve({data:[],error:null}).then(resolve,reject)}};return q;},rpc(name,args){calls.rpc={name,args};return Promise.resolve({data:rpcError?null:'booking-1',error:rpcError?{message:rpcError}:null})}};
  const modules={
+ '../../../lib/recordingOffer':recordingOffer,
  '../../../lib/onsiteCheckout':{createWebsiteCheckout},
  '../../../lib/customerAuth':{getCustomerContext:async()=>signedIn?{customer}:null},
  '../../../lib/supportedArtists':{programmeSlotAllowed,programmeRate},
