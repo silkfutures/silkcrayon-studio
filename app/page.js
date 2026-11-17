@@ -1,4 +1,5 @@
 import {recordingOfferActive} from "../lib/recordingOffer";
+import "./home-booking.css";
 import Link from "next/link";
 import styles from "./first-session.module.css";
 import SiteFooter from "../components/SiteFooter";
@@ -23,7 +24,7 @@ export default async function Home(){
   ];
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
   const business={"@context":"https://schema.org","@type":"LocalBusiness","@id":`${site}/#studio`,name:"Silkcrayon Studios",url:site,image:`${site}/images/wide.webp`,description:"Premium vocal recording, mixing and release-ready music production in Cardiff Bay.",priceRange:"££",address:{"@type":"PostalAddress",streetAddress:process.env.STUDIO_STREET_ADDRESS||"113-116 Portland House",addressLocality:process.env.STUDIO_LOCALITY||"Cardiff",postalCode:process.env.STUDIO_POSTCODE||undefined,addressCountry:"GB"},sameAs:["https://instagram.com/silkcrayon",process.env.GOOGLE_BUSINESS_URL].filter(Boolean)};
-  return <main className="marketingSite"><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(business)}}/>
+  return <main className="marketingSite homePage"><script type="application/ld+json" dangerouslySetInnerHTML={{__html:JSON.stringify(business)}}/>
     <SiteHeader/>
     <section className="hero heroV12">
       <div className="heroShade"/>
@@ -32,8 +33,10 @@ export default async function Home(){
         <p className="eyebrow heroEyebrow">Cardiff Bay · Est. 2020</p>
         <h1>A Studio For Artists<br/>Who Want To <span>Go Further.</span></h1>
         <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
-        <div className="actions heroActions"><Link className="button primary magnetic" href="/booking">Book a session <span>↗</span></Link><a className="textLink" href="#space">Explore the studio →</a></div>
-        {offerActive&&<div className="homeOffer recordingHomeOffer"><Link href="/booking?service=vocal-recording&duration=120"><strong>£40/hour for 2+ hours</strong><span>Save 20% <span aria-hidden="true">↗</span></span></Link><small>1 hour · {hourly}</small></div>}
+        <div className="heroBooking">
+          <Link className="button primary" href={offerActive?"/booking?service=vocal-recording&duration=120":"/booking"}>{offerActive?"Book a session · £40/hr":"Book a session"}<span aria-hidden="true"> →</span></Link>
+          {offerActive&&<p className="heroBookingTerms"><span>2+ hours · <b>Save 20%</b></span><span>1 hour {hourly}</span></p>}
+        </div>
         {!offerActive&&promo && <p className="homeOffer"><Link href={`/booking?service=${promo.serviceSlug}&duration=${promo.durationMinutes}`}>{promo.badgeText || 'Studio offer'}: {promo.durationMinutes / 60} hours for £{promo.offerPricePence / 100} · {promo.ctaText || 'View offer'} →</Link></p>}
         <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span>Engineer included</span></div>
       </div>
@@ -92,6 +95,6 @@ export default async function Home(){
     </div></section>
 
     <SiteFooter/>
-    <Link href="/booking" className="mobileBookBar">Book a session <span>↗</span></Link>
+    
   </main>
 }

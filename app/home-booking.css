@@ -1,0 +1,16 @@
+/* A single booking action with the offer attached to it. */
+.homePage .heroBooking{max-width:420px;margin-top:28px}
+.homePage .heroBooking>.button{width:100%;min-height:52px;justify-content:center;gap:8px;text-align:center}
+.homePage .heroBookingTerms{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 18px;margin:10px 0 0;font-size:13px;line-height:1.5;color:#d5cddd}
+.homePage .heroBookingTerms b{font-weight:500;color:var(--accent)}
+.homePage .heroProof{margin-top:30px}
+body:has(.homePage) .studioContact{position:relative;inset:auto;margin:0 16px 24px auto;width:max-content;z-index:10}
+@media(max-width:700px){
+ .homePage .heroV12{height:auto;min-height:0;max-height:none;padding-bottom:42px}
+ .homePage .heroV12 .heroContent{padding-top:48px}
+ .homePage .heroV12 h1{font-size:clamp(42px,12vw,64px);line-height:.98}
+ .homePage .heroV12 .lede{font-size:15px;line-height:1.65;margin:22px 0 0}
+ .homePage .heroBooking{max-width:none;margin-top:24px}
+ .homePage .heroBooking>.button{font-size:15px;min-height:50px}
+ .homePage .heroProof{display:none}
+}

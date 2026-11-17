@@ -8,10 +8,10 @@ import { useSearchParams } from "next/navigation";
 
 const services = {
  "vocal-recording": {name:"Vocal Recording", description:"Engineer included. Record, mix and master within your session.",durations:[60,120,180,240,300,360,420,480]},
- "voiceover": {name:"Voice Over Recording",description:"Engineer and recording files included. Editing quoted separately.",durations:[60,120,180,240,300,360,420,480]},
+ "voiceover": {name:"Voiceover",description:"Engineer and recording files included. Editing quoted separately.",durations:[60,120,180,240,300,360,420,480]},
  "full-day": {name:"Full Day Studio",description:"A full day in the studio with an engineer.",durations:[480]},
  "artist-development": {name:"Artist Development",description:"One hour of guidance on your music and releases.",durations:[60]},
- "dry-hire": {name:"Studio Dry Hire",description:"Bring your own engineer. Two-hour minimum.",durations:[120,180,240,300,360,420,480]},
+ "dry-hire": {name:"Dry Hire",description:"Bring your own engineer. Two-hour minimum.",durations:[120,180,240,300,360,420,480]},
  "system-test": {name:"30p Test Booking",description:"Test checkout.",durations:[60]},
 };
 
@@ -236,7 +236,7 @@ export default function BookingFlow({promotions=[],pricing={}}) {
 
   return (
     <><form style={checkout?{display:"none"}:undefined} className="bookingPanel" onSubmit={submit} onInput={updateReadiness} onChange={updateReadiness}><FormProtection/>
-      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><b>{s.name}</b>{slug==="vocal-recording"&&offerActive?<><strong className="recordingOfferRate">£40/hour <span>for 2+ hours</span></strong><span className="recordingOfferSaving">Save 20%</span><small className="recordingStandard">1 hour · {money(pricing.studioHourlyPricePence||5000)}</small></>:<small>{serviceCardPrice(slug)}</small>}<span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/enquire?call=1">Not sure what to book? Ask us</a></p></div></div>
+      <div className="bookingSection"><span className="step">01</span><div><h2>Choose your session</h2><div className="optionGrid">{Object.entries(services).filter(([slug])=>publicServices.includes(slug)||(showTest&&slug==="system-test")).map(([slug,s])=><button type="button" key={slug} aria-pressed={service===slug} className={`option ${service===slug?"active":""} ${slug==="vocal-recording"&&promo?"hasPromoSticker":""}`} onClick={()=>chooseService(slug)}><span className="serviceChoiceHeading"><b>{s.name}</b><strong>{slug==="vocal-recording"&&offerActive?"£40/hr":serviceCardPrice(slug)}</strong></span>{slug==="vocal-recording"&&offerActive&&<span className="serviceChoiceOffer">2+ hours · Save 20%<small>1 hour {money(pricing.studioHourlyPricePence||5000)}</small></span>}<span className="serviceDescription">{s.description}</span>{slug==="vocal-recording"&&promo&&<span className="promoSticker"><i>RELAUNCH</i><strong>2 HOURS</strong><em>£{promo.offerPricePence/100}</em></span>}</button>)}</div><p className="bookingAsk"><a href="/enquire?call=1">Not sure what to book? Ask us</a></p></div></div>
 
 
       <div className="bookingSection"><span className="step">02</span><div><h2>Duration & date</h2><div className="durationRow">{services[service].durations.map(d=>{const offer=offerEligible(service,d)?{offerPricePence:recordingOfferPrice(d),normalPricePence:standardRecordingPrice(d)}:null;return <button type="button" className={`${duration===d?"activePill":"pill"} ${offer?"offerPill":""}`} key={d} aria-pressed={duration===d} onClick={()=>setDuration(d)}><span>{durationLabel(d)} · {offer?money(offer.offerPricePence):livePrice(service,d)}</span>{offer&&<small><s>{money(offer.normalPricePence)}</s> · Save {money(offer.normalPricePence-offer.offerPricePence)}</small>}</button>})}</div>
