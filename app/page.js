@@ -34,8 +34,7 @@ export default async function Home(){
         <h1>A Studio For Artists<br/>Who Want To <span>Go Further.</span></h1>
         <p className="lede">Expert vocal recording, release-ready production and genuine creative guidance — inside a hidden 1926 bank vault in Cardiff Bay.</p>
         <div className="heroBooking">
-          <Link className="button primary" href={offerActive?"/booking?service=vocal-recording&duration=120":"/booking"}>{offerActive?"Book a session · £40/hr":"Book a session"}<span aria-hidden="true"> →</span></Link>
-          {offerActive&&<p className="heroBookingTerms"><span>2+ hours · <b>Save 20%</b></span><span>1 hour {hourly}</span></p>}
+          <Link className="button primary" href={offerActive?"/booking?service=vocal-recording&duration=120":"/booking"}>Book a session<span aria-hidden="true"> →</span></Link>
         </div>
         {!offerActive&&promo && <p className="homeOffer"><Link href={`/booking?service=${promo.serviceSlug}&duration=${promo.durationMinutes}`}>{promo.badgeText || 'Studio offer'}: {promo.durationMinutes / 60} hours for £{promo.offerPricePence / 100} · {promo.ctaText || 'View offer'} →</Link></p>}
         <div className="heroProof"><span><b>600+</b> artists</span><i/><span><b>6+</b> years developing talent</span><i/><span>Engineer included</span></div>
@@ -95,6 +94,6 @@ export default async function Home(){
     </div></section>
 
     <SiteFooter/>
-    
+    <Link href="/booking" className="mobileBookBar">Book a session <span>↗</span></Link>
   </main>
 }
