@@ -750,3 +750,28 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 .sessionGallery img{display:block;width:100%;height:auto;border-radius:12px}
 .sessionGallery .sessionPortrait{grid-column:2;grid-row:1 / span 2}
 @media(max-width:640px){.sessionGallery{grid-template-columns:1fr;gap:16px}.sessionGallery .sessionPortrait{grid-column:auto;grid-row:auto}}
+
+/* Recording offer: use separate lines instead of a crowded promotional sentence. */
+.hero .recordingHomeOffer{max-width:360px;margin:22px 0 0;padding:0;border:0;background:none;text-align:left}
+.hero .recordingHomeOffer>a{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-decoration:none;white-space:normal;line-height:1.45}
+.hero .recordingHomeOffer strong{font-size:20px;color:var(--text)}
+.hero .recordingHomeOffer>a>span,.serviceMeta .serviceOfferSaving{font-size:13px;color:var(--accent)}
+.hero .recordingHomeOffer>small{display:block;color:var(--muted);font-size:13px;line-height:1.5;margin-top:7px}
+.serviceMeta{min-width:0}
+.serviceMeta>strong{white-space:normal}
+.serviceMeta>small,.serviceMeta .serviceOfferSaving{display:block;line-height:1.5;margin-top:5px}
+.serviceMeta>small{color:var(--muted);font-size:13px}
+.studioContact button{padding:11px 15px;min-height:44px;font-size:13px;box-shadow:0 3px 12px #0005}
+.studioContact>div{bottom:54px}
+@media(max-width:640px){
+ .studioContactPrompt{display:none}
+ .hero .recordingHomeOffer strong{font-size:18px}
+ .servicesV12 .serviceMeta{max-width:100%}
+}
+
+@media(max-width:700px){
+ .servicesV12 .serviceMeta{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 16px;align-items:start}
+ .servicesV12 .serviceMeta>strong,.servicesV12 .serviceMeta>small,.servicesV12 .serviceMeta>.serviceOfferSaving{grid-column:1;margin:0}
+ .servicesV12 .serviceMeta>a{grid-column:2;grid-row:1;min-height:44px;display:flex;align-items:center}
+ .heroV12:has(.recordingHomeOffer){height:auto;max-height:none;padding-bottom:48px}
+}

@@ -1,3 +1,4 @@
+import {recordingOfferEligible,recordingOfferPrice} from "../../../lib/recordingOffer";
 import {createWebsiteCheckout} from '../../../lib/onsiteCheckout';
 import {getCustomerContext} from '../../../lib/customerAuth';
 import {programmeSlotAllowed,programmeRate} from '../../../lib/supportedArtists';
@@ -91,9 +92,9 @@ export async function POST(request) {
       const {count}=await db.from('bookings').select('id',{count:'exact',head:true}).eq('customer_id',customer.id).eq('promotion_id',promotion.id).in('status',['pending','confirmed','completed']);
       if(Number(count||0)>=Number(promotion.usage_limit_per_customer)) return NextResponse.json({error:'This discount code has reached its usage limit.'},{status:400});
     }
-    const offerEligible=!programme&&!promotion&&service.slug==="vocal-recording"&&duration>=120&&Date.now()<Date.parse("2026-12-01T00:00:00Z");
+    const offerEligible=!programme&&!promotion&&recordingOfferEligible(service.slug,duration);
     const rewardApplied=!programme&&!promotion&&!offerEligible&&rewardAvailableBefore&&service.slug!=='system-test';
-    let amountPence = programme?Math.round(duration/60*programmeRate(programme)):promotion?(promotion.code?.toUpperCase()==='RELAUNCH40'?Math.round(duration/60*4000):Number(promotion.offer_price_pence)):(offerEligible?Math.round(duration/60*4000):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence));
+    let amountPence = programme?Math.round(duration/60*programmeRate(programme)):promotion?(promotion.code?.toUpperCase()==='RELAUNCH40'?Math.round(duration/60*4000):Number(promotion.offer_price_pence)):(offerEligible?recordingOfferPrice(duration):(rewardApplied?Math.max(30,Math.round(listPricePence*0.95)):listPricePence));
     const holdExpires = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     const { data: reservedId, error: bookingError } = await db.rpc(programme?"reserve_supported_booking_v2":"reserve_booking", programme?{
       p_expected_rate_pence:programmeRate(programme),p_membership_id:programme.id,p_customer_id:customer.id,p_booking_date:body.date,p_start_time:body.start,p_end_time:body.end,p_duration_minutes:duration,p_genre:body.genre?.trim()||null,p_notes:developmentContext||null,p_harmful_music_policy_accepted:true

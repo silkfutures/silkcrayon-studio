@@ -13,8 +13,8 @@ export default function BookingModeChooser({promotions, pricing}) {
       <button type="button" className={`bookingModeCard ${mode === "session" ? "selected" : ""}`} onClick={() => setMode("session")} aria-pressed={mode === "session"}>
         <span className="bookingModeGlyph" aria-hidden="true">◉</span>
         <strong>Book a Session</strong>
-        <span>Choose your date, engineer and session time.</span>
-        <b>£{(pricing.studioHourlyPricePence/100).toFixed(0)}/hour</b>
+        <span>Pick a date and time.</span>
+        <b>See session prices below</b>
         <span className="bookingModeCheck" aria-hidden="true">{mode === "session" ? "●" : "○"}</span>
       </button>
       <button type="button" className={`bookingModeCard ${mode === "pass" ? "selected" : ""}`} onClick={() => setMode("pass")} aria-pressed={mode === "pass"}>
