@@ -6,11 +6,29 @@
 .homePage .heroProof{margin-top:30px}
 body:has(.homePage) .studioContact{position:relative;inset:auto;margin:0 16px 24px auto;width:max-content;z-index:10}
 @media(max-width:700px){
- .homePage .heroV12{height:auto;min-height:0;max-height:none;padding-bottom:42px}
- .homePage .heroV12 .heroContent{padding-top:48px}
- .homePage .heroV12 h1{font-size:clamp(42px,12vw,64px);line-height:.98}
- .homePage .heroV12 .lede{font-size:15px;line-height:1.65;margin:22px 0 0}
+ .homePage .heroV12{height:auto;min-height:94svh;max-height:none;padding-bottom:56px}
+ .homePage .heroV12 .heroContent{padding-top:112px}
+ .homePage .heroV12 h1{font-size:clamp(54px,15vw,76px);line-height:.94}
+ .homePage .heroV12 .lede{font-size:17px;line-height:1.65;margin:26px 0 0}
  .homePage .heroBooking{max-width:none;margin-top:24px}
  .homePage .heroBooking>.button{font-size:15px;min-height:50px}
  .homePage .heroProof{display:none}
+}
+
+/* Keep each price and its qualifiers together, independent of the old meta grid. */
+.homePage .homeServiceFooter{display:flex;flex-direction:column;align-items:flex-end;gap:12px;padding-top:6px}
+.homePage .homeServicePrice{min-width:0;text-align:right}
+.homePage .homeServicePrice>strong{display:block;font-size:14px;line-height:1.5}
+.homePage .homeServicePrice>small{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px 14px;margin-top:4px;font-size:12px;line-height:1.5;color:var(--muted)}
+.homePage .homeServicePrice small b{color:var(--accent);font-weight:500}
+.homePage .homeServiceFooter>a{display:inline-flex;align-items:center;min-height:44px;color:var(--accent);font-size:14px;font-weight:700;white-space:nowrap}
+@media(max-width:700px){
+ .homePage .heroV12 h1>span{display:block}
+ .homePage .serviceRow{grid-template-columns:minmax(0,1fr);gap:16px;padding:28px 0}
+ .homePage .serviceNumber{display:none}
+ .homePage .serviceRow h3{font-size:28px;line-height:1.2;margin-bottom:10px}
+ .homePage .serviceRow p{font-size:15px;line-height:1.65}
+ .homePage .homeServiceFooter{flex-direction:row;justify-content:space-between;align-items:center;gap:16px;padding-top:0}
+ .homePage .homeServicePrice{text-align:left}
+ .homePage .homeServicePrice>small{justify-content:flex-start}
 }

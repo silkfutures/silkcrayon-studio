@@ -61,7 +61,7 @@ export default async function Home(){
 
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
-      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="serviceMeta"><strong>{s.meta}</strong>{s.featured&&offerActive&&<><span className="serviceOfferSaving">Save 20%</span><small>1 hour · {hourly}</small></>}{s.href?<Link href={s.href}>{s.enquire?'Enquire →':'Book →'}</Link>:<Link href="/enquire">Enquire →</Link>}</div></article></Reveal>)}</div>
+      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="homeServiceFooter"><div className="homeServicePrice"><strong>{s.meta}</strong>{s.featured&&offerActive&&<small><b>Save 20%</b><span>1 hour {hourly}</span></small>}</div><Link href={s.href||"/enquire"}>{s.enquire?'Enquire →':'Book →'}</Link></div></article></Reveal>)}</div>
       <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/enquire?call=1">Need a hand choosing? Request a call →</Link></div>
     </div></section>
 
