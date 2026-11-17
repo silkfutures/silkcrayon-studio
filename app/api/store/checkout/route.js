@@ -1,3 +1,4 @@
+import {studioPassPrice,studioPassComparisonPrice} from "../../../../lib/studioPassPricing";
 import {createWebsiteCheckout} from '../../../../lib/onsiteCheckout';
 import {publicFormGuard} from "../../../../lib/publicFormGuard";
 import {NextResponse} from "next/server";
@@ -70,8 +71,8 @@ export async function POST(req){
    if(tableError)return NextResponse.json({error:"Studio Pass setup is incomplete. Please contact the studio before purchasing."},{status:503});
   }
   const pricing=await getStudioSettings();
-  const listAmount=Math.round(hours*pricing.studioHourlyPricePence);
-  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?({4:18000,5:21500,6:25000,7:28500,8:32000})[hours]:listAmount;
+  const listAmount=kind==="studio_pass"?studioPassComparisonPrice(hours,pricing.studioHourlyPricePence):Math.round(hours*pricing.studioHourlyPricePence);
+  const amount=kind==="relaunch40"?8000:kind==="relaunch"?Number(relaunch.offer_price_pence):kind==="project_pass"?22500:kind==="studio_pass"?studioPassPrice(hours):listAmount;
   const description=kind==="gift"
    ? `${hours} studio hour${hours===1?"":"s"} — gift from ${buyerName}`
    :kind==="relaunch40"?"2 studio hours — RELAUNCH40":kind==="relaunch"

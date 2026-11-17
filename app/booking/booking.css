@@ -90,3 +90,8 @@ body:has(.bookingPage) .studioContact{position:relative;inset:auto;margin:0 14px
  .bookingPage .bookingSection:first-child{padding-top:0!important}
  .bookingPage .bookingModeSwitch{margin-bottom:24px}
 }
+
+.bookingModeSwitch button{padding:12px 10px;text-align:left}
+.bookingModeSwitch button strong{display:block;font-size:14px}
+.bookingModeSwitch button small{display:block;margin-top:4px;font-size:12px;line-height:1.45;font-weight:400;color:var(--muted)}
+.bookingModeSwitch button.selected small{color:#c9b8d6}
