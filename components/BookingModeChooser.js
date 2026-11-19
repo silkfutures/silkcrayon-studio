@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import {STUDIO_PASS_HOURLY_PENCE} from "../lib/studioPassPricing";
+import {formatGBP} from "../lib/services";
 import BookingFlow from "./BookingFlow";
 import StudioHoursStore from "./StudioHoursStore";
 
@@ -13,7 +15,7 @@ export default function BookingModeChooser({promotions, pricing}) {
       <button type="button" className={mode==="pass"?"selected":""} onClick={()=>setMode("pass")} aria-pressed={mode==="pass"}><strong>Hour passes</strong><small>Prepay hours. Book across visits.</small></button>
     </div>
     {mode === "session" ? <BookingFlow promotions={promotions} pricing={pricing}/> : <section className="bookingModePass" aria-label="Build your Studio Hour Pass">
-      <div className="bookingModePassIntro"><span>STUDIO HOUR PASSES</span><h2>Make time for the music.</h2><p>4–8 hours at £35/hour. Engineer included. Use within 30 days.</p></div>
+      <div className="bookingModePassIntro"><span>STUDIO HOUR PASSES</span><h2>Make time for the music.</h2><p>4–8 hours at {formatGBP(STUDIO_PASS_HOURLY_PENCE)}/hour. Engineer included. Use within 30 days.</p></div>
       <StudioHoursStore pass hourlyPrice={pricing.studioHourlyPricePence / 100}/>
     </section>}
   </div>;

@@ -39,7 +39,7 @@ export default function StudioHoursStore({gift=false,offer=false,relaunch40=fals
    :<div className="hourWheel">
       <div className="hourWheelReadout">
        <div><small>CHOOSE YOUR HOURS</small><b>{hours} HOURS</b><span>£{effective.toFixed(effective%1?2:0)}/hour effective rate</span></div>
-       <div className="hourWheelPrice"><strong>£{price}</strong><span><s>£{listPrice}</s> · Save £{saving}</span></div>
+       <div className="hourWheelPrice"><strong>£{price}</strong>{saving>0&&<span><s>£{listPrice}</s> · Save £{saving}</span>}</div>
       </div>
       <input aria-label="Choose studio hours" type="range" min={pass?4:3} max={pass?8:10} step={1} value={hours} onChange={e=>setHours(Number(e.target.value))}/>
       <div className="hourWheelTicks">{(pass?[4,5,6,7,8]:[3,4,5,6,7,8,9,10]).map(h=><button type="button" key={h} className={hours===Number(h)?"active":""} onClick={()=>setHours(Number(h))}>{h}h</button>)}</div>
@@ -51,7 +51,7 @@ export default function StudioHoursStore({gift=false,offer=false,relaunch40=fals
     <label><span>{gift?"Your email":"Email"}</span><input required type="email" name="buyerEmail" maxLength="254"/></label>
     {gift&&<><label><span>Recipient name</span><input required name="recipientName" maxLength="120"/></label><label><span>Recipient email</span><input required type="email" name="recipientEmail" maxLength="254"/></label><label className="full"><span>Gift message · optional</span><textarea name="message" rows="3" maxLength="500" placeholder="A few words from you…"/></label></>}
    </div>
-   <div className="hoursStoreSummary"><div><small>{title}</small><b>{hours} hour{hours===1?"":"s"} · £{price}</b><span>{relaunch40?"One per customer. Buy 30 Oct–2 Nov; record by 30 Nov 2026. Subject to availability.":offer?"One per customer. Buy now and choose the date later.":gift?"No date required. Hours stay on the artist’s Silkcrayon account until they book.":`Compared with £${listPrice} for the same hours booked separately. Save £${saving}. ${pass?"Sessions must take place within 30 days of purchase. Unused pass hours expire.":"Use the balance across future sessions."}`}</span></div><button className="button primary" disabled={busy}>{busy?"Opening checkout…":relaunch40?"Get 2 hours for £80 →":offer?`Get 2 hours for £${relaunchPrice} →`:gift?"Buy gift →":pass?"Buy hour pass →":"Buy hour pack →"}</button></div>
+   <div className="hoursStoreSummary"><div><small>{title}</small><b>{hours} hour{hours===1?"":"s"} · £{price}</b><span>{relaunch40?"One per customer. Buy 30 Oct–2 Nov; record by 30 Nov 2026. Subject to availability.":offer?"One per customer. Buy now and choose the date later.":gift?"No date required. Hours stay on the artist’s Silkcrayon account until they book.":pass?"Sessions must take place within 30 days of purchase. Unused pass hours expire.":"Use the balance across future sessions."}</span></div><button className="button primary" disabled={busy}>{busy?"Opening checkout…":relaunch40?"Get 2 hours for £80 →":offer?`Get 2 hours for £${relaunchPrice} →`:gift?"Buy gift →":pass?"Buy hour pass →":"Buy hour pack →"}</button></div>
    {msg&&<p className="muted">{msg}</p>}
    <button type="submit" value="hosted" className="onsiteHostedFallback" disabled={busy}>Use separate Stripe checkout</button>
  </form>{checkout&&<OnsiteCheckout checkout={checkout} onBack={()=>{setCheckout(null);setMsg("");}}/>}</>

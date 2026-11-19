@@ -1,3 +1,4 @@
+import {dryHireRate, recordingRateLabel} from "../lib/publicRates";
 import {recordingOfferActive} from "../lib/recordingOffer";
 import "./home-booking.css";
 import Link from "next/link";
@@ -15,11 +16,10 @@ export const dynamic="force-dynamic";
 export default async function Home(){
   const [livePromotions,pricing]=await Promise.all([getLivePromotions(),getStudioSettings()]);
   const promo=publicPromotion(livePromotions.find(p=>p.show_on_homepage));
-  const hourly=`£${(pricing.studioHourlyPricePence/100).toFixed(pricing.studioHourlyPricePence%100?2:0)}`;
   const offerActive=recordingOfferActive();
   const services=[
-    {n:'01',title:'Vocal Recording',copy:'Record vocals with an engineer. Mixing and mastering included within your booked time.',meta:offerActive?"£40/hour for 2+ hours":`From ${hourly} / hour`,href:'/booking?service=vocal-recording',featured:true},
-    {n:'02',title:'Studio Dry Hire',copy:'Your session, your engineer, our studio. Two-hour minimum.',meta:'£40 / hour · 2h minimum',href:'/dry-hire-cardiff'},
+    {n:'01',title:'Vocal Recording',copy:'Record vocals with an engineer. Mixing and mastering included within your booked time.',meta:recordingRateLabel(pricing.studioHourlyPricePence),href:'/booking?service=vocal-recording',featured:true},
+    {n:'02',title:'Studio Dry Hire',copy:'Your session, your engineer, our studio. Two-hour minimum.',meta:`${dryHireRate}/hour · 2h minimum`,href:'/dry-hire-cardiff'},
     {n:'03',title:'Mixing & Mastering',copy:'Get your track ready for release with a professional mix and master.',meta:'Tailored quote per track',href:'/mix-request',enquire:true},
   ];
   const site=process.env.NEXT_PUBLIC_SITE_URL||'https://www.silkcrayon.com';
@@ -60,7 +60,7 @@ export default async function Home(){
 
     <section id="services" className="section servicesV12"><div className="container">
       <Reveal><div className="sectionHeading serviceHeading"><div><p className="eyebrow">Services</p><h2>Come in with an idea.<br/>Leave with a record.</h2></div><p>Start with the session you need now. Stay for everything that comes next.</p></div></Reveal>
-      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="homeServiceFooter"><div className="homeServicePrice"><strong>{s.meta}</strong>{s.featured&&offerActive&&<small><b>Save 20%</b><span>1 hour {hourly}</span></small>}</div><Link href={s.href||"/enquire"}>{s.enquire?'Enquire →':'Book →'}</Link></div></article></Reveal>)}</div>
+      <div className="serviceList">{services.map((s,i)=><Reveal key={s.title} delay={i*60}><article className={`serviceRow ${s.featured?'featured':''}`}><span className="serviceNumber">{s.n}</span><div><h3>{s.title}</h3><p>{s.copy}</p></div><div className="homeServiceFooter"><div className="homeServicePrice"><strong>{s.meta}</strong></div><Link href={s.href||"/enquire"}>{s.enquire?'Enquire →':'Book →'}</Link></div></article></Reveal>)}</div>
       <div className="serviceCta"><Link className="textLink" href="/services">All services, full days &amp; artist development →</Link><Link className="textLink" href="/enquire?call=1">Need a hand choosing? Request a call →</Link></div>
     </div></section>
 

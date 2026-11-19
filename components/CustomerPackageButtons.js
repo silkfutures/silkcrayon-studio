@@ -1,5 +1,5 @@
 "use client";
 import {studioPassPrice} from "../lib/studioPassPricing";
 import {useState} from 'react';
-const packs=[4,8].map(hours=>({hours,price:`£${studioPassPrice(hours)/100}`,tag:"£35/hr"}));
+const packs=[4,8].map(hours=>({hours,price:`£${studioPassPrice(hours)/100}`,tag:`£${studioPassPrice(hours)/hours/100}/hr`}));
 export default function CustomerPackageButtons(){const [loading,setLoading]=useState(null),[err,setErr]=useState('');async function buy(hours){setLoading(hours);setErr('');const r=await fetch('/api/customer/packages',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({hours})});const j=await r.json();if(!r.ok){setErr(j.error||'Could not start checkout.');setLoading(null);return}window.location.href=j.url}return <><div className="portalPackageGrid">{packs.map(p=><button className={`portalPackage ${p.hours===5?'featured':''}`} key={p.hours} onClick={()=>buy(p.hours)} disabled={!!loading}><small>{p.tag}</small><b>{p.hours} HOURS</b><strong>{p.price}</strong><span>{loading===p.hours?'Opening checkout…':'Buy hours →'}</span></button>)}</div>{err&&<p className="errorBox">{err}</p>}</>}

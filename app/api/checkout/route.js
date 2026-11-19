@@ -39,7 +39,7 @@ export async function POST(request) {
     if(service.slug==='system-test'&&process.env.ENABLE_SYSTEM_TEST_BOOKING!=='true')return NextResponse.json({error:'Test booking is disabled.'},{status:404});
     if (!/^\d{4}-\d{2}-\d{2}$/.test(body.date || "") || !/^\d{2}:\d{2}$/.test(body.start || "")) throw new Error("Invalid date or time");
     if (!body.fullName?.trim() || !body.email?.trim()) throw new Error("Name and email are required");
-    if(service.slug==='artist-development'&&(!String(body.developmentGoal||'').trim()||!String(body.developmentBlocker||'').trim()||!String(body.developmentOutcome||'').trim()))return NextResponse.json({error:'Tell us your goal, what is stopping you and what would make the session useful.'},{status:400});
+    if(service.slug==='artist-development')return NextResponse.json({error:'Artist development bookings are paused.'},{status:410});
     if(String(body.fullName).length>120||String(body.email).length>254||String(body.notes||'').length>2000||String(body.instagram||'').length>200||String(body.developmentGoal||'').length>2000||String(body.developmentBlocker||'').length>2000||String(body.developmentOutcome||'').length>2000)return NextResponse.json({error:'Some booking details are too long.'},{status:400});
     const requestedStart=londonDateTimeToUtc(body.date,body.start);
     if(!requestedStart||requestedStart.getTime()<=Date.now()+5*60*1000)return NextResponse.json({error:'Please choose a future session time.'},{status:400});

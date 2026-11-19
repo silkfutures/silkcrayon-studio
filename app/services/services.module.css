@@ -1,0 +1,15 @@
+.directory { padding-block: clamp(6rem, 10vw, 10rem) 4rem; max-width: 64rem; }
+.directory h1 { font-size: clamp(2.75rem, 7vw, 5.5rem); line-height: 1.05; margin: .4rem 0 0; }
+.directory section { margin-top: clamp(2.5rem, 6vw, 4.5rem); }
+.directory h2 { font-size: clamp(1.5rem, 3vw, 2rem); margin: 0 0 1rem; }
+.row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(13rem, .65fr); gap: 2rem; padding-block: 1.5rem; border-top: 1px solid currentColor; }
+.row h3 { margin: 0 0 .4rem; font-size: 1.25rem; }
+.row p { margin: 0; max-width: 50ch; line-height: 1.5; }
+.action { display: grid; align-content: start; gap: .5rem; text-align: right; }
+.directory a { text-decoration: underline; text-underline-offset: .2em; }
+.help { margin-top: 2rem; }
+@media (max-width: 640px) {
+  .row { grid-template-columns: 1fr; gap: .75rem; }
+  .action { text-align: left; }
+  .action a { justify-self: start; padding-block: .45rem; }
+}
