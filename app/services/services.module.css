@@ -13,3 +13,5 @@
   .action { text-align: left; }
   .action a { justify-self: start; padding-block: .45rem; }
 }
+
+.vault { display: block; width: 100%; height: clamp(10rem, 24vw, 16rem); margin-top: 1.5rem; object-fit: cover; object-position: center; }

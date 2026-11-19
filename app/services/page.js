@@ -28,7 +28,9 @@ export default async function Services() {
   ];
   return <main className="marketingSite"><SiteHeader/>
     <div className={`container ${styles.directory}`}>
-      <header><p className="eyebrow">Silkcrayon Studios · Cardiff Bay</p><h1>Services &amp; prices</h1></header>
+      <header><p className="eyebrow">Silkcrayon Studios · Cardiff Bay</p><h1>Services &amp; prices</h1>
+        <img className={styles.vault} src="/images/vault.webp" alt="Inside Silkcrayon’s vault studio in Cardiff Bay" />
+      </header>
       {[["Studio sessions", sessions], ["Project work", projects]].map(([heading, rows]) =>
         <section key={heading}><h2>{heading}</h2>
           {rows.map(([title, description, rate, href, action]) =>
@@ -37,6 +39,7 @@ export default async function Services() {
               <div className={styles.action}><strong>{rate}</strong><Link href={href}>{action}</Link></div>
             </article>)}
         </section>)}
-      <p className={styles.help}>Need help choosing? <Link href="/enquire?call=1">Request a call</Link></p>
+      <p className={styles.help}>Planning an EP, an album or a funded project? <Link href="/plan-a-project">Tell us what you have in mind</Link>.</p>
+      <p>Need help choosing? <Link href="/enquire?call=1">Request a call</Link></p>
     </div><SiteFooter/></main>;
 }
